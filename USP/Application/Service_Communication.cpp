@@ -18,6 +18,7 @@
 #include "internal.h"
 #include "openlog.h"
 #include "protocol.h"
+#include "global_data.h"
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 #if USE_SRML_CAN

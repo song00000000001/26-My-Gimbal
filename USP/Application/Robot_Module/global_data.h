@@ -1,13 +1,12 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 #include "stdint.h"
+#include "launchest.h"
+#include "Yaw_control.h"
 
 // 声明全局机构对象
-
+extern Launch_Classdef Launch; // 发射类
+extern Missle_YawController_Classdef Yaw; // yaw控制类
 
 // 声明任务句柄
 
@@ -38,10 +37,6 @@ extern DartAimEnumdef HitTarget;                            // 打击目标
 extern uint8_t ParamSendPack[9];
 extern uint8_t CurrentCnt; // 当前发数
 extern float Yaw_Angle[2]; // 默认前哨站和基地角度
-
-#ifdef  __cplusplus
-}
-#endif
 
 
 

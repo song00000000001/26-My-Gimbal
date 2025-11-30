@@ -19,9 +19,7 @@
 #include "queue.h"
 #include "semphr.h"
 
-//自定义头文件
-#include "launchest.h"
-#include "Yaw_control.h"
+
 
 
 #if USE_SRML_BMI088  
@@ -130,14 +128,14 @@ extern FS_I6X_Classdef remote;
 extern referee_Classdef Referee;//裁判系统类
 #endif
 
+// 声明电机对象
 extern Motor_C610 m2006;
 extern Motor_C620 m3508;
 extern Motor_GM6020 loadermotor[1];
-extern Launch_Classdef Launch; 
-extern Missle_YawController_Classdef Yaw;
 extern abstractMotor<Motor_C610> absM2006;
 extern abstractMotor<Motor_C620> absM3508;
 extern abstractMotor<Motor_GM6020> absM6020[2];
+
 
 /* Exported function declarations --------------------------------------------*/
 void Service_Debug_Init(void);
