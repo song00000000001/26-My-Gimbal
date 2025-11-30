@@ -46,8 +46,11 @@ extern "C"{
 #endif
 
 /* ==舵机宏== */
-#define servo_igniter_on        __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, 200) // 扳机舵机扣下
-#define servo_igniter_off       __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, 100) // 扳机舵机松开
+//扳机舵机可能是tim1,ch1,待检查
+#define servo_igniter_on        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 205) // 扳机舵机解锁
+#define servo_igniter_off       __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 320) // 扳机舵机锁止
+//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 205); // todo开火角度待定,tim1改为htim3吗？
+
 #define servo_loader_clamp1     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, 53)   // 一号夹爪夹紧
 #define servo_loader_release1   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, 100)  // 一号夹爪松开
 #define servo_loader_clamp2     __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_4, 126)  // 二号夹爪夹紧
@@ -76,6 +79,7 @@ void Loader_Clamps_Release3(void);
 
 #define SW_YAW_R_OFF (HAL_GPIO_ReadPin(SW_YAW_R_GPIO_Port, SW_YAW_R_Pin))==GPIO_PIN_RESET
 #define SW_YAW_L_OFF (HAL_GPIO_ReadPin(SW_YAW_L_GPIO_Port, SW_YAW_L_Pin))==GPIO_PIN_RESET
+
 
 #ifdef __cplusplus
 }

@@ -42,6 +42,16 @@ enum
   L = 1
 };
 
+// 定义一个本地结构体，只保存我们需要的数据
+struct DR16_Snapshot_t {
+    LinkageStatus_Typedef Status;
+    SW_Status_Typedef S1;
+    SW_Status_Typedef S2;
+    float RY_Norm;
+    float RX_Norm;
+};
+
+
 extern DartDataStructdef DartsData[MAX_DART_DATAPOOL_SIZE]; // 飞镖数据
 extern uint8_t DartDataSlot[5];                             // 发射数据选择
 extern DartAimEnumdef HitTarget;                            // 打击目标

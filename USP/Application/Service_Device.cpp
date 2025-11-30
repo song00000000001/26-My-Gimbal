@@ -117,31 +117,35 @@ void tskDR16(void *arg)
 	/* Infinite loop */
 	for (;;)
 	{
-		/* Enter critical */
-		xSemaphoreTake(DR16_mutex, portMAX_DELAY);
-		/*	等待数据	*/
-		if (xQueueReceive(DR16_QueueHandle, &Rx_Package, 100) == pdPASS)
-		{
-			// Read Message
-			DR16.DataCapture((DR16_DataPack_Typedef *)Rx_Package.address);
-		}
-		/*	检测遥控器连接 */
-		DR16.Check_Link(xTaskGetTickCount());
-		/*	判断是否连接 	 */
-		if (DR16.GetStatus() != DR16_ESTABLISHED)
-		{
-			/**
-			 * lost the remote control
-			 */
+		// 1. 等待数据（不要拿锁！）
+        // 减少等待时间，20ms，这样Check_Link检查频率更高，反应更快,
+        //dr16数据更新频率70hz,所以最快不要小于15ms即可。
+        // Check_Link是在超时后才运行
+        if (xQueueReceive(DR16_QueueHandle, &Rx_Package, 20) == pdPASS)
+        {
+            // 2. 收到数据，拿锁进行解析和更新
+            xSemaphoreTake(DR16_mutex, portMAX_DELAY);
+            DR16.DataCapture((DR16_DataPack_Typedef *)Rx_Package.address);
+            xSemaphoreGive(DR16_mutex);
+        }
 
-			/* Leave critical */
-			xSemaphoreGive(DR16_mutex);
-			continue;
-		}
-		/*	更新遥控器控制	*/
-
-		/* Leave critical */
-		xSemaphoreGive(DR16_mutex);
+        // 3. 无论有没有收到数据，都要检查是否超时
+        // 这里需要拿锁，因为 Check_Link 可能会修改 Status，而其他任务可能会读取 Status
+        xSemaphoreTake(DR16_mutex, portMAX_DELAY);
+        DR16.Check_Link(xTaskGetTickCount());
+        xSemaphoreGive(DR16_mutex);
+        /*       
+        todo:
+        song 
+        // 4. 处理掉线逻辑示例
+        xSemaphoreTake(DR16_mutex, portMAX_DELAY);
+        if (DR16.GetStatus() != DR16_ESTABLISHED)
+        {
+             // 执行掉线后的安全措施
+        }
+        xSemaphoreGive(DR16_mutex);
+        以上的逻辑考虑封入类中，不过互斥锁似乎不好封装进去。
+        */
 	}
 }
 #endif

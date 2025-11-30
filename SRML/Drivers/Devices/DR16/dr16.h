@@ -97,12 +97,12 @@ class DR16_Classdef
         uint32_t dt = 0;
         LinkageStatus_Typedef Status;   /*<! 连接状态 */
         uint8_t  detecting_flag;        /*<! 检测操作标志位*/
-		    uint32_t last_check_time;       /*<! 上一次在线检测时间*/
+		uint32_t last_check_time;       /*<! 上一次在线检测时间*/
         DR16_DataPack_Typedef DataPack; /*<! 数据包*/
         float RX_Norm,RY_Norm,LX_Norm,LY_Norm,MouseX_Norm,MouseY_Norm,MouseZ_Norm;
                                         /*<! 两个摇杆四个方向与鼠标三个方向速度归一化后的值*/
         Key_Typedef Key[18];            /*<! 16个键的相关信息*/
-		    CLICK_EXCE Click_Fun[18];       /*<! 单击执行函数 */
+		CLICK_EXCE Click_Fun[18];       /*<! 单击执行函数 */
         float MouseCoefficient;         /*<! 鼠标动作乘的系数*/
         void Key_Process(void);         /*<! 按键处理*/
 

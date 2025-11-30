@@ -210,11 +210,11 @@ void Launch_Classdef::Igniter_Pos_Set(float _target_pos)
 
 void Launch_Classdef::Igniter_On()
 {
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 205); // todo开火角度待定
+    servo_igniter_on;
 }
 void Launch_Classdef::Igniter_Off()
 {
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 320); // todo关角度待定
+    servo_igniter_off;
 }
 
 void Launch_Classdef::disable()
