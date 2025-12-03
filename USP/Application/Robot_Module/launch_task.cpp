@@ -380,7 +380,10 @@ void LaunchCtrl(void *arg)
         // ---------------- [D] 发送 CAN 数据 ----------------
          /*打包数据发送*/
         MotorMsgPack(Tx_Buff, Launch.DeliverMotor[L], Launch.DeliverMotor[R], Launch.IgniterMotor);
-        xQueueSend(CAN2_TxPort, &Tx_Buff.Id200, 0);
+		
+		xQueueSend(CAN1_TxPort, &Tx_Buff.Id200, 0);
+		//这里发现原理图只画了can1的收发器,猜测应该是can1,原代码是发射架的和国镖可能有不同
+       // xQueueSend(CAN2_TxPort, &Tx_Buff.Id200, 0);
         //这里说明同步带电机和行程电机都是can2总线，
         //后续进行can2接收测试时，可以和这里互相验证。
     }

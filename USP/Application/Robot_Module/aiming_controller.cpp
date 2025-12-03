@@ -75,7 +75,8 @@ void Yaw_Task(void *arg)
 			Yaw.adjust();
 			/*打包发送*/
 			MotorMsgPack(Tx_Buff1, Yaw.YawMotor);
-			xQueueSend(CAN2_TxPort, &Tx_Buff1.Id1ff, 0);
+			xQueueSend(CAN1_TxPort, &Tx_Buff1.Id1ff, 0);
+			//xQueueSend(CAN2_TxPort, &Tx_Buff1.Id1ff, 0);
 		}
 	}
 }
