@@ -13,6 +13,8 @@ void Loader_Ctrl(void *arg)
 	/*	pre load for task	*/
 	Motor_CAN_COB Tx_Buff = {};
 	TickType_t xLastWakeTime_t;
+    myPID anglepid;									// 装填电机的编码器环
+    myPID speedpid;									// 装填电机的速度环
 	xLastWakeTime_t = xTaskGetTickCount();
 	anglepid.SetPIDParam(4, 0, 0.1, 100, 1200);
 	speedpid.SetPIDParam(8, 1, 0, 100, 16000);
@@ -58,7 +60,15 @@ void Loader_Ctrl(void *arg)
 		}
 
         //装填电机控制
-        turn1(goal);
+        anglepid.Target = goal;
+        anglepid.Current = loadermotor[0].getAngle();
+        anglepid.Adjust();
+        speedpid.Target = anglepid.Out;
+        speedpid.Current = loadermotor[0].getSpeed();
+        speedpid.Adjust();
+        loadermotor[0].Out = speedpid.Out;
+
+        //发送CAN报文
 		motor_dji::MotorMsgPack(Tx_Buff, loadermotor[0]);
         xQueueSend(CAN2_TxPort, &Tx_Buff.Id1ff, 0);   
 		//xQueueSend(CAN2_TxPort, &Tx_Buff.Id2ff, 0);    
@@ -72,12 +82,5 @@ void Loader_Ctrl(void *arg)
  */
 void turn1(float angle)
 {
-	Motor_CAN_COB Tx_Buff = {};
-	anglepid.Target = angle;
-	anglepid.Current = loadermotor[0].getAngle();
-	anglepid.Adjust();
-	speedpid.Target = anglepid.Out;
-	speedpid.Current = loadermotor[0].getSpeed();
-	speedpid.Adjust();
-	loadermotor[0].Out = speedpid.Out;
+	
 }

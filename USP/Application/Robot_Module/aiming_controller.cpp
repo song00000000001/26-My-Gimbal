@@ -7,12 +7,19 @@
  * @parma None
  * @return None
  */
+
+ float Yaw_Angle[2]; // 默认前哨站和基地角度
+
 void Yaw_Task(void *arg)
 {
 	Motor_CAN_COB Tx_Buff1;
 	TickType_t xLastWakeTime_t;
 	static uint32_t tick = xTaskGetTickCount();
 	uint32_t currentTick = xTaskGetTickCount();
+    float yaw_target = 0, yaw_goal = 0, igniter_target_pos = 0, igniter_goal_pos = 0;
+    bool vision_aim_state = 0;				// 视觉瞄准状态
+    float storage_base_angle; // 视觉基准角、原基准角暂存
+    float _YawCorrectionAngle;//yaw轴修正角
 	yaw_target = 0;
 	for (;;)
 	{

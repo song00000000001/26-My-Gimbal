@@ -67,6 +67,12 @@ struct DownLinkStructdef
   uint8_t CRC8;
 }DownLinkPack;
 #pragma pack()
+
+Missle_State_t state = DEINIT;
+uint8_t DartDataSlot[5]={0,1,2,3,4}; // 发射数据选择
+DartDataStructdef DartsData[MAX_DART_DATAPOOL_SIZE]; //发射数据
+
+
 void SendHeartBeat();
 void Launch_Callback()
 {
@@ -142,7 +148,7 @@ void SendHeartBeat()
 {
   DownLinkPack.SOF = 0xA5;
   DownLinkPack.CmdID = 0x11;
-  DownLinkPack.cur_num = CurrentCnt - 1;
+  //DownLinkPack.cur_num = CurrentCnt - 1;
  if(Is_Launching())
  {
    DownLinkPack.launcher_state = 4; //回传镖架状态

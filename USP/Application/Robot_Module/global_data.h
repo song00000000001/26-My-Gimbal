@@ -134,32 +134,50 @@ typedef struct {
 } Robot_Ctrl_t;
 
 
-extern DartDataStructdef DartsData[MAX_DART_DATAPOOL_SIZE]; // 飞镖数据
-extern uint8_t DartDataSlot[5];                             // 发射数据选择
+#pragma pack(1)
+    struct VisionRecvData_t
+    {
+        uint8_t target_mode;
+		uint8_t ros=3;
+        float target_yaw;
+        float pilot_translation;
+        uint8_t end;
+    };
+#pragma pack()
+
+#pragma pack(1)
+    struct VisionSendData_t
+    {
+        uint8_t head = 0x45;
+        float current_yaw;
+        float base_yaw;
+        uint8_t mode = 3;
+        uint8_t tracker_bit = 0;
+        uint8_t calibration_state = 0; // 标定
+        uint8_t end = 0x55;
+    };
+#pragma pack()
+
+
 extern DartAimEnumdef HitTarget;                            // 打击目标
-extern uint8_t ParamSendPack[9];
-extern uint8_t CurrentCnt; // 当前发数
-extern float Yaw_Angle[2]; // 默认前哨站和基地角度
 
 
-// 调试/通信用变量
-extern Missle_State_t state; // 发射状态
 
-// 声明全局机构对象
 extern Launch_Classdef Launch; // 发射类
+
 extern Missle_YawController_Classdef Yaw; // yaw控制类
-extern float yaw_target , yaw_goal , igniter_target_pos , igniter_goal_pos;
-
-extern int cnt;
 
 
-extern float visionangle;
-extern myPID anglepid;
-extern myPID speedpid;
+
+extern Motor_GM6020 loadermotor[1];; // 装填电机
 extern bool vision_aim_state;
 extern float vision_base_angle;
 extern float storage_base_angle;
 
+
+extern uint32_t vision_last_recv_time ; // 视觉最后接收时间
+extern VisionRecvData_t vision_recv_pack;
+extern VisionSendData_t vision_send_pack;
 
 /************************ COPYRIGHT(C) SCUT-ROBOTLAB **************************/
 

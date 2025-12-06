@@ -2858,11 +2858,6 @@
               <FilePath>..\USP\Application\Robot_Module\loader_controller.cpp</FilePath>
             </File>
             <File>
-              <FileName>main_controller.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\USP\Application\Robot_Module\main_controller.cpp</FilePath>
-            </File>
-            <File>
               <FileName>launch_task.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\USP\Application\Robot_Module\launch_task.cpp</FilePath>

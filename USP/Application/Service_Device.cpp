@@ -82,6 +82,7 @@ void Vision_Task(void *arg)
 	UART_pack.port_num = 1;
 	UART_pack.address = (uint8_t *)&vision_send_pack;
 	UART_pack.len = sizeof(vision_send_pack);
+
 	for (;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime_t, 1);

@@ -42,29 +42,7 @@ extern "C" {
 #define PrioritySuperHigh     7
 #define PriorityRealtime      8
 
-#pragma pack(1)
-    struct VisionRecvData_t
-    {
-        uint8_t target_mode;
-		uint8_t ros=3;
-        float target_yaw;
-        float pilot_translation;
-        uint8_t end;
-    };
-#pragma pack()
 
-#pragma pack(1)
-    struct VisionSendData_t
-    {
-        uint8_t head = 0x45;
-        float current_yaw;
-        float base_yaw;
-        uint8_t mode = 3;
-        uint8_t tracker_bit = 0;
-        uint8_t calibration_state = 0; // 标定
-        uint8_t end = 0x55;
-    };
-#pragma pack()
 
 /* HAL Handlers --------------------------------------------------------------*/
 /* RTOS Resources ------------------------------------------------------------*/
@@ -123,7 +101,7 @@ extern referee_Classdef Referee;//裁判系统类
 // 声明电机对象
 extern Motor_C610 m2006;
 extern Motor_C620 m3508;
-extern Motor_GM6020 loadermotor[1];
+
 extern abstractMotor<Motor_C610> absM2006;
 extern abstractMotor<Motor_C620> absM3508;
 extern abstractMotor<Motor_GM6020> absM6020[2];
@@ -145,10 +123,7 @@ extern User_Uart_Callback UART5_RxCpltCallback;
 extern User_Uart_Callback UART6_RxCpltCallback;
 uint32_t Param_RxCpltCallback(uint8_t *Recv_Data, uint16_t ReceiveLen);
 uint32_t Referee_recv_Callback(uint8_t *Recv_Data, uint16_t ReceiveLen);
-extern VisionRecvData_t vision_recv_pack;
-extern VisionSendData_t vision_send_pack;
-extern uint32_t vision_last_recv_time ;
-extern float _YawCorrectionAngle;
+
 #if USE_SRML_DR16
 uint32_t DR16_RxCpltCallback(uint8_t *Recv_Data, uint16_t ReceiveLen);
 #endif
