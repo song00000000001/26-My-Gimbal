@@ -4,7 +4,7 @@
 
 
 //主控制任务类实例化,launchest.cpp等任务中使用,service_communication.cpp中更新电机数据
-Motor_GM6020 loadermotor[1]{ID_LOADER};//装填电机
+abstractMotor<Motor_GM6020> loadermotor(ID_LOADER);//装填电机抽象类
 
 // 实例化驱动,发射类在发射主控任务中使用,service_communication.cpp中更新电机数据
 Launcher_Driver Launcher(ID_DELIVER_L, ID_DELIVER_R, ID_IGNITER); 

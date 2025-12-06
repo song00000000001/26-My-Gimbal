@@ -152,7 +152,7 @@ void Task_CAN1Receive(void *arg)
         }
         else if (Yawer.YawMotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
         {}
-        else if(loadermotor[0].update(CAN_RxCOB.ID,CAN_RxCOB.Data))
+        else if(loadermotor.update(CAN_RxCOB.ID,CAN_RxCOB.Data))
         {}
     }
   }
@@ -179,7 +179,7 @@ void Task_CAN2Receive(void *arg)
         {}
         else if (Yawer.YawMotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
         {}
-        else if(loadermotor[0].update(CAN_RxCOB.ID,CAN_RxCOB.Data))
+        else if(loadermotor.update(CAN_RxCOB.ID,CAN_RxCOB.Data))
         {}
     }
   }

@@ -69,5 +69,8 @@ void Missle_YawController_Classdef::adjust()
 
 void Missle_YawController_Classdef::disable()
 {
+    //失控保护
+    PID_Yaw_Angle.clean_intergral();
+    PID_Yaw_Speed.clean_intergral();
     YawMotor.setMotorCurrentOut(0);
 }

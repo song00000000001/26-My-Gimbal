@@ -166,7 +166,7 @@ extern Launcher_Driver Launcher; // 发射驱动类
 
 extern Missle_YawController_Classdef Yawer; // yaw控制类
 
-extern Motor_GM6020 loadermotor[1];; // 装填电机
+extern abstractMotor<Motor_GM6020> loadermotor; // 装填电机抽象类
 
 
 extern uint32_t vision_last_recv_time ; // 视觉最后接收时间

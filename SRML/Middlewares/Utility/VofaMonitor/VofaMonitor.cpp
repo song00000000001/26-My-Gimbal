@@ -50,7 +50,7 @@ using namespace VofaMonitor;
 #if VOFAMONITOR_MAX_DATA_NUM < 0
 #error "The maximum amount of "Max_Sent_Data_Num" must be greater than 0."
 #else
-#warning "Please pay attention to the baud rate of the serial port (UART/USART) to avoid data loss. "
+//#warning "Please pay attention to the baud rate of the serial port (UART/USART) to avoid data loss. "
 #endif
 /* Private variables ---------------------------------------------------------*/
 namespace VofaMonitor

@@ -60,19 +60,20 @@ void Loader_Ctrl(void *arg)
 		}
 
         //装填电机控制
-        anglepid.Target = goal;
-        anglepid.Current = loadermotor[0].getAngle();
+        //anglepid.Target = goal;
+        anglepid.Current = loadermotor.getMotorTotalAngle();//换成getTotalAngle试试,测试后发现,total才是绝对,直接get的会有跳变
+
+        //计算pid
         anglepid.Adjust();
         speedpid.Target = anglepid.Out;
-        speedpid.Current = loadermotor[0].getSpeed();
+        speedpid.Current = loadermotor.getMotorSpeed();
         speedpid.Adjust();
-        //以下的输出直接修改out,并没有利用motor_current类的torquecurrent,就没有反电动势修正
-        //loadermotor[0].Out = speedpid.Out;
-        //改为调用setCurrentOut函数，利用反电动势补偿,测试
-        loadermotor[0].setCurrentOut(speedpid.Out);
 
+        //设置电机输出
+        loadermotor.setMotorCurrentOut(speedpid.Out);
+        
         //发送CAN报文
-		motor_dji::MotorMsgPack(Tx_Buff, loadermotor[0]);
+        MotorMsgPack(Tx_Buff, loadermotor);
         xQueueSend(CAN2_TxPort, &Tx_Buff.Id1ff, 0);   
 		//xQueueSend(CAN2_TxPort, &Tx_Buff.Id2ff, 0);    
 	}
