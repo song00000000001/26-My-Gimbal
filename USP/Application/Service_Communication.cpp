@@ -66,10 +66,10 @@ void Service_Communication_Init(void)
 # endif
   /* USART Management */
 #if USE_SRML_UART
-  //xTaskCreate(Task_UsartReceive, "Com.Usart RxPort", Small_Stack_Size, NULL, PriorityRealtime, &UartReceivePort_Handle);
-  //xTaskCreate(Task_UsartTransmit, "Com.Usart TxPort", Small_Stack_Size, NULL, PriorityRealtime, &UartTransmitPort_Handle);
+  xTaskCreate(Task_UsartReceive, "Com.Usart RxPort", Small_Stack_Size, NULL, PriorityRealtime, &UartReceivePort_Handle);
+  xTaskCreate(Task_UsartTransmit, "Com.Usart TxPort", Small_Stack_Size, NULL, PriorityRealtime, &UartTransmitPort_Handle);
 #endif
-  //xTaskCreate(Task_ParamChanger, "change", Normal_Stack_Size, NULL, PriorityHigh, NULL);
+  xTaskCreate(Task_ParamChanger, "change", Normal_Stack_Size, NULL, PriorityHigh, NULL);
 }
 
 /*----------------------------------------------- CAN Manager ---------------------------------------------*/
