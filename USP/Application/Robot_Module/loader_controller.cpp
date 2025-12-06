@@ -66,7 +66,10 @@ void Loader_Ctrl(void *arg)
         speedpid.Target = anglepid.Out;
         speedpid.Current = loadermotor[0].getSpeed();
         speedpid.Adjust();
-        loadermotor[0].Out = speedpid.Out;
+        //以下的输出直接修改out,并没有利用motor_current类的torquecurrent,就没有反电动势修正
+        //loadermotor[0].Out = speedpid.Out;
+        //改为调用setCurrentOut函数，利用反电动势补偿,测试
+        loadermotor[0].setCurrentOut(speedpid.Out);
 
         //发送CAN报文
 		motor_dji::MotorMsgPack(Tx_Buff, loadermotor[0]);

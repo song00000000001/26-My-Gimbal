@@ -26,16 +26,16 @@ void Yaw_Task(void *arg)
 		vTaskDelayUntil(&xLastWakeTime_t, 1);
 		if (DR16.GetStatus() == DR16_ESTABLISHED)
 		{
-			if (Yaw.is_Yaw_Init() == 1 && DR16.GetS1() == SW_UP) // 左拨杆朝上，进入调试模式
+			if (Yawer.is_Yaw_Init() == 1 && DR16.GetS1() == SW_UP) // 左拨杆朝上，进入调试模式
 			{
 				yaw_target -= DR16.Get_LX_Norm() * 0.002f;
 				yaw_target = std_lib::constrain(yaw_target, -10.2f, 10.2f);
-				Yaw.update(yaw_target);
+				Yawer.update(yaw_target);
 			}
-			if (Yaw.is_Yaw_Init() == 1 && DR16.GetS1() == SW_DOWN) // 左拨杆朝下拨，进入视觉接管模式
+			if (Yawer.is_Yaw_Init() == 1 && DR16.GetS1() == SW_DOWN) // 左拨杆朝下拨，进入视觉接管模式
 			{
 				storage_base_angle = Yaw_Angle[HitTarget];
-				if (Yaw.is_Yaw_Init() == 1 && DR16.GetS1() == SW_DOWN)
+				if (Yawer.is_Yaw_Init() == 1 && DR16.GetS1() == SW_DOWN)
 				{
 					//			if(vision_recv_pack.ros==3)//若视觉未识别到引导灯，则先自行扫描
 					//			{
@@ -62,26 +62,26 @@ void Yaw_Task(void *arg)
 						yaw_target += 0;
 					}
 					yaw_target = std_lib::constrain(yaw_target, -10.2f, 10.2f);
-					Yaw.update(yaw_target);
+					Yawer.update(yaw_target);
 					Yaw_Angle[HitTarget] = yaw_target;
 				}
 			}
-			else if (Yaw.is_Yaw_Init() == 1 && (vision_aim_state == 1 || DR16.GetS1() == SW_MID)) // 非视觉模式  or 瞄准完成
+			else if (Yawer.is_Yaw_Init() == 1 && (vision_aim_state == 1 || DR16.GetS1() == SW_MID)) // 非视觉模式  or 瞄准完成
 			{
-				Yaw.update(_YawCorrectionAngle + Yaw_Angle[HitTarget]); // 更改Yaw轴角度
+				Yawer.update(_YawCorrectionAngle + Yaw_Angle[HitTarget]); // 更改Yaw轴角度
 			}
-			if (Yaw.is_Yaw_Init() != 1)
+			if (Yawer.is_Yaw_Init() != 1)
 			{
-				Yaw.init();
+				Yawer.init();
 			}
 			/*关控保护*/
 			if (DR16.GetStatus() != DR16_ESTABLISHED)
 			{
-				Yaw.disable();
+				Yawer.disable();
 			}
-			Yaw.adjust();
+			Yawer.adjust();
 			/*打包发送*/
-			MotorMsgPack(Tx_Buff1, Yaw.YawMotor);
+			MotorMsgPack(Tx_Buff1, Yawer.YawMotor);
 			xQueueSend(CAN1_TxPort, &Tx_Buff1.Id1ff, 0);
 			//xQueueSend(CAN2_TxPort, &Tx_Buff1.Id1ff, 0);
 		}

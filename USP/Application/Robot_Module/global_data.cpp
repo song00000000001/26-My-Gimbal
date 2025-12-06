@@ -2,10 +2,15 @@
 #include "robot_config.h"
 #include "internal.h"
 
+
 //主控制任务类实例化,launchest.cpp等任务中使用,service_communication.cpp中更新电机数据
 Motor_GM6020 loadermotor[1]{ID_LOADER};//装填电机
-Launch_Classdef Launch(ID_DELIVER_R, ID_DELIVER_L, ID_IGNITER); //发射类
-Missle_YawController_Classdef Yaw(ID_YAW);//yaw控制类
+
+// 实例化驱动,发射类在发射主控任务中使用,service_communication.cpp中更新电机数据
+Launcher_Driver Launcher(ID_DELIVER_L, ID_DELIVER_R, ID_IGNITER); 
+
+// yaw控制类实例化,yaw_control.cpp等任务中使用,service_communication.cpp中更新电机数据
+Missle_YawController_Classdef Yawer(ID_YAW);
 
 //视觉通信协议用,aiming_controller.cpp中会读取。
 //communication.cpp中在硬件串口中断拷贝更新,

@@ -2868,16 +2868,6 @@
           <GroupName>USP/Application/class</GroupName>
           <Files>
             <File>
-              <FileName>launchest.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\USP\Application\Robot_Module\launchest.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>launchest.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\USP\Application\Robot_Module\launchest.h</FilePath>
-            </File>
-            <File>
               <FileName>Yaw_control.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\USP\Application\Robot_Module\Yaw_control.cpp</FilePath>

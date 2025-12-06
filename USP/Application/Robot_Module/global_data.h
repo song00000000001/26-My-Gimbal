@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "launchest.h"
 #include "Yaw_control.h"
+#include "launcher_driver.h"
 
 // 飞镖数据存储相关定义
 //最大飞镖数据池大小?待确认
@@ -161,18 +162,11 @@ typedef struct {
 
 extern DartAimEnumdef HitTarget;                            // 打击目标
 
+extern Launcher_Driver Launcher; // 发射驱动类
 
-
-extern Launch_Classdef Launch; // 发射类
-
-extern Missle_YawController_Classdef Yaw; // yaw控制类
-
-
+extern Missle_YawController_Classdef Yawer; // yaw控制类
 
 extern Motor_GM6020 loadermotor[1];; // 装填电机
-extern bool vision_aim_state;
-extern float vision_base_angle;
-extern float storage_base_angle;
 
 
 extern uint32_t vision_last_recv_time ; // 视觉最后接收时间

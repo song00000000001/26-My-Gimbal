@@ -76,7 +76,7 @@ DartDataStructdef DartsData[MAX_DART_DATAPOOL_SIZE]; //发射数据
 void SendHeartBeat();
 void Launch_Callback()
 {
-    Launch.Igniter_On();
+    //Launch.Igniter_On();
 }
 void packDecoder(uint8_t * _addr,uint8_t len)
 {

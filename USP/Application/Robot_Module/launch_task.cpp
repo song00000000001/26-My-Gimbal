@@ -17,9 +17,6 @@
 // 定义全局机器人状态 (Cmd, Flag, Status)
 Robot_Ctrl_t Robot; 
 
-// 实例化驱动 (假设 ID 为 CAN1_1, CAN1_2, CAN2_1，请修改为你实际的 ID)
-Launcher_Driver Launcher(1, 2, 1); 
-
 
 /* --- 2. 辅助变量 --- */
 static uint32_t stick_hold_timer = 0; // 用于长按判断
@@ -204,7 +201,7 @@ static void Run_Firing_Sequence()
 
 
 /**
- * @brief 发射主控任务 (大脑)
+ * @brief 发射主控任务
  */
 void LaunchCtrl(void *arg)
 {
@@ -379,7 +376,7 @@ void LaunchCtrl(void *arg)
         
         // ---------------- [D] 发送 CAN 数据 ----------------
          /*打包数据发送*/
-        MotorMsgPack(Tx_Buff, Launch.DeliverMotor[L], Launch.DeliverMotor[R], Launch.IgniterMotor);
+        MotorMsgPack(Tx_Buff, Launcher.DeliverMotor[L], Launcher.DeliverMotor[R], Launcher.IgniterMotor);
 		
 		xQueueSend(CAN1_TxPort, &Tx_Buff.Id200, 0);
 		//这里发现原理图只画了can1的收发器,猜测应该是can1,原代码是发射架的和国镖可能有不同

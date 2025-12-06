@@ -19,8 +19,7 @@ class Launcher_Driver
 {
 private:
     /* --- 1. 硬件对象 (Private: 外部不可见) --- */
-    abstractMotor<Motor_C620> DeliverMotor[2]; // [0]=Left, [1]=Right
-    abstractMotor<Motor_C610> IgniterMotor;
+
     
     // 限位开关读取函数指针
     GPIO_PinState (*read_switch_L)(void);
@@ -49,6 +48,8 @@ private:
     void check_calibration_logic(); 
 
 public:
+abstractMotor<Motor_C620> DeliverMotor[2]; // [0]=Left, [1]=Right
+abstractMotor<Motor_C610> IgniterMotor;
     /* --- 构造函数 --- */
     Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign);
 

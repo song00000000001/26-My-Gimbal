@@ -33,7 +33,7 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
 
 void Launcher_Driver::init()
 {
-    // PID 参数初始化 (从你原来的代码搬过来)
+    // PID 参数初始化
     pid_deliver_sync.SetPIDParam(0.5f, 0.0f, 0.0f, 8000, 16000);
     
     for(int i=0; i<2; i++) {
