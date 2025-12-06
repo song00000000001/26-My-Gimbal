@@ -225,7 +225,7 @@ void LaunchCtrl(void *arg)
 
     // 初始状态设为自检
     Robot.Status.current_state = SYS_CHECKING;
-// --- 【新增】自检专用静态变量 ---
+    // --- 【新增】自检专用静态变量 ---
     // 记录哪几个开关已经检测过了 (Bitmask)
     static uint8_t check_progress = 0; 
     
@@ -270,7 +270,6 @@ void LaunchCtrl(void *arg)
         case SYS_CHECKING:
         {
             Launcher.stop(); // 确保电机无力
-            
             // 1. 定义检测逻辑 (Lambda函数)
             // 参数: 当前是否按下, 上次是否按下(引用), 对应的掩码位
             auto update_edge = [&](bool is_pressed, bool &last_pressed, uint8_t mask) {
@@ -281,7 +280,7 @@ void LaunchCtrl(void *arg)
                 }
                 last_pressed = is_pressed; // 更新历史状态
             };
-
+            
             // 2. 执行检测 (使用 Driver 提供的接口)
             update_edge(Launcher.get_switch_state_L(),   last_sw_L,   MASK_DELIVER_L);
             update_edge(Launcher.get_switch_state_R(),   last_sw_R,   MASK_DELIVER_R);
@@ -301,6 +300,7 @@ void LaunchCtrl(void *arg)
                 Launcher.start_calibration();
             }
         }
+
             break;
         
         case SYS_CALIBRATING:

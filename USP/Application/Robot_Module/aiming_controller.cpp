@@ -1,6 +1,7 @@
 
 #include "internal.h"
 #include "global_data.h"
+#include "robot_config.h"
 
 /**
  * @brief Yaw轴控制任务
@@ -17,6 +18,7 @@ enum vision_aim_state_enum
     CORRECT_AIM = 2
 };
 
+
 void Yaw_Task(void *arg)
 {
 	Motor_CAN_COB Tx_Buff1;
@@ -27,6 +29,8 @@ void Yaw_Task(void *arg)
     float storage_base_angle; // 视觉基准角、原基准角暂存
     float _YawCorrectionAngle;//yaw轴修正角
 	yaw_target = 0;
+    test_servo_action(); // 测试舵机动作
+
 	for (;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime_t, 1);

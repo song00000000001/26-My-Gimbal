@@ -49,7 +49,6 @@ extern "C"{
 //扳机舵机可能是tim1,ch1,待检查
 #define servo_igniter_on        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 205) // 扳机舵机解锁
 #define servo_igniter_off       __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 320) // 扳机舵机锁止
-//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 205); // todo开火角度待定,tim1改为htim3吗？
 
 #define servo_loader_clamp1     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, 53)   // 一号夹爪夹紧
 #define servo_loader_release1   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, 100)  // 一号夹爪松开
@@ -58,11 +57,13 @@ extern "C"{
 #define servo_loader_clamp3     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_2, 288)  // 三号夹爪夹紧
 #define servo_loader_release3   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_2, 360)  // 三号夹爪松开 
 
+//舵机动作组
 void Loader_Clamps_ClampAll(void);
 void Loader_Clamps_ReleaseAll(void);
 void Loader_Clamps_Release1(void);
 void Loader_Clamps_Release2(void);
 void Loader_Clamps_Release3(void);
+void test_servo_action();
 
 // ================= 开关引脚定义 =================
 #define SW_DELIVER_L_Pin              GPIO_PIN_4

@@ -45,3 +45,13 @@ void Loader_Clamps_Release3(void)
     servo_loader_clamp2;    // 二号夹爪夹紧
     servo_loader_release3;   // 三号夹爪松开 
 }
+
+//临时测试舵机动作
+void test_servo_action()
+{
+    servo_igniter_on;
+    HAL_Delay(1000);
+    servo_igniter_off;
+    HAL_Delay(1000);
+
+}
