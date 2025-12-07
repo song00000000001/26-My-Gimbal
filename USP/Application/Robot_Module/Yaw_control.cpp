@@ -14,7 +14,7 @@ Missle_YawController_Classdef::Missle_YawController_Classdef(uint8_t _ID_YAW)
     PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 18000);
 }
 
-void Missle_YawController_Classdef::init()
+void Missle_YawController_Classdef::calibration()
 {
     switch (Yaw_Init_flag)
     {
@@ -43,6 +43,7 @@ void Missle_YawController_Classdef::init()
         break;
     }
 }
+
 void Missle_YawController_Classdef::update(float _yaw_target)
 {
     PID_Yaw_Angle.Target = 0.5f * MAX_YAW_ANGLE + 532.5f * tanf(_yaw_target / 180.f * PI);//0.5MAX_YAW_ANGLE后的部分需要重新计算

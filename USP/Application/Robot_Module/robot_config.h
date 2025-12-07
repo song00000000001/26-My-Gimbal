@@ -47,8 +47,8 @@ extern "C"{
 
 /* ==舵机宏== */
 
-#define servo_igniter_unlock    __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 205) // 扳机舵机解锁
-#define servo_igniter_lock      __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 320) // 扳机舵机锁止
+#define servo_igniter_unlock    __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 170) // 扳机舵机解锁      ,120卡住,180ok
+#define servo_igniter_lock      __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 270) // 扳机舵机锁止
 
 /*ttodo
 以下只有1号舵机响应,其他的都不对,而且测试时用不上,所以先不管

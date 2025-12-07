@@ -41,7 +41,7 @@ public:
   inline bool is_Yaw_Init() { return (Yaw_Init_flag == 2); }
 
   Missle_YawController_Classdef(uint8_t _ID_YAW);
-  void init();
+  void calibration();
   void update(float _yaw_target);
   void adjust();
   void disable();

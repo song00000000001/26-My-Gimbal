@@ -109,18 +109,13 @@ static void Run_Firing_Sequence()
         
         // 触发条件：收到指令 且 视觉瞄准到位(可选)
         // 这里假设 Cmd.fire_command 在自动模式下由视觉改写，或者简单的连发逻辑
+		Robot.Cmd.fire_command=true;
         if (Robot.Cmd.fire_command) {
             fire_state = FIRE_PULLING;
         }
         break;
 
     case FIRE_PULLING:
-        // 1. 锁住丝杆 (防止堵转) -> 对应 Driver 里的 MODE_LOCKED (输出0电流)
-        //    我们需要在 Launcher 类加一个接口，或者直接在这里利用状态位
-        //    为了简单，我们假设 Launcher 内部逻辑：
-        //    如果我们要下拉，我们不改变丝杆目标，但因为结构问题，建议丝杆卸力
-        //    【重要】这里调用我们在 Driver 里新加的特殊模式接口(如果有)
-        //    或者简单地：不更新丝杆目标，让它保持原位(有电流)或者设为0电流
         
         // 2. 滑块全速下拉
         Launcher.fire_lock();//锁止扳机,准备扣上滑台
@@ -194,8 +189,10 @@ void LaunchCtrl(void *arg)
     Motor_CAN_COB Tx_Buff;
  
     // 初始状态设为自检
+    Robot.Status.yaw_control_state=disable_motor; //yaw轴失能
     Robot.Status.current_state = SYS_CHECKING;
-
+	Robot.Flag.Check.limit_sw_ok=false;
+    
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1);
@@ -208,8 +205,10 @@ void LaunchCtrl(void *arg)
         // 2. 解析遥控器/视觉指令 -> 存入 Robot.Cmd
         Update_Input(); 
 
+		
+		
         // 3. 全局离线保护 (优先级最高)
-        if (DR16.GetStatus() != DR16_ESTABLISHED) {
+        if (DR16.GetStatus() != DR16_ESTABLISHED&&DR16.GetS1()==SW_UP) {
             Robot.Status.current_state = SYS_OFFLINE;
         }
 
@@ -221,7 +220,7 @@ void LaunchCtrl(void *arg)
         {
             stop_all_motor();
             // 恢复条件：遥控器重连
-            if (DR16.GetStatus() == DR16_ESTABLISHED) {
+            if (DR16.GetStatus() == DR16_ESTABLISHED&&DR16.GetS1()!=SW_UP) {
                 Robot.Status.current_state = SYS_CHECKING;
             }
         }
@@ -240,10 +239,14 @@ void LaunchCtrl(void *arg)
         break;
         
         case SYS_CALIBRATING:
-            // 此状态下，Launcher.run_1ms() 内部正在跑归零逻辑
-            // 任务层只需要等待驱动层反馈 "已校准"
+            // 此状态下，Launcher.run_1ms() 内部正在跑归零逻辑，任务层只需要等待驱动层反馈 "已校准"
+            //yaw控制考虑到是并行的，主状态机和子状态机采用状态位判断
+            Robot.Status.yaw_control_state = YAW_CALIBRATING;
 
-            if (Launcher.is_calibrated()) {
+            //校准完毕跳转待机状态
+            if (Yawer.is_Yaw_Init() == 1&&Launcher.is_calibrated()&&Robot.Flag.Status.is_calibrated==false) {
+                Robot.Flag.Status.is_calibrated = true;
+                Robot.Status.yaw_control_state = MANUAL_AIM; //校准完毕进入手动瞄准状态
                 Robot.Status.current_state = SYS_STANDBY;
             }
             break;
@@ -309,6 +312,6 @@ void LaunchCtrl(void *arg)
         // ---------------- [D] 发送 CAN 数据 ----------------
         /*打包数据发送*/
         MotorMsgPack(Tx_Buff, Launcher.DeliverMotor[L], Launcher.DeliverMotor[R], Launcher.IgniterMotor);
-		xQueueSend(CAN2_TxPort, &Tx_Buff.Id200, 0);
+		xQueueSend(CAN1_TxPort, &Tx_Buff.Id200, 0);
     }
 }

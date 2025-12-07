@@ -16,27 +16,24 @@ static myPID load_pid_ang;									// 装填电机的编码器环
 static myPID load_pid_spd;									// 装填电机的速度环
 
 
-void key_check(){
-    // 初始化5*pid参数
-    //Launcher.init();
-    
+void key_check(){  
     // 初始状态设为自检
     Robot.Status.current_state = SYS_CHECKING;
     // 记录哪几个开关已经检测过了 (Bitmask)
     static uint8_t check_progress = 0; 
-    if(READ_SW_YAW_L){
+    if(SW_YAW_L_OFF){
         check_progress |= MASK_YAW_L;
     }
-    if(READ_SW_YAW_R){
+    if(SW_YAW_R_OFF){
         check_progress |= MASK_YAW_R;
     }
-    if(READ_SW_DELIVER_L){
+    if(SW_DELIVER_L_OFF){
         check_progress |= MASK_DELIVER_L;
     }
-    if(READ_SW_DELIVER_R){
+    if(SW_DELIVER_R_OFF){
         check_progress |= MASK_DELIVER_R;
     }
-    if(READ_SW_IGNITER){
+    if(SW_IGNITER_OFF){
         check_progress |= MASK_IGNITER;
     }
     // 3. 处理跳过逻辑
@@ -52,32 +49,21 @@ void key_check(){
 void stop_all_motor(){
     Launcher.stop(); 
     Yawer.disable();
-    loadermotor.setMotorCurrentOut(0);
     load_pid_ang.clean_intergral();
     load_pid_spd.clean_intergral();
     Launcher.fire_lock();
 }
 
-void yaw_calibration(){
-    //进行校准，校准完成后，自动改变校准标志
-    Yawer.init();
-    //计算电机pid
-    Yawer.adjust();
-}
-
 //yaw摇杆控制函数
 void yaw_remote_control_task(){
 
-    if(DR16.GetS2() == SW_MID) // 右拨杆中档，手动模式
+    if(DR16.GetS2() == SW_UP) // 右拨杆上,取消使能
     {
-        Robot.Status.yaw_control_state = MANUAL_AIM;
-    }
-    else if(DR16.GetS2() == SW_DOWN) // 右拨杆朝下，修正模式
-    {
-        Robot.Status.yaw_control_state = CORRECT_AIM;
-    }//右拨杆朝上,取消使能
-    else{
         Robot.Status.yaw_control_state = disable_motor;
+    }
+    else if(Robot.Status.yaw_control_state!=YAW_CALIBRATING)
+    {
+        Robot.Status.yaw_control_state=MANUAL_AIM;
     }
 }
 
@@ -126,6 +112,14 @@ void yaw_state_machine(){
         */
        }
         break;
+    case YAW_CALIBRATING:
+        //校准模式
+        //进行校准，校准完成后，自动改变校准标志
+        Yawer.calibration();
+        if(Yawer.is_Yaw_Init()){
+            Robot.Status.yaw_control_state = MANUAL_AIM; //校准完成后，进入手动模式
+        }
+        break;
     case disable_motor:
     default:
         Yawer.disable();
@@ -134,9 +128,14 @@ void yaw_state_machine(){
 
 }
 
+
+//注意校准模式，下面的状态机本来是发射的，但是临时拿来测试，后续要删掉，还给发射任务
+//而后续yaw校准会靠发射任务将robot.status.yaw_control_state设为校准状态
+//yaw任务的子状态机再根据状态进行校准
+
 void yaw_and_load_motor_control(){
     //这里为了方便,脱离状态机单独处理可能的输出。
-    if( Yawer.is_Yaw_Init() == 1 && Robot.Status.yaw_control_state!=disable_motor&& Robot.Status.current_state != SYS_OFFLINE)
+    if(Robot.Status.yaw_control_state!=disable_motor&& Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING)
     {
         //计算电机pid
         Yawer.adjust();
@@ -146,7 +145,7 @@ void yaw_and_load_motor_control(){
         Yawer.disable();
     }
 
-    if(Robot.Status.current_state != SYS_OFFLINE)
+    if(Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING)
     {
         //装填任务
         //计算装填电机pid
@@ -167,6 +166,8 @@ void yaw_and_load_motor_control(){
         loadermotor.setMotorCurrentOut(0);
     }
 }
+		   
+uint16_t servo_ccr_test =200;
 
 void Yaw_Task(void *arg)
 {
@@ -177,22 +178,20 @@ void Yaw_Task(void *arg)
     //初始化参数可以考虑集成到launcher中
     load_pid_ang.SetPIDParam(10, 0, 0, 100, 1200);
 	load_pid_spd.SetPIDParam(50, 1, 0, 1000, 16000);
-    load_pid_ang.Target = 120+5;    //安全位置
+    load_pid_ang.Target = 60;    //安全位置
 
+	// 初始状态设为自检
     //测试用,只执行一次
     // 测试舵机动作
-    test_servo_action(); 
-
+    //test_servo_action(); 
+	 
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1);
+	
 	for (;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-
-        if (DR16.GetStatus() != DR16_ESTABLISHED) {
-            Robot.Status.current_state = SYS_OFFLINE;
-        }
         
         //s2摇杆解析
         yaw_remote_control_task();
@@ -201,50 +200,6 @@ void Yaw_Task(void *arg)
         yaw_state_machine();
         //yaw轴和装填电机控制，都有失能保护，yaw轴还有初始化保护
         yaw_and_load_motor_control();
-
-        //主状态机
-        switch (Robot.Status.current_state)
-        {
-        case SYS_OFFLINE:
-            {
-                //断电
-                stop_all_motor();
-                // 恢复条件：遥控器重连
-                if (DR16.GetStatus() == DR16_ESTABLISHED) {
-                    Robot.Status.current_state = SYS_CHECKING;
-                }
-                break;
-            }
-        case SYS_CHECKING:
-            {
-     
-                stop_all_motor();
-                key_check();
-                         
-                // 5个按键手动检查全部通过则进入校准状态
-                if (Robot.Flag.Check.limit_sw_ok) {
-                    Robot.Status.current_state = SYS_CALIBRATING;
-                }
-        
-            }
-            break;
-        
-        case SYS_CALIBRATING:
-            {
-                yaw_calibration();
-                //校准完毕跳转待机状态
-                if (Yawer.is_Yaw_Init() == 1){
-                    Robot.Status.current_state = SYS_STANDBY;
-                }
-            }
-            break;
-        
-        case SYS_STANDBY:
-        case SYS_AUTO_PREP:
-        case SYS_AUTO_FIRE:
-        default:
-            break;
-        }
 
 	    /*打包发送*/
         MotorMsgPack(Tx_Buff1, Yawer.YawMotor);
@@ -255,6 +210,5 @@ void Yaw_Task(void *arg)
         MotorMsgPack(Tx_Buff, loadermotor);
         xQueueSend(CAN2_TxPort, &Tx_Buff.Id2ff, 0); 
        
-
 	}
 }
