@@ -6,9 +6,9 @@
 
 /* 常量定义 */
 //这里ai的配置和原本的不一样,需要注意
-#define DELIVER_HOME_SPEED   (2000.0f) // 归零时的向上速度
-#define IGNITER_HOME_SPEED   (-2000.0f)
-#define DELIVER_OFFSET_POS   (-10.0f)  // 碰到开关后设置的初始坐标
+#define DELIVER_HOME_SPEED   (1000.0f) // 归零时的向上速度
+#define IGNITER_HOME_SPEED   (-1000.0f)
+#define DELIVER_OFFSET_POS   (-20.0f)  // 碰到开关后设置的初始坐标
 #define IGNITER_OFFSET_POS   (3.0f)
 
 // 构造函数
@@ -32,7 +32,7 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
     // 默认为失能状态
     stop();
     // PID 参数初始化
-    pid_deliver_sync.SetPIDParam(0.5f, 0.0f, 0.0f, 8000, 16000);
+    pid_deliver_sync.SetPIDParam(0.0f, 0.0f, 0.0f, 8000, 16000);
     
     for(int i=0; i<2; i++) {
         pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16380);
@@ -54,15 +54,16 @@ void Launcher_Driver::start_calibration()
         pid_deliver_spd[i].clean_intergral();
         pid_deliver_pos[i].clean_intergral();
     } 
-    mode_igniter = MODE_HOMING;
+    mode_igniter = MODE_DISABLE;
+    //mode_igniter = MODE_HOMING;
     pid_igniter_spd.clean_intergral();
     pid_igniter_pos.clean_intergral();
 }
 
 void Launcher_Driver::stop()
 {
-    for(int i=0; i<2; i++) mode_deliver[i] = MODE_DISABLE;
-    mode_igniter = MODE_DISABLE;
+    //for(int i=0; i<2; i++) mode_deliver[i] = MODE_DISABLE;
+    ///mode_igniter = MODE_DISABLE;
     // 安全保护：切断电流
     IgniterMotor.setMotorCurrentOut(0);
     pid_igniter_spd.clean_intergral();
@@ -99,15 +100,16 @@ void Launcher_Driver::check_calibration_logic()
 {
     // --- 滑块归零逻辑 ---
     // 定义局部数组方便遍历 [0]=L, [1]=R
-    GPIO_PinState (*read_sw[2])() = {read_switch_L, read_switch_R};
+    
 
     if (mode_deliver[0] == MODE_HOMING) {
         // 如果碰到开关 (假设低电平触发)
         if (SW_DELIVER_L_OFF) {
-            pid_deliver_pos[0].Target=-10;
-            pid_deliver_spd[0].clean_intergral();
-            // 1. 消除编码器累积误差 (归零)
-            DeliverMotor[0].baseAngle -= DeliverMotor[0].getMotorTotalAngle();
+			pid_deliver_spd[0].clean_intergral();
+			 // 1. 消除编码器累积误差 (归零)
+			DeliverMotor[0].baseAngle -= DeliverMotor[0].getMotorTotalAngle();
+			
+            pid_deliver_pos[0].Target=DELIVER_OFFSET_POS;
             
             // 2. 切换到位置模式
             mode_deliver[0] = MODE_POSITION;
@@ -121,10 +123,10 @@ void Launcher_Driver::check_calibration_logic()
     if (mode_deliver[1] == MODE_HOMING) {
         // 如果碰到开关 (假设低电平触发)
         if (SW_DELIVER_R_OFF) {
-            pid_deliver_pos[1].Target=-10;
-            pid_deliver_spd[1].clean_intergral();
-            // 1. 消除编码器累积误差 (归零)
+			pid_deliver_spd[1].clean_intergral();
+			// 1. 消除编码器累积误差 (归零)
             DeliverMotor[1].baseAngle -= DeliverMotor[1].getMotorTotalAngle();
+            pid_deliver_pos[1].Target=DELIVER_OFFSET_POS;  
             
             // 2. 切换到位置模式
             mode_deliver[1] = MODE_POSITION;
@@ -241,13 +243,13 @@ void Launcher_Driver::run_1ms()
 // ================= 状态查询 =================
 
 bool Launcher_Driver::is_calibrated() {
-    return is_deliver_homed[0] && is_deliver_homed[1] && is_igniter_homed;
+    return is_deliver_homed[0] && is_deliver_homed[1] ;//&& is_igniter_homed;
 }
 
 bool Launcher_Driver::is_deliver_at_target() {
     // 简单判断误差
     uint16_t err=abs(DeliverMotor[0].getMotorTotalAngle() - target_deliver_angle);
-    return (err < 5.0f);
+    return (err < 10.0f);
 }
 
 bool Launcher_Driver::is_igniter_at_target() {

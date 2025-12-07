@@ -3,6 +3,9 @@
 #include "launcher_driver.h"
 #include "robot_config.h"
 
+#define POS_BUFFER -20
+#define POS_BOTTOM -620
+
 /* --- 2. 辅助变量 --- */
 static uint32_t stick_hold_timer = 0; // 用于长按判断
 static bool is_combo_active = false;  // 组合键激活标志
@@ -95,10 +98,6 @@ static void Run_Firing_Sequence()
 {
     static Fire_State_e fire_state = FIRE_IDLE;
     static uint32_t state_timer = 0;
-    
-    // 定义位置常量 (请根据实际调试修改)
-    const float POS_BUFFER = -200.0f; 
-    const float POS_BOTTOM = -640.0f;
 
     switch (fire_state)
     {
@@ -153,7 +152,7 @@ static void Run_Firing_Sequence()
         Launcher.fire_trigger();
         
         // 等待发射完成 (例如 500ms)
-        if ((xTaskGetTickCount() - state_timer) > 1000) {
+        if ((xTaskGetTickCount() - state_timer) > 2000) {
             Robot.Status.dart_count++; // 计数+1
             fire_state = FIRE_COOLDOWN;
             state_timer = xTaskGetTickCount();
@@ -208,7 +207,7 @@ void LaunchCtrl(void *arg)
 		
 		
         // 3. 全局离线保护 (优先级最高)
-        if (DR16.GetStatus() != DR16_ESTABLISHED&&DR16.GetS1()==SW_UP) {
+        if (DR16.GetStatus() != DR16_ESTABLISHED) {
             Robot.Status.current_state = SYS_OFFLINE;
         }
 
@@ -220,7 +219,7 @@ void LaunchCtrl(void *arg)
         {
             stop_all_motor();
             // 恢复条件：遥控器重连
-            if (DR16.GetStatus() == DR16_ESTABLISHED&&DR16.GetS1()!=SW_UP) {
+            if (DR16.GetStatus() == DR16_ESTABLISHED) {
                 Robot.Status.current_state = SYS_CHECKING;
             }
         }
@@ -244,22 +243,20 @@ void LaunchCtrl(void *arg)
             Robot.Status.yaw_control_state = YAW_CALIBRATING;
 
             //校准完毕跳转待机状态
-            if (Yawer.is_Yaw_Init() == 1&&Launcher.is_calibrated()&&Robot.Flag.Status.is_calibrated==false) {
-                Robot.Flag.Status.is_calibrated = true;
-                Robot.Status.yaw_control_state = MANUAL_AIM; //校准完毕进入手动瞄准状态
+            if (Yawer.is_Yaw_Init() == 1&&Launcher.is_calibrated()) {
                 Robot.Status.current_state = SYS_STANDBY;
             }
             break;
 
         case SYS_STANDBY:
             // --- 待机 / 手动模式 ---
-            
+            Launcher.set_deliver_target(POS_BUFFER); // 回缓冲
             if (Robot.Cmd.manual_override) {
                 // 手动微调逻辑
                 // 读取当前角度 + 摇杆增量
-                float new_igniter_pos = Launcher.get_igniter_angle() + Robot.Cmd.manual_pitch_inc;
+                //float new_igniter_pos = Launcher.get_igniter_angle() + Robot.Cmd.manual_pitch_inc;
                 // 将计算结果传给驱动
-                Launcher.set_igniter_target(new_igniter_pos);
+                //Launcher.set_igniter_target(new_igniter_pos);
                 
                 // 手动模式下，建议把滑块移开，防止卡住
                 //Launcher.set_deliver_target(-200.0f); // 缓冲区位置
@@ -274,11 +271,12 @@ void LaunchCtrl(void *arg)
         case SYS_AUTO_PREP:
             // --- 自动发射准备 ---
             // 确保机构归位到待发状态
-            Launcher.set_deliver_target(-200.0f); // 回缓冲
-            Launcher.set_igniter_target(150.0f);  // 去瞄准默认高度(示例)
+			Launcher.set_deliver_target(POS_BUFFER); // 回缓冲
+            //Launcher.set_igniter_target(150.0f);  // 去瞄准默认高度(示例)
             
             // 检查是否到位
-            if (Launcher.is_deliver_at_target() && Launcher.is_igniter_at_target()) {
+            if (Launcher.is_deliver_at_target() )//&& Launcher.is_igniter_at_target()) 
+            {  
                 Robot.Status.current_state = SYS_AUTO_FIRE;
             }
             
@@ -292,13 +290,12 @@ void LaunchCtrl(void *arg)
             if (!Robot.Cmd.auto_mode) Robot.Status.current_state = SYS_STANDBY;
             break;
         }
-
         // ---------------- [C] 执行底层控制 (Act) ----------------
         
         // 只有在非 OFFLINE 且非 CHECKING 时，才允许驱动层输出电流
         // 这是一个双重保险
         if (Robot.Status.current_state != SYS_OFFLINE && 
-            Robot.Status.current_state != SYS_CHECKING) 
+            Robot.Status.current_state != SYS_CHECKING&&DR16.GetS1()!=SW_UP) 
         {
             // 驱动层，负责计算 PID、处理归零逻辑、输出电流
             Launcher.run_1ms();

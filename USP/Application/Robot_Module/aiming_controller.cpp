@@ -135,7 +135,7 @@ void yaw_state_machine(){
 
 void yaw_and_load_motor_control(){
     //这里为了方便,脱离状态机单独处理可能的输出。
-    if(Robot.Status.yaw_control_state!=disable_motor&& Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING)
+    if(Robot.Status.yaw_control_state!=disable_motor&& Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING&&DR16.GetS1()!=SW_UP)
     {
         //计算电机pid
         Yawer.adjust();
@@ -145,7 +145,7 @@ void yaw_and_load_motor_control(){
         Yawer.disable();
     }
 
-    if(Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING)
+    if(Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING&&DR16.GetS1()!=SW_UP)
     {
         //装填任务
         //计算装填电机pid
