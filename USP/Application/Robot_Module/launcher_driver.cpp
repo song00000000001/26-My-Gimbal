@@ -92,8 +92,8 @@ void Launcher_Driver::set_igniter_target(float angle)
     }
 }
 
-void Launcher_Driver::fire_trigger() { servo_igniter_on; }
-void Launcher_Driver::fire_reset()   { servo_igniter_off; }
+void Launcher_Driver::fire_trigger() { servo_igniter_unlock; }
+void Launcher_Driver::fire_reset()   { servo_igniter_lock; }
 
 // ================= 核心运行 (run_1ms) =================
 

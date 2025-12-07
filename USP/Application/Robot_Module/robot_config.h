@@ -46,10 +46,14 @@ extern "C"{
 #endif
 
 /* ==舵机宏== */
-//扳机舵机可能是tim1,ch1,待检查
-#define servo_igniter_on        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 205) // 扳机舵机解锁
-#define servo_igniter_off       __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 320) // 扳机舵机锁止
 
+#define servo_igniter_unlock    __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 205) // 扳机舵机解锁
+#define servo_igniter_lock      __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 320) // 扳机舵机锁止
+
+/*ttodo
+以下只有1号舵机响应,其他的都不对,而且测试时用不上,所以先不管
+后续检查
+*/
 #define servo_loader_clamp1     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, 53)   // 一号夹爪夹紧
 #define servo_loader_release1   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, 100)  // 一号夹爪松开
 #define servo_loader_clamp2     __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_4, 126)  // 二号夹爪夹紧

@@ -49,9 +49,9 @@ void Loader_Clamps_Release3(void)
 //临时测试舵机动作
 void test_servo_action()
 {
-    servo_igniter_on;
+    servo_igniter_unlock;
     HAL_Delay(1000);
-    servo_igniter_off;
+    servo_igniter_lock;
     HAL_Delay(1000);
 
 }

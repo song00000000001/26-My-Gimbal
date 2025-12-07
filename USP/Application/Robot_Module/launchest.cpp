@@ -210,11 +210,11 @@ void Launch_Classdef::Igniter_Pos_Set(float _target_pos)
 
 void Launch_Classdef::Igniter_On()
 {
-    servo_igniter_on;
+    servo_igniter_unlock;
 }
 void Launch_Classdef::Igniter_Off()
 {
-    servo_igniter_off;
+    servo_igniter_lock;
 }
 
 void Launch_Classdef::disable()
