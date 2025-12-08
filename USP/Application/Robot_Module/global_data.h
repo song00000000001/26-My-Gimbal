@@ -42,13 +42,6 @@ enum
   L = 1
 };
 
-enum yaw_control_state_e
-{
-    MANUAL_AIM = 0,
-    VISION_AIM,
-    CORRECT_AIM,
-    YAW_CALIBRATING 
-};
 
 // 定义一个本地结构体，只保存我们需要的数据
 struct DR16_Snapshot_t {

@@ -252,7 +252,7 @@ void LaunchCtrl(void *arg)
             disable_motor:失能电机
             yaw_calibrating:校准模式
         */
-        yaw_state_machine();
+        Yawer.yaw_state_machine(Robot.Status.yaw_control_state,DR16.Get_LX_Norm());
 
         if (Robot.Status.current_state != SYS_OFFLINE && 
             Robot.Status.current_state != SYS_CHECKING&&

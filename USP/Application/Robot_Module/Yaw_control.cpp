@@ -81,3 +81,66 @@ void Missle_YawController_Classdef::disable()
 void Missle_YawController_Classdef::yaw_out_motor_speed(){
     YawMotor.setMotorCurrentOut(PID_Yaw_Speed.Out);
 }
+
+
+void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_state,float yaw_manual_target){
+    
+    static float yaw_target = 0;
+    static float yaw_correct_angle=0;        //yaw轴修正角
+
+    switch (yaw_state)
+    {
+    case MANUAL_AIM:
+        yaw_target -= yaw_manual_target * 0.002f;
+        yaw_target = std_lib::constrain(yaw_target, -10.2f, 10.2f);
+        Yawer.update(yaw_target);
+        break;
+    case CORRECT_AIM:
+        //根据目标选择修正角度
+        //固定修正值模式
+        Yawer.update(yaw_correct_angle); // 更改Yaw轴角度
+        break;
+    case VISION_AIM:
+        //视觉模式
+        //todo
+        {/*todo
+        测试时，暂时不管视觉
+        storage_base_angle = default_yaw_target[HitTarget];
+
+        if (vision_recv_pack.ros == 1)
+        {
+            yaw_target += 0.0003;
+        }
+        if (vision_recv_pack.ros == 2)
+        {
+            yaw_target -= 0.0003;
+        }
+        if (vision_recv_pack.ros == 0)
+        {
+            yaw_target += 0;
+        }
+        yaw_target = std_lib::constrain(yaw_target, -10.2f, 10.2f);
+        Yawer.update(yaw_target);
+        default_yaw_target[HitTarget] = yaw_target;
+        //计算电机pid
+        Yawer.adjust();
+        */
+       }
+        break;
+    case YAW_CALIBRATING:
+        //校准模式
+        //进行校准，校准完成后，自动改变校准标志
+        Yawer.calibration();
+        if(Yawer.is_Yaw_Init()){
+            Robot.Status.yaw_control_state = MANUAL_AIM; //校准完成后，进入手动模式
+        }
+        break;
+    default:
+        Yawer.disable();
+        break;
+    }
+
+}
+
+
+

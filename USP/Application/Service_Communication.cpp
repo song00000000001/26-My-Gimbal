@@ -50,7 +50,7 @@ void Task_ParamChanger(void *arg);
  * @param  None.
  * @return None.
  */
- uint32_t OpenLog_Transmit(uint8_t *buff, uint16_t len)
+uint32_t OpenLog_Transmit(uint8_t *buff, uint16_t len)
 {
   SRML_UART_Transmit_DMA(3, buff, len);
   return 0;

@@ -1,34 +1,17 @@
-/**
-  ******************************************************************************
-  * Copyright (c) 2019 - ~, SCUT-RobotLab Development Team
-  * @file    YawController_Classdef.h
-  * @author  lpk
-  * @brief   Header file 
-  ******************************************************************************
-  * @attention
-  * 
-  * if you had modified this file, please make sure your code does not have many
-  * bugs, update the version Number, write dowm your name and the date, the most
-  * important is make sure the users will have clear and definite understanding 
-  * through your new brief.
-  *
-  * <h2><center>&copy; Copyright (c) 2019 - ~, SCUT-RobotLab Development Team.
-  * All rights reserved.</center></h2>
-  ******************************************************************************
-  */
 #pragma once
 
 #ifdef __cplusplus
 
-/* Includes ------------------------------------------------------------------*/
 #include "SRML.h"
-/* Private macros ------------------------------------------------------------*/
 
-/* Private type --------------------------------------------------------------*/
+enum yaw_control_state_e
+{
+    MANUAL_AIM = 0,
+    VISION_AIM,
+    CORRECT_AIM,
+    YAW_CALIBRATING 
+};
 
-/* Exported macros -----------------------------------------------------------*/
-
-/* Exported types ------------------------------------------------------------*/
 class Missle_YawController_Classdef
 {
 private:
@@ -37,6 +20,7 @@ private:
   myPID PID_Yaw_Speed;
   uint8_t Yaw_Init_flag = 0;
 public:
+
   abstractMotor<Motor_GM6020> YawMotor;
   inline bool is_Yaw_Init() { return (Yaw_Init_flag == 2); }
 
@@ -46,7 +30,7 @@ public:
   void adjust();
   void disable();
   void yaw_out_motor_speed();
+  void yaw_state_machine(yaw_control_state_e yaw_state,float yaw_manual_target);
 };
-/* Exported function declarations --------------------------------------------*/
 
 #endif

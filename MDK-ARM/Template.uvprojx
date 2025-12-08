@@ -2848,16 +2848,6 @@
           <GroupName>USP/Application/task</GroupName>
           <Files>
             <File>
-              <FileName>aiming_controller.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\USP\Application\Robot_Module\aiming_controller.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>loader_controller.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\USP\Application\Robot_Module\loader_controller.cpp</FilePath>
-            </File>
-            <File>
               <FileName>launch_task.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\USP\Application\Robot_Module\launch_task.cpp</FilePath>
