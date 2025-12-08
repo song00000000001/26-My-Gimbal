@@ -123,7 +123,4 @@ void test_servo_action();
 // 定义全部通过的目标值 (0b11111 = 0x1F)
 #define MASK_ALL_PASSED (MASK_DELIVER_L | MASK_DELIVER_R | MASK_IGNITER | MASK_YAW_L | MASK_YAW_R)
 
-//按键自检逻辑，放在yaw任务中
-void key_check();
-//失能所有电机
-void stop_all_motor();
+void yaw_state_machine();

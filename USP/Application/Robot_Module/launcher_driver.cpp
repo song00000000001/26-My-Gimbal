@@ -11,6 +11,8 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
     : DeliverMotor{abstractMotor<Motor_C620>(id_l), abstractMotor<Motor_C620>(id_r)},//这里的警报可以忽略,因为编译通过了
       IgniterMotor(id_ign)
 {
+    stop_all_motor();
+
     // 电机参数初始化 (极性、减速比)
     DeliverMotor[0].Polarity = POLARITY_DELIVER_L;
     DeliverMotor[1].Polarity = POLARITY_DELIVER_R;
@@ -24,8 +26,6 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
     DeliverMotor[1].angle_unit_convert = deliver_ratio;
     IgniterMotor.angle_unit_convert = 4.0f / (360.f * 36.f); 
 
-    // 默认为失能状态
-    stop();
     // PID 参数初始化
     pid_deliver_sync.SetPIDParam(0.0f, 0.0f, 0.0f, 8000, 16000);
     
@@ -36,6 +36,9 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
     
     pid_igniter_spd.SetPIDParam(15.0, 0.0, 0.0, 3000, 12000);
     pid_igniter_pos.SetPIDParam(3000.0, 0.0, 0.0, 3000, IGNITER_MAX_SPEED);
+
+    // 自检开关检测进度
+    check_progress=0; 
 }
 
 // ================= 动作接口 =================
@@ -54,22 +57,6 @@ void Launcher_Driver::start_calibration()
     pid_igniter_pos.clean_intergral();
 }
 
-void Launcher_Driver::stop()
-{
-    //for(int i=0; i<2; i++) mode_deliver[i] = MODE_DISABLE;
-    ///mode_igniter = MODE_DISABLE;
-    // 安全保护：切断电流
-    IgniterMotor.setMotorCurrentOut(0);
-    pid_igniter_spd.clean_intergral();
-    pid_igniter_pos.clean_intergral();
-    for(int i=0;i<2;i++){
-        DeliverMotor[i].setMotorCurrentOut(0);
-        pid_deliver_spd[i].clean_intergral();
-        pid_deliver_pos[i].clean_intergral();
-    }
-    pid_deliver_sync.clean_intergral();
-}
-
 void Launcher_Driver::set_deliver_target(float angle)
 {
     // 只有在位置模式下才允许设置目标
@@ -84,8 +71,9 @@ void Launcher_Driver::set_igniter_target(float angle)
         target_igniter_angle = angle;
     }
 }
-
-void Launcher_Driver::fire_trigger() { servo_igniter_unlock; }
+//解锁扳机舵机
+void Launcher_Driver::fire_unlock() { servo_igniter_unlock; }
+//锁定扳机舵机
 void Launcher_Driver::fire_lock()   { servo_igniter_lock; }
 
 // ================= 核心运行 (run_1ms) =================
@@ -257,3 +245,48 @@ bool Launcher_Driver::get_switch_state_R() { return (read_switch_R() == GPIO_PIN
 bool Launcher_Driver::get_switch_state_Ign() { return (read_switch_Ign() == GPIO_PIN_RESET); }
 
 float Launcher_Driver::get_igniter_angle() { return IgniterMotor.getMotorTotalAngle(); }
+
+
+void Launcher_Driver::key_check(){  
+
+    if(SW_YAW_L_OFF){
+        check_progress |= MASK_YAW_L;
+    }
+    if(SW_YAW_R_OFF){
+        check_progress |= MASK_YAW_R;
+    }
+    if(SW_DELIVER_L_OFF){
+        check_progress |= MASK_DELIVER_L;
+    }
+    if(SW_DELIVER_R_OFF){
+        check_progress |= MASK_DELIVER_R;
+    }
+    if(SW_IGNITER_OFF){
+        check_progress |= MASK_IGNITER;
+    }
+    
+}
+
+void Launcher_Driver::stop_all_motor(){
+    //重置电机状态,会导致状态抢占,
+    //for(int i=0; i<2; i++) mode_deliver[i] = MODE_DISABLE;
+    ///mode_igniter = MODE_DISABLE;
+    // 安全保护：切断电流
+    IgniterMotor.setMotorCurrentOut(0);
+    pid_igniter_spd.clean_intergral();
+    pid_igniter_pos.clean_intergral();
+    for(int i=0;i<2;i++){
+        DeliverMotor[i].setMotorCurrentOut(0);
+        pid_deliver_spd[i].clean_intergral();
+        pid_deliver_pos[i].clean_intergral();
+    }
+    pid_deliver_sync.clean_intergral();
+    
+    fire_lock();
+
+   // Yawer.disable();
+   /*todo
+   song
+   将yaw合并到发射类中,考虑下合并事宜后再操作,现在检查电机状态问题.
+   */
+}

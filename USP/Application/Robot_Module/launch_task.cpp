@@ -103,7 +103,7 @@ static void Run_Firing_Sequence()
     case FIRE_IDLE:
         // 确保滑块在缓冲区
         Launcher.set_deliver_target(POS_BUFFER);
-        Launcher.fire_lock(); // 关舵机
+        Launcher.fire_lock(); // 锁止扳机舵机
         
         // 触发条件：收到指令 且 视觉瞄准到位(可选)
         // 这里假设 Cmd.fire_command 在自动模式下由视觉改写，或者简单的连发逻辑
@@ -147,9 +147,13 @@ static void Run_Firing_Sequence()
         break;
 
     case FIRE_SHOOTING:
-        // 舵机动作
-        Launcher.fire_trigger();
-        
+        // 等待发射完成 (例如 500ms)
+        if ((xTaskGetTickCount() - state_timer) > 500) {
+             // 舵机动作
+            Launcher.fire_unlock();
+            state_timer = xTaskGetTickCount();
+        }
+       
         // 等待发射完成 (例如 500ms)
         if ((xTaskGetTickCount() - state_timer) > 2000) {
             Robot.Status.dart_count++; // 计数+1
@@ -183,13 +187,15 @@ static void Run_Firing_Sequence()
 void LaunchCtrl(void *arg)
 {
     //can发送的包
-    Motor_CAN_COB Tx_Buff;
+    Motor_CAN_COB Tx_Buff,Tx_Buff1;
  
     // 初始状态设为自检
-    Robot.Status.yaw_control_state=disable_motor; //yaw轴失能
     Robot.Status.current_state = SYS_CHECKING;
+    // 初始自检标志位失能
 	Robot.Flag.Check.limit_sw_ok=false;
-    
+    //yaw轴电机标志位失能,标志位后期考虑删除
+    Robot.Status.yaw_control_state=disable_motor; 
+
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1);
@@ -232,7 +238,6 @@ void LaunchCtrl(void *arg)
 			
         case SYS_OFFLINE:
         {
-            stop_all_motor();
             // 恢复条件：遥控器重连
             if (DR16.GetStatus() == DR16_ESTABLISHED) {
                 Robot.Status.current_state = SYS_CHECKING;
@@ -241,9 +246,16 @@ void LaunchCtrl(void *arg)
         break;
         case SYS_CHECKING:
         {
-            stop_all_motor(); 
             //按键自检逻辑
-            key_check();
+            Launcher.key_check();
+            // 3. 处理跳过逻辑
+            if (Robot.Cmd.skip_check) {
+                Launcher.check_progress = MASK_ALL_PASSED; // 强制全满
+            }
+
+            // 4. 更新全局标志位
+            Robot.Flag.Check.limit_sw_ok = (Launcher.check_progress == MASK_ALL_PASSED);
+   
             // 5个按键手动检查全部通过则进入校准状态,后续可以加入电机检查
             if (Robot.Flag.Check.limit_sw_ok) {
                 Robot.Status.current_state = SYS_CALIBRATING;
@@ -314,6 +326,35 @@ void LaunchCtrl(void *arg)
             break;
         }
 
+        
+        //yaw轴子状态机,包含状态如下
+        /*
+            manual_aim:手动瞄准
+            vision_aim:视觉瞄准
+            correct_aim:修正值瞄准
+            disable_motor:失能电机
+            yaw_calibrating:校准模式
+        */
+       yaw_state_machine();
+       //在失联,自检状态,和手动失能(s1向上)时,关闭电机控制
+       if( Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING&&DR16.GetS1()!=SW_UP){
+           if(Robot.Status.yaw_control_state!=disable_motor)
+           {
+               //计算电机pid
+               Yawer.adjust();
+           }
+           else
+           {
+               Yawer.disable();
+           }
+       }
+       else
+       {
+           Yawer.disable();
+       }
+
+       
+
         if (Robot.Status.current_state != SYS_OFFLINE && 
             Robot.Status.current_state != SYS_CHECKING&&
            // Robot.Status.current_state != SYS_ERROR &&
@@ -326,12 +367,13 @@ void LaunchCtrl(void *arg)
         else
         {
             // 显式停止，防止意外
-            stop_all_motor();
+            Launcher.stop_all_motor();
         }
         
-        // ---------------- [D] 发送 CAN 数据 ----------------
-        /*打包数据发送*/
+        MotorMsgPack(Tx_Buff1, Yawer.YawMotor);
+        xQueueSend(CAN2_TxPort, &Tx_Buff1.Id1ff, 0);
         MotorMsgPack(Tx_Buff, Launcher.DeliverMotor[L], Launcher.DeliverMotor[R], Launcher.IgniterMotor);
 		xQueueSend(CAN1_TxPort, &Tx_Buff.Id200, 0);
+
     }
 }

@@ -41,26 +41,31 @@ private:
 
     bool is_deliver_homed[2];       // 是否已完成归零
     bool is_igniter_homed;
+    
 
     /* --- 4. 内部辅助函数 --- */
     // 检查限位开关并处理归零逻辑 (仅在 HOMING 模式运行)
     void check_calibration_logic(); 
 
 public:
+
 abstractMotor<Motor_C620> DeliverMotor[2]; // [0]=Left, [1]=Right
 abstractMotor<Motor_C610> IgniterMotor;
+// 记录哪几个开关已经检测过了 (Bitmask)
+uint8_t check_progress; 
+
     /* --- 构造函数 --- */
     Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign);
-
-    /* --- 1. 初始化与配置 --- */
-    void init(); // 加载PID参数，绑定回调
     
     /* --- 2. 动作接口 (Command) --- */
     // 启动归零程序 (将模式切为 HOMING)
     void start_calibration();
     
     // 强制停止/失能
-    void stop();
+    void stop_yaw_motor();
+    void stop_deliver_motor();
+    void stop_igniter_motor();
+    void stop_all_motor();
 
     // 设置滑块位置 (单位: 度, 仅在 MODE_POSITION 下生效)
     void set_deliver_target(float angle);
@@ -69,7 +74,7 @@ abstractMotor<Motor_C610> IgniterMotor;
     void set_igniter_target(float angle);
 
     // 舵机动作 (直接操作硬件，简单封装)
-    void fire_trigger(); 
+    void fire_unlock(); 
     void fire_lock();
 
     /* --- 3. 核心运行 (Execute) --- */
@@ -89,6 +94,9 @@ abstractMotor<Motor_C610> IgniterMotor;
     
     // 获取当前角度 (用于调试或手动模式增量计算)
     float get_igniter_angle();
+
+    void key_check();
+
 };
 
 #endif
