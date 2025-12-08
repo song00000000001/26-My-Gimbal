@@ -27,7 +27,7 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
     IgniterMotor.angle_unit_convert = 4.0f / (360.f * 36.f); 
 
     // PID 参数初始化
-    pid_deliver_sync.SetPIDParam(0.0f, 0.0f, 0.0f, 8000, 16000);
+    pid_deliver_sync.SetPIDParam(0.5f, 0.0f, 0.0f, 8000, 16000);
     
     for(int i=0; i<2; i++) {
         pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16380);
@@ -42,48 +42,92 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
 }
 
 // ================= 动作接口 =================
+void Launcher_Driver::run_1ms()
+{
+    // 计算同步误差 (仅在两个都进入位置模式后)
+    float sync_comp[2] = {0, 0};
+    if (mode_deliver[0] == MODE_ANGLE && mode_deliver[1] == MODE_ANGLE) {
+        // R - L
+        float diff = DeliverMotor[1].getMotorTotalAngle() - DeliverMotor[0].getMotorTotalAngle();
+        pid_deliver_sync.Target = 0;
+        pid_deliver_sync.Current = diff;
+        pid_deliver_sync.Adjust();
+        // 补偿: R快了就减R加L
+        sync_comp[1] = -pid_deliver_sync.Out;
+        sync_comp[0] =  pid_deliver_sync.Out;
+    } 
+    else {
+        pid_deliver_sync.clean_intergral();
+    }
+
+    for (int i = 0; i < 2; i++) {
+        //按需执行角度环
+        if(mode_deliver[i]==MODE_ANGLE){
+            // 串级PID: 位置环 -> 速度环
+            pid_deliver_pos[i].Target = target_deliver_angle + sync_comp[i];
+            pid_deliver_pos[i].Current = DeliverMotor[i].getMotorTotalAngle();
+            pid_deliver_pos[i].Adjust();
+            //速度环的输入为角度环输出
+            pid_deliver_spd[i].Target = pid_deliver_pos[i].Out;
+            //速度环
+            pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();
+            pid_deliver_spd[i].Adjust();
+        }
+        else if(mode_deliver[i]==MODE_SPEED){
+            pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();
+            pid_deliver_spd[i].Adjust();
+        }
+        else{
+            DeliverMotor[i].setMotorCurrentOut(0);
+            pid_deliver_spd[i].clean_intergral();
+            pid_deliver_pos[i].clean_intergral();
+        }
+    }
+    if(mode_deliver[0]==MODE_ANGLE){
+        // 串级PID: 位置环 -> 速度环
+        pid_igniter_pos.Target = target_igniter_angle;
+        pid_igniter_pos.Current = IgniterMotor.getMotorTotalAngle();
+        pid_igniter_pos.Adjust();
+        pid_igniter_spd.Target = pid_igniter_pos.Out;
+        //速度环的输入为角度环输出
+        pid_igniter_spd.Target = pid_deliver_pos[0].Out;
+        //速度环
+        pid_igniter_spd.Current = IgniterMotor.getMotorSpeed();
+        pid_igniter_spd.Adjust();
+    }
+    else if(mode_deliver[0]==MODE_SPEED){
+        pid_igniter_spd.Current = IgniterMotor.getMotorSpeed();
+        pid_igniter_spd.Adjust();
+    }
+    else{
+        IgniterMotor.setMotorCurrentOut(0);
+        pid_igniter_pos.clean_intergral();
+        pid_igniter_spd.clean_intergral();
+    }
+
+}
 
 void Launcher_Driver::start_calibration()
 {
     // 只有在未校准或强制请求时调用
     for(int i=0; i<2; i++) {
-        mode_deliver[i] = MODE_HOMING;
+        mode_deliver[i] = MODE_SPEED;
+        pid_deliver_spd[i].Target = DELIVER_HOME_SPEED;
         // 清除积分，防止上次残留
         pid_deliver_spd[i].clean_intergral();
         pid_deliver_pos[i].clean_intergral();
     } 
-    mode_igniter = MODE_HOMING;
+    mode_igniter = MODE_SPEED;
+    pid_igniter_spd.Target = IGNITER_HOME_SPEED;
     pid_igniter_spd.clean_intergral();
     pid_igniter_pos.clean_intergral();
 }
-
-void Launcher_Driver::set_deliver_target(float angle)
-{
-    // 只有在位置模式下才允许设置目标
-    if (mode_deliver[0] == MODE_POSITION && mode_deliver[1] == MODE_POSITION) {
-        target_deliver_angle = angle; // 软件限位可以在这里加
-    }
-}
-
-void Launcher_Driver::set_igniter_target(float angle)
-{
-    if (mode_igniter == MODE_POSITION) {
-        target_igniter_angle = angle;
-    }
-}
-//解锁扳机舵机
-void Launcher_Driver::fire_unlock() { servo_igniter_unlock; }
-//锁定扳机舵机
-void Launcher_Driver::fire_lock()   { servo_igniter_lock; }
-
-// ================= 核心运行 (run_1ms) =================
 
 void Launcher_Driver::check_calibration_logic()
 {
     // --- 滑块归零逻辑 ---
     // 定义局部数组方便遍历 [0]=L, [1]=R
-    
-    if (mode_deliver[0] == MODE_HOMING) {
+    if (!is_deliver_homed[0]) {
         // 如果碰到开关 (假设低电平触发)
         if (SW_DELIVER_L_OFF) {
 			pid_deliver_spd[0].clean_intergral();
@@ -93,7 +137,7 @@ void Launcher_Driver::check_calibration_logic()
             pid_deliver_pos[0].Target=DELIVER_OFFSET_POS;
             
             // 2. 切换到位置模式
-            mode_deliver[0] = MODE_POSITION;
+            mode_deliver[0] = MODE_ANGLE;
             is_deliver_homed[0] = true;
             
             // 3. 设定当前位置为初始目标 (防止跳变)
@@ -101,7 +145,7 @@ void Launcher_Driver::check_calibration_logic()
         }
     }
 
-    if (mode_deliver[1] == MODE_HOMING) {
+    if (!is_deliver_homed[0]) {
         // 如果碰到开关 (假设低电平触发)
         if (SW_DELIVER_R_OFF) {
 			pid_deliver_spd[1].clean_intergral();
@@ -110,7 +154,7 @@ void Launcher_Driver::check_calibration_logic()
             pid_deliver_pos[1].Target=DELIVER_OFFSET_POS;  
             
             // 2. 切换到位置模式
-            mode_deliver[1] = MODE_POSITION;
+            mode_deliver[1] = MODE_ANGLE;
             is_deliver_homed[1] = true;
             
             // 3. 设定当前位置为初始目标 (防止跳变)
@@ -119,133 +163,17 @@ void Launcher_Driver::check_calibration_logic()
     }
 
     // --- 丝杆归零逻辑 ---
-    if (mode_igniter == MODE_HOMING) {
+    if (!is_igniter_homed) {
         if (SW_IGNITER_OFF) {
             pid_igniter_pos.clean_intergral();
             pid_igniter_spd.clean_intergral();
             IgniterMotor.baseAngle -= IgniterMotor.getMotorTotalAngle();
-            mode_igniter = MODE_POSITION;
+            mode_igniter = MODE_ANGLE;
             is_igniter_homed = true;
             target_igniter_angle = IGNITER_OFFSET_POS;
         }
     }
 }
-
-void Launcher_Driver::run_1ms()
-{
-    // 1. 处理归零状态转换 (如果在 HOMING 模式)
-    check_calibration_logic();
-
-    // 2. 滑块控制循环
-    // ------------------------------------------------
-    
-    // 计算同步误差 (仅在两个都进入位置模式后)
-    float sync_comp[2] = {0, 0};
-    if (mode_deliver[0] == MODE_POSITION && mode_deliver[1] == MODE_POSITION) {
-        // R - L
-        float diff = DeliverMotor[1].getMotorTotalAngle() - DeliverMotor[0].getMotorTotalAngle();
-        pid_deliver_sync.Target = 0;
-        pid_deliver_sync.Current = diff;
-        pid_deliver_sync.Adjust();
-        // 补偿: R快了就减R加L
-        sync_comp[1] = -pid_deliver_sync.Out;
-        sync_comp[0] =  pid_deliver_sync.Out;
-    } else {
-        pid_deliver_sync.clean_intergral();
-    }
-
-    for (int i = 0; i < 2; i++) {
-        float speed_cmd = 0;
-
-        switch (mode_deliver[i]) {
-            case MODE_DISABLE:
-                speed_cmd = 0;
-                break;
-            
-            case MODE_HOMING:
-                // 纯速度环向上找开关
-                speed_cmd = DELIVER_HOME_SPEED; 
-                break;
-            
-            case MODE_POSITION:
-                // 串级PID: 位置环 -> 速度环
-                pid_deliver_pos[i].Target = target_deliver_angle + sync_comp[i];
-                pid_deliver_pos[i].Current = DeliverMotor[i].getMotorTotalAngle();
-                pid_deliver_pos[i].Adjust();
-                speed_cmd = pid_deliver_pos[i].Out;
-                break;
-                
-            default: speed_cmd = 0; break;
-        }
-        
-        // 执行速度环
-        if (mode_deliver[i] != MODE_DISABLE) {
-            pid_deliver_spd[i].Target = speed_cmd;
-            pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();
-            pid_deliver_spd[i].Adjust();
-            DeliverMotor[i].setMotorCurrentOut(pid_deliver_spd[i].Out);
-        } else {
-            DeliverMotor[i].setMotorCurrentOut(0);
-        }
-    }
-    // 3. 丝杆控制循环
-    // ------------------------------------------------
-    float ign_spd_cmd = 0;
-    switch (mode_igniter) {
-        case MODE_DISABLE: 
-            ign_spd_cmd = 0; 
-            break;
-            
-        case MODE_HOMING:  
-            ign_spd_cmd = IGNITER_HOME_SPEED; 
-            break;
-            
-        case MODE_POSITION:
-            pid_igniter_pos.Target = target_igniter_angle;
-            pid_igniter_pos.Current = IgniterMotor.getMotorTotalAngle();
-            pid_igniter_pos.Adjust();
-            ign_spd_cmd = pid_igniter_pos.Out;
-            break;
-    }
-
-    // DISABLE强制输出 0 电流
-    if (mode_igniter != MODE_DISABLE ) {
-        pid_igniter_spd.Target = ign_spd_cmd;
-        pid_igniter_spd.Current = IgniterMotor.getMotorSpeed();
-        pid_igniter_spd.Adjust();
-        IgniterMotor.setMotorCurrentOut(pid_igniter_spd.Out);
-    } 
-    else {
-        // 安全保护：切断电流
-        IgniterMotor.setMotorCurrentOut(0);
-        // 清除积分，防止切换模式瞬间突变
-        pid_igniter_spd.clean_intergral();
-    }
-}
-
-// ================= 状态查询 =================
-
-bool Launcher_Driver::is_calibrated() {
-    return is_deliver_homed[0] && is_deliver_homed[1] && is_igniter_homed;
-}
-
-bool Launcher_Driver::is_deliver_at_target() {
-    // 简单判断误差
-    uint16_t err=abs(DeliverMotor[0].getMotorTotalAngle() - target_deliver_angle);
-    return (err < 10.0f);
-}
-
-bool Launcher_Driver::is_igniter_at_target() {
-    uint16_t err=abs(IgniterMotor.getMotorTotalAngle() - target_igniter_angle);
-    return (err < 5.0f);
-}
-
-bool Launcher_Driver::get_switch_state_L() { return (read_switch_L() == GPIO_PIN_RESET); }
-bool Launcher_Driver::get_switch_state_R() { return (read_switch_R() == GPIO_PIN_RESET); }
-bool Launcher_Driver::get_switch_state_Ign() { return (read_switch_Ign() == GPIO_PIN_RESET); }
-
-float Launcher_Driver::get_igniter_angle() { return IgniterMotor.getMotorTotalAngle(); }
-
 
 void Launcher_Driver::key_check(){  
 
@@ -267,26 +195,59 @@ void Launcher_Driver::key_check(){
     
 }
 
-void Launcher_Driver::stop_all_motor(){
-    //重置电机状态,会导致状态抢占,
-    //for(int i=0; i<2; i++) mode_deliver[i] = MODE_DISABLE;
-    ///mode_igniter = MODE_DISABLE;
-    // 安全保护：切断电流
-    IgniterMotor.setMotorCurrentOut(0);
-    pid_igniter_spd.clean_intergral();
-    pid_igniter_pos.clean_intergral();
-    for(int i=0;i<2;i++){
-        DeliverMotor[i].setMotorCurrentOut(0);
-        pid_deliver_spd[i].clean_intergral();
-        pid_deliver_pos[i].clean_intergral();
-    }
-    pid_deliver_sync.clean_intergral();
-    
-    fire_lock();
+//解锁扳机舵机
+void Launcher_Driver::fire_unlock() { servo_igniter_unlock; }
+//锁定扳机舵机
+void Launcher_Driver::fire_lock()   { servo_igniter_lock; }
 
-   // Yawer.disable();
+void Launcher_Driver::out_all_motor_speed(){
+    for(int i=0;i<2;i++){
+        DeliverMotor[i].setMotorCurrentOut(pid_deliver_spd[i].Out);
+    }
+    IgniterMotor.setMotorCurrentOut(pid_igniter_spd.Out);
+}
+
+void Launcher_Driver::stop_yaw_motor(){
+    // Yawer.disable();
    /*todo
    song
    将yaw合并到发射类中,考虑下合并事宜后再操作,现在检查电机状态问题.
    */
+}
+
+void Launcher_Driver::stop_deliver_motor(){
+    for(int i=0;i<2;i++){
+        pid_deliver_spd[i].clean_intergral();
+        pid_deliver_pos[i].clean_intergral();
+        DeliverMotor[i].setMotorCurrentOut(0);
+    }
+}
+
+void Launcher_Driver::stop_igniter_motor(){
+    pid_igniter_pos.clean_intergral();
+    pid_igniter_spd.clean_intergral();
+    IgniterMotor.setMotorCurrentOut(0);
+}
+
+void Launcher_Driver::stop_all_motor(){
+    stop_igniter_motor();
+    stop_deliver_motor();
+    stop_yaw_motor();
+
+    fire_lock();
+}
+
+// ================= 状态查询 =================
+bool Launcher_Driver::is_calibrated() {
+    return is_deliver_homed[0] && is_deliver_homed[1] && is_igniter_homed;
+}
+
+bool Launcher_Driver::is_deliver_at_target() {
+    uint16_t err=abs(DeliverMotor[0].getMotorTotalAngle() - target_deliver_angle);
+    return (err < 5.0f);
+}
+
+bool Launcher_Driver::is_igniter_at_target() {
+    uint16_t err=abs(IgniterMotor.getMotorTotalAngle() - target_igniter_angle);
+    return (err < 5.0f);
 }

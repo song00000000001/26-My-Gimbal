@@ -65,7 +65,7 @@ void Missle_YawController_Classdef::adjust()
     }
     PID_Yaw_Speed.Current = YawMotor.getMotorSpeed();
     PID_Yaw_Speed.Adjust();
-    YawMotor.setMotorCurrentOut(PID_Yaw_Speed.Out);
+    
 }
 
 void Missle_YawController_Classdef::disable()
@@ -74,4 +74,8 @@ void Missle_YawController_Classdef::disable()
     PID_Yaw_Angle.clean_intergral();
     PID_Yaw_Speed.clean_intergral();
     YawMotor.setMotorCurrentOut(0);
+}
+
+void Missle_YawController_Classdef::yaw_out_motor_speed(){
+    YawMotor.setMotorCurrentOut(PID_Yaw_Speed.Out);
 }

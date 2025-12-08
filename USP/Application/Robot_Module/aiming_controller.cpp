@@ -57,11 +57,12 @@ void yaw_state_machine(){
             Robot.Status.yaw_control_state = MANUAL_AIM; //校准完成后，进入手动模式
         }
         break;
-    case disable_motor:
     default:
         Yawer.disable();
         break;
     }
 
 }
+
+
 

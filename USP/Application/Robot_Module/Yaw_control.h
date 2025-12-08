@@ -45,7 +45,7 @@ public:
   void update(float _yaw_target);
   void adjust();
   void disable();
-
+  void yaw_out_motor_speed();
 };
 /* Exported function declarations --------------------------------------------*/
 

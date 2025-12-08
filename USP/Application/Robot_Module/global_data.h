@@ -45,10 +45,9 @@ enum
 enum yaw_control_state_e
 {
     MANUAL_AIM = 0,
-    VISION_AIM = 1,
-    CORRECT_AIM = 2,
-    disable_motor =3,
-    YAW_CALIBRATING =4
+    VISION_AIM,
+    CORRECT_AIM,
+    YAW_CALIBRATING 
 };
 
 // 定义一个本地结构体，只保存我们需要的数据

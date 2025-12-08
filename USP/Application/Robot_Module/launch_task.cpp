@@ -102,7 +102,7 @@ static void Run_Firing_Sequence()
     {
     case FIRE_IDLE:
         // 确保滑块在缓冲区
-        Launcher.set_deliver_target(POS_BUFFER);
+        Launcher.target_deliver_angle=(POS_BUFFER);
         Launcher.fire_lock(); // 锁止扳机舵机
         
         // 触发条件：收到指令 且 视觉瞄准到位(可选)
@@ -117,7 +117,7 @@ static void Run_Firing_Sequence()
         
         // 2. 滑块全速下拉
         Launcher.fire_lock();//锁止扳机,准备扣上滑台
-        Launcher.set_deliver_target(POS_BOTTOM);
+        Launcher.target_deliver_angle=(POS_BOTTOM);
         
         // 3. 判断到位
         if (Launcher.is_deliver_at_target()) {
@@ -136,7 +136,7 @@ static void Run_Firing_Sequence()
 
     case FIRE_RETURNING:
         // 滑块回缓冲区
-        Launcher.set_deliver_target(POS_BUFFER);
+        Launcher.target_deliver_angle=(POS_BUFFER);
         
         // 判断到位
         if (Launcher.is_deliver_at_target()) {
@@ -193,8 +193,6 @@ void LaunchCtrl(void *arg)
     Robot.Status.current_state = SYS_CHECKING;
     // 初始自检标志位失能
 	Robot.Flag.Check.limit_sw_ok=false;
-    //yaw轴电机标志位失能,标志位后期考虑删除
-    Robot.Status.yaw_control_state=disable_motor; 
 
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -268,7 +266,8 @@ void LaunchCtrl(void *arg)
             // 此状态下，Launcher.run_1ms() 内部正在跑归零逻辑，任务层只需要等待驱动层反馈 "已校准"
             //yaw控制考虑到是并行的，主状态机和子状态机采用状态位判断
             Robot.Status.yaw_control_state = YAW_CALIBRATING;
-
+            // 1. 处理归零状态转换
+            Launcher.check_calibration_logic();
             //校准完毕跳转待机状态
             if (Yawer.is_Yaw_Init() == 1&&Launcher.is_calibrated()) {
                 Robot.Status.current_state = SYS_STANDBY;
@@ -277,7 +276,7 @@ void LaunchCtrl(void *arg)
 
         case SYS_STANDBY:
             // --- 待机 / 手动模式 ---
-            //Launcher.set_deliver_target(POS_BUFFER); // 回缓冲
+            //Launcher.target_deliver_angle=(POS_BUFFER); // 回缓冲
             /*
             static uint16_t motor_speed_test=0;
             if(motor_speed_test<-20){
@@ -287,14 +286,14 @@ void LaunchCtrl(void *arg)
                 motor_speed_test-=-600;
             }
             
-            Launcher.set_deliver_target(motor_speed_test);
+            Launcher.target_deliver_angle=(motor_speed_test);
 		*/
             if (Robot.Cmd.manual_override) {
                 // 手动微调逻辑
                 // 读取当前角度 + 摇杆增量
-                float new_igniter_pos = Launcher.get_igniter_angle() + DR16.Get_LY_Norm() * 0.002f;
+                float new_igniter_pos = Launcher.IgniterMotor.getMotorTotalAngle()+ DR16.Get_LY_Norm() * 0.002f;
                 //将计算结果传给驱动
-                Launcher.set_igniter_target(new_igniter_pos);
+                Launcher.target_igniter_angle=new_igniter_pos;
             }
 			 
             // 切换到自动模式
@@ -306,8 +305,8 @@ void LaunchCtrl(void *arg)
         case SYS_AUTO_PREP:
             // --- 自动发射准备 ---
             // 确保机构归位到待发状态
-			Launcher.set_deliver_target(POS_BUFFER); // 回缓冲
-            Launcher.set_igniter_target(POS_IGNITER);  // 去瞄准默认高度(示例)
+			Launcher.target_igniter_angle=POS_BUFFER; // 回缓冲
+            Launcher.target_igniter_angle=POS_IGNITER;  // 去瞄准默认高度(示例)
             
             // 检查是否到位
             if (Launcher.is_deliver_at_target() && Launcher.is_igniter_at_target()) 
@@ -335,25 +334,10 @@ void LaunchCtrl(void *arg)
             disable_motor:失能电机
             yaw_calibrating:校准模式
         */
-       yaw_state_machine();
-       //在失联,自检状态,和手动失能(s1向上)时,关闭电机控制
-       if( Robot.Status.current_state != SYS_OFFLINE&&Robot.Status.current_state!=SYS_CHECKING&&DR16.GetS1()!=SW_UP){
-           if(Robot.Status.yaw_control_state!=disable_motor)
-           {
-               //计算电机pid
-               Yawer.adjust();
-           }
-           else
-           {
-               Yawer.disable();
-           }
-       }
-       else
-       {
-           Yawer.disable();
-       }
-
-       
+        yaw_state_machine();
+        // 驱动层，负责计算 PID、处理归零逻辑、输出电流
+        Launcher.run_1ms();
+        Yawer.disable();
 
         if (Robot.Status.current_state != SYS_OFFLINE && 
             Robot.Status.current_state != SYS_CHECKING&&
@@ -361,13 +345,14 @@ void LaunchCtrl(void *arg)
             DR16.GetS1()!=SW_UP
         ) 
         {
-            // 驱动层，负责计算 PID、处理归零逻辑、输出电流
-            Launcher.run_1ms();
+            Launcher.out_all_motor_speed();
+            Yawer.yaw_out_motor_speed();
         }
         else
         {
             // 显式停止，防止意外
             Launcher.stop_all_motor();
+            Yawer.disable();
         }
         
         MotorMsgPack(Tx_Buff1, Yawer.YawMotor);
