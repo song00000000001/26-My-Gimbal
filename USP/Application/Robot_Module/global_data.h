@@ -49,8 +49,8 @@ struct DR16_Snapshot_t {
 //主状态枚举
 typedef enum {
     SYS_OFFLINE = 0,    // 离线
-    //SYS_ERROR,           // 错误状态,一般是运行中电机失控装限位开关，或者触发堵转保护
-    //SYS_DEBUG,           // 调试状态
+    SYS_ERROR,           // 错误状态,一般是运行中电机失控装限位开关，或者触发堵转保护
+    SYS_DEBUG,           // 调试状态
     SYS_CHECKING,       // 自检中
     SYS_CALIBRATING,    // 归零/校准中
     SYS_STANDBY,        // 待机/手动
@@ -155,5 +155,15 @@ extern VisionRecvData_t vision_recv_pack;
 extern VisionSendData_t vision_send_pack;
 
 extern Robot_Ctrl_t Robot; 
+
+
+// 2. 新增调试数据结构体
+typedef struct {
+    // 标志位
+    bool enable_debug_mode; // 在watch窗口改为true以进入调试模式(配合遥控器)
+
+} Debug_Data_t;
+
+extern Debug_Data_t Debugger; // 声明全局变量
 /************************ COPYRIGHT(C) SCUT-ROBOTLAB **************************/
 

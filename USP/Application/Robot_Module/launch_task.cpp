@@ -5,16 +5,21 @@
 
 /*摇杆逻辑
 markdown:
-| 摇杆  | 状态     | 动作                                     |     | 摇杆  | 状态         | 动作                             |
-| --- | ------ | -------------------------------------- | --- | --- | ---------- | ------------------------------ |
-| s1  | up     | 电机失能（进check状态）                         |     | s2  | up         | 手动控制yaw和igniter                |
-|     | middle | 等待发射，（卡stay状态）                         |     |     | middle     | 使用修正值控制yaw和igniter（修正值由调参板设置）  |
-|     | down   | 激活自动发射，（进autofireprep状态），跳过自检（手动按限位开关） |     |     | down       | 使用视觉控制，如果视觉失联，转而用修正值控制，直到视觉重连。 |
-| LX  |        |                                        |     | RX  | left/right | 增量控制yaw                        |
-| LY  |        |                                        |     | RY  | up/donw    | 增量控制igniter                    |
 
-date:20251209
+| 摇杆  | 状态     | 动作                                                                 |     | 摇杆  | 状态         | 动作                             |
+| --- | ------ | ------------------------------------------------------------------ | --- | --- | ---------- | ------------------------------ |
+| s1  | up     | 电机失能（不修改状态）                                                        |     | s2  | up         | 手动控制yaw和igniter                |
+|     | middle | 进自检，自检手动完成或者跳过自动进校准，校准完后进等待发射，（卡stay状态，后续的autofire状态会因此被重置到stay状态） |     |     | middle     | 使用修正值控制yaw和igniter（修正值由调参板设置）  |
+|     | down   | 激活自动发射，（进autofireprep状态），跳过自检（自检就是手动按限位开关）                         |     |     | down       | 使用视觉控制，如果视觉失联，转而用修正值控制，直到视觉重连。 |
+| LX  |        |                                                                    |     | RX  | left/right | 增量控制yaw                        |
+| LY  |        |                                                                    |     | RY  | up/donw    | 增量控制igniter                    |
+s1要是多个状态就可以在自检完后进idle空闲而不是直接开始校准（电机会直接开转），不然就要事先在自检前失能，检完后使能（middle)，然后打down自动发射。
+记得改冗余标志位，然后把发射子状态机封装进类
+
+date:2025/12/09/20:42
 */
+
+
 
 /* --- 4. 发射流程子状态机 --- */
 // 定义子状态
@@ -27,7 +32,7 @@ typedef enum {
     FIRE_COOLDOWN    // 冷却
 } Fire_State_e;
 
-static void Run_Firing_Sequence()
+void Run_Firing_Sequence()
 {
     static Fire_State_e fire_state = FIRE_IDLE;
     static uint32_t state_timer = 0;
@@ -114,10 +119,7 @@ static void Run_Firing_Sequence()
     }
 }
 
-
-/**
- * @brief 发射主控任务
- */
+/*发射主控任务*/
 void LaunchCtrl(void *arg)
 {
     //can发送的包
@@ -127,6 +129,7 @@ void LaunchCtrl(void *arg)
     Robot.Status.current_state = SYS_CHECKING;
     // 初始自检标志位失能
 	Robot.Flag.Check.limit_sw_ok=false;
+    Debugger.enable_debug_mode=false;
 
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -137,6 +140,20 @@ void LaunchCtrl(void *arg)
 		
         if (DR16.GetStatus() != DR16_ESTABLISHED) {
             Robot.Status.current_state = SYS_OFFLINE;
+        }
+        else{
+            // Debug 模式判定 (最高优先级的主动模式)
+            // 只有当遥控器连接，且全局 Debug 标志位被置 1 时进入
+            if (Debugger.enable_debug_mode) {
+                Robot.Status.current_state = SYS_DEBUG;
+            }
+            else {
+                // 如果之前是 Debug，现在退出了，并且手动失能，则回 Checking 状态
+                if (Robot.Status.current_state == SYS_DEBUG && DR16.GetS1()==SW_UP) {
+                    // 安全起见重新自检
+                    Launcher.check_progress=0; // 重置自检进度
+                    Robot.Status.current_state = SYS_CHECKING;
+                }
         }
 	
         /*在非校准状态如果发生碰撞限位的现象，则立即取消使能并且记录错误电机信息，
@@ -154,16 +171,21 @@ void LaunchCtrl(void *arg)
        
         switch (Robot.Status.current_state)
         {
-		/*case SYS_ERROR:
+		case SYS_ERROR:
 		{
-			stop_all_motor();
-            // 恢复条件：
+            // 恢复条件：手动失能
             if (DR16.GetStatus() == DR16_ESTABLISHED&&DR16.GetS1()==SW_UP) {
+                
                 Robot.Status.current_state = SYS_CHECKING;
             }
 		}  
-			break;
-			*/
+		break;
+		
+        case SYS_DEBUG:
+        {
+
+        }
+        break;
 			
         case SYS_OFFLINE:
         {
@@ -269,7 +291,7 @@ void LaunchCtrl(void *arg)
 
         if (Robot.Status.current_state != SYS_OFFLINE && 
             Robot.Status.current_state != SYS_CHECKING&&
-           // Robot.Status.current_state != SYS_ERROR &&
+            Robot.Status.current_state != SYS_ERROR &&
             DR16.GetS1()!=SW_UP
         ) 
         {
@@ -294,3 +316,4 @@ void LaunchCtrl(void *arg)
 
     }
 }
+
