@@ -6,14 +6,8 @@
 #define _LAUNCHER_DRIVER_H_
 
 #include "SRML.h"
+#include "robot_types.h"
 
-//不知道为什么，在global_data.h里定义会报错，只能放这里
-// 定义控制模式
-typedef enum {
-    MODE_SPEED=0,       // 速度环
-    MODE_ANGLE,      // 角度环
-    MODE_ERROR      // 失能
-} Control_Mode_e;
 
 /* --- 4. 发射流程子状态机 --- */
 // 定义子状态
@@ -33,7 +27,9 @@ class Launcher_Driver
 {
 private:
     /* --- 1. 硬件对象 (Private: 外部不可见) --- */
-
+    // 堵转计时器
+    uint32_t stall_timer_deliver[2];
+    uint32_t stall_timer_igniter;
     
     // 限位开关读取函数指针
     GPIO_PinState (*read_switch_L)(void);
@@ -101,6 +97,9 @@ public:
     void out_all_motor_speed();
     // 发射子状态机
     void Run_Firing_Sequence();
+    // 堵转检测 (无电流计版)
+    bool check_deliver_stall(float limit_output,float threhold_rpm, uint32_t time_ms);
+    bool check_igniter_stall(float limit_output,float threhold_rpm, uint32_t time_ms);
 };
 
 #endif

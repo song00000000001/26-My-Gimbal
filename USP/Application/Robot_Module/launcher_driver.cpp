@@ -1,10 +1,6 @@
-/**
-  * @file   launcher_driver.cpp
-  */
 #include "launcher_driver.h"
 #include "robot_config.h"
 #include "global_data.h"
-
 
 //定义舵机测试结构体，方便调节测试舵机行程
 typedef struct 
@@ -82,6 +78,13 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
 
     // 自检开关检测进度
     check_progress=0; 
+    // 初始化堵转计时器
+    stall_timer_deliver[0] = 0; 
+    stall_timer_deliver[1] = 0;
+    stall_timer_igniter = 0;
+    mode_deliver[0] = MODE_SPEED;
+    mode_deliver[1] = MODE_SPEED;
+    mode_igniter = MODE_SPEED;
 }
 
 // ================= 动作接口 =================
@@ -184,7 +187,7 @@ void Launcher_Driver::check_calibration_logic()
             mode_deliver[0] = MODE_ANGLE;
             is_deliver_homed[0] = true;
             
-            // 3. 设定当前位置为初始目标 (防止跳变)
+            // 3. 设定当前位置为初始目标
             target_deliver_angle = DELIVER_OFFSET_POS;
         }
     }
@@ -201,7 +204,7 @@ void Launcher_Driver::check_calibration_logic()
             mode_deliver[1] = MODE_ANGLE;
             is_deliver_homed[1] = true;
             
-            // 3. 设定当前位置为初始目标 (防止跳变)
+            // 3. 设定当前位置为初始目标
             target_deliver_angle = DELIVER_OFFSET_POS;
         }
     }
@@ -395,3 +398,38 @@ void Launcher_Driver::Run_Firing_Sequence()
         }
     }
 }
+
+// --- 堵转检测 (无电流计版) ---
+// limit_output: 当 PID 输出(即目标电流)超过此值
+// time_ms: 持续时间
+bool Launcher_Driver::check_deliver_stall(float limit_output,float threhold_rpm, uint32_t time_ms)
+{
+    uint32_t now = xTaskGetTickCount();
+    bool is_stalled = false;
+    bool stalled_check=(abs(pid_deliver_spd[0].Out)>limit_output&&abs(DeliverMotor[0].getMotorSpeed())<threhold_rpm);
+    stalled_check|=(abs(pid_deliver_spd[1].Out)>limit_output&&abs(DeliverMotor[1].getMotorSpeed())<threhold_rpm);
+    if(stalled_check) {
+        if (stall_timer_deliver[0] == 0) stall_timer_deliver[0] = now;
+        else if (now - stall_timer_deliver[0] > time_ms) is_stalled = true;
+    } 
+    else {
+        stall_timer_deliver[0] = 0;
+    }
+    return is_stalled;
+}
+
+bool Launcher_Driver::check_igniter_stall(float limit_output, float threhold_rpm, uint32_t time_ms)
+{ 
+    uint32_t now = xTaskGetTickCount();
+    bool is_stalled = false;
+    if (abs(pid_igniter_spd.Out) > limit_output && abs(IgniterMotor.getMotorSpeed()) < threhold_rpm) {
+        if (stall_timer_igniter == 0) stall_timer_igniter = now;
+        else if (now - stall_timer_igniter > time_ms) is_stalled = true;
+    } 
+    else {
+        stall_timer_igniter = 0;
+    }
+    
+    return is_stalled;
+}
+

@@ -14,6 +14,7 @@ Missle_YawController_Classdef::Missle_YawController_Classdef(uint8_t _ID_YAW)
     PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 18000);
     //PID_Yaw_Speed.I_SeparThresh = 0;
     //PID_Yaw_Speed.DeadZone = 0;
+    mode_YAW = MODE_SPEED;
 }
 
 void Missle_YawController_Classdef::calibration()
@@ -55,17 +56,25 @@ void Missle_YawController_Classdef::update(float _yaw_target)
 void Missle_YawController_Classdef::adjust()
 {
     //角度环
-    if(is_Yaw_Init() == 1)
+    if(mode_YAW == MODE_ANGLE)
     {
         PID_Yaw_Angle.Current = YawMotor.getMotorTotalAngle();
         PID_Yaw_Angle.Adjust();
         PID_Yaw_Speed.Target = PID_Yaw_Angle.Out;
     }
     //速度环，校准过程中直接速度环控制
-    else
+    else if(mode_YAW == MODE_SPEED)
     {
+        //这一步的目的应该是防止切到角度环后如果没有显示给target，就会停下，免得切状态后没有及时给一个设定值就乱跑。
         PID_Yaw_Angle.Target = PID_Yaw_Angle.Current = YawMotor.getMotorTotalAngle();
         PID_Yaw_Angle.Adjust();
+    }
+    else
+    {
+        YawMotor.setMotorCurrentOut(0);
+        PID_Yaw_Angle.clean_intergral();
+        PID_Yaw_Speed.clean_intergral();
+        return;
     }
     PID_Yaw_Speed.Current = YawMotor.getMotorSpeed();
     PID_Yaw_Speed.Adjust();
@@ -88,7 +97,7 @@ void Missle_YawController_Classdef::yaw_out_motor_speed(){
 void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_state){
     
 
-
+    
     switch (yaw_state)
     {
     case MANUAL_AIM:
@@ -130,7 +139,7 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_st
         //校准模式
         //进行校准，校准完成后，自动改变校准标志
         Yawer.calibration();
-    
+        mode_YAW = MODE_SPEED; //校准过程中采用速度模式
         break;
     default:
         Yawer.disable();
@@ -140,4 +149,21 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_st
 }
 
 
+bool Missle_YawController_Classdef::yaw_stall_check(float limit_output, float threhold_rpm, uint32_t time_ms)
+{
+    uint32_t now = xTaskGetTickCount();
+    bool is_stalled = false;
+    if (abs(PID_Yaw_Speed.Out) > limit_output && abs(YawMotor.getMotorSpeed()) < threhold_rpm) {
+        if (stall_timer_yaw == 0) {
+            stall_timer_yaw = now;
+        }
+        else if ((now - stall_timer_yaw) > time_ms) {
+            is_stalled = true;
+        }
+    }
+    else {
+        stall_timer_yaw = 0;
+    }
 
+    return is_stalled;
+}

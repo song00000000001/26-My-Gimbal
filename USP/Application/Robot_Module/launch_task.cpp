@@ -36,7 +36,15 @@ void LaunchCtrl(void *arg)
     //跳过自检标志位失能,只会在s1下时生效,并且会在s1为中重置
     Robot.Cmd.skip_check=false;
 
-    Debugger.enable_debug_mode=false;
+    // Debug 初始化
+    Debugger={
+        .enable_debug_mode=false,
+        .debug_mode_deliver={MODE_SPEED,MODE_SPEED},
+        .debug_mode_igniter=MODE_SPEED ,
+        .stall_params_deliver={8000,10,500},//堵转参数初始化，limit_output,speed_threshold,time_ms
+        .stall_params_igniter={4000,10,500},
+        .stall_params_yaw={8000,5,500}
+    };
 
     //校准速度初始化
     calibration_speed={
@@ -52,27 +60,16 @@ void LaunchCtrl(void *arg)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
 		
-
-
         if (DR16.GetStatus() != DR16_ESTABLISHED) {
+            Robot.Flag.Status.rc_connected = false;
             Robot.Status.current_state = SYS_OFFLINE;
         }
         else{
+            Robot.Flag.Status.rc_connected = true;
             // Debug 模式判定 (最高优先级的主动模式)
             // 只有当遥控器连接，且全局 Debug 标志位被置 1 时进入，并且校准完成。
             if (Debugger.enable_debug_mode&&Robot.Flag.Status.is_calibrated) {
                 Robot.Status.current_state = SYS_DEBUG;
-            }
-            else {
-                // 如果之前是 Debug，现在退出了，并且手动失能，则回 Checking 状态
-                if (Robot.Status.current_state == SYS_DEBUG && !Robot.Cmd.sys_enable) {
-                    // 安全起见重新自检
-                    Launcher.check_progress=0; // 重置自检进度
-                    Robot.Status.current_state = SYS_CHECKING;
-                    //为了防止自己跳过自检（电机速度角度环状态只在校准后才会切换角度环，而debug中可能会改成速度环然后退出，那么后续就不会进入角度环模式，那就不行）
-                    
-                    Launcher.mode_deliver[1] = MODE_ANGLE;
-                }
             }
 
             // 处理遥控器开关逻辑
@@ -137,8 +134,7 @@ void LaunchCtrl(void *arg)
 		case SYS_ERROR:
 		{
             // 恢复条件：手动失能
-            if (DR16.GetStatus() == DR16_ESTABLISHED&& !Robot.Cmd.sys_enable) {
-                
+            if (Robot.Flag.Status.rc_connected&& !Robot.Cmd.sys_enable) {
                 Robot.Status.current_state = SYS_CHECKING;
             }
 		}  
@@ -146,14 +142,37 @@ void LaunchCtrl(void *arg)
 		
         case SYS_DEBUG:
         {
+             // 在 Debug 模式下：
+            // 1. 不执行任何自动逻辑 (fire sequence等)
+            // 2. adjust() 依然运行，但 target 不会被代码修改
+            // 3. 用户在 Watch 窗口直接修改 Launcher.pid_xxx.Target 或 Kp Ki Kd
 
+            //利用debug结构体修改电机模式
+            Launcher.mode_deliver[0]=Debugger.debug_mode_deliver[0];
+            Launcher.mode_deliver[1]=Debugger.debug_mode_deliver[1];
+            Launcher.mode_igniter=Debugger.debug_mode_igniter;
+            
+            // 如果手动失能，则回 Checking 状态
+            if (Robot.Status.current_state == SYS_DEBUG && !Robot.Cmd.sys_enable) {
+                // 安全起见重新自检
+                Launcher.check_progress=0; // 重置自检进度
+                Robot.Status.current_state = SYS_CHECKING;
+                //为了防止自己跳过自检（电机速度角度环状态只在校准后才会切换角度环，而debug中可能会改成速度环然后退出，那么后续就不会进入角度环模式，那就不行）
+                Launcher.mode_deliver[0] = MODE_ANGLE;
+                Launcher.mode_deliver[1] = MODE_ANGLE;
+                Launcher.mode_igniter = MODE_ANGLE;
+                // 重置目标值为当前值，防止猛冲
+                Launcher.target_deliver_angle = Launcher.DeliverMotor[0].getMotorTotalAngle(); 
+                Launcher.target_igniter_angle = Launcher.IgniterMotor.getMotorTotalAngle();
+            }
+            
         }
         break;
 			
         case SYS_OFFLINE:
         {
             // 恢复条件：遥控器重连
-            if (DR16.GetStatus() == DR16_ESTABLISHED) {
+            if (Robot.Flag.Status.rc_connected) {
                 Robot.Status.current_state = SYS_CHECKING;
             }
         }
@@ -173,17 +192,20 @@ void LaunchCtrl(void *arg)
             // 5个按键手动检查全部通过则进入校准状态,后续可以加入电机检查
             if (Robot.Flag.Check.limit_sw_ok) {
                 Robot.Status.current_state = SYS_CALIBRATING;
+                //注意,这里启动了校准过程,会配置电机为速度环,直到撞到限位开关
                 Launcher.start_calibration();
             }
         }
         break;
         
         case SYS_CALIBRATING:
+            //calibration_speed;
             // 此状态下，Launcher.adjust() 内部正在跑归零逻辑，任务层只需要等待驱动层反馈 "已校准"
             //yaw控制考虑到是并行的，主状态机和子状态机采用状态位判断
             Robot.Status.yaw_control_state = YAW_CALIBRATING;
             if(Yawer.is_Yaw_Init()){
                 Robot.Status.yaw_control_state = MANUAL_AIM; //校准完成后，进入手动模式
+                Yawer.mode_YAW = MODE_ANGLE; //切换回角度环
                 Yawer.yaw_target=0;
             }
             // 1. 处理归零状态转换
@@ -214,7 +236,6 @@ void LaunchCtrl(void *arg)
             // 检查是否到位
             if (Launcher.is_deliver_at_target() && Launcher.is_igniter_at_target()) 
             {  
-                
                 Robot.Status.current_state = SYS_AUTO_FIRE;
             }
             
@@ -238,6 +259,40 @@ void LaunchCtrl(void *arg)
             yaw_calibrating:校准模式
         */
         Yawer.yaw_state_machine(Robot.Status.yaw_control_state);
+
+        // 2. 堵转保护 (全局生效，除 Debug/Offline)
+        if (Robot.Status.current_state != SYS_OFFLINE  
+            && Robot.Status.current_state != SYS_ERROR 
+            //&& Robot.Status.current_state != SYS_DEBUG  // Debug时可能会手动扭角度环。
+        ) 
+        {
+            // 如果 PID 输出超过 8000 (约50%力矩) 且速度小于10，持续1000ms -> 错误状态
+            bool stall_detected = false;
+            /*todo
+            后期可能在发射子状态机的某个状态不检测滑块堵转，但前期检测它最容易，所以先全局用着。
+            不检测的原因是滑块会有一个状态是拉到底然后卡住等待装填，这个时候速度肯定是0，如果检测堵转就会误判。
+            倒时候也可以在发射子状态机里处理这个逻辑，比如说在等待装填状态不检测堵转。
+            */
+            stall_detected |=Launcher.check_deliver_stall(
+                Debugger.stall_params_deliver.limit_output,
+                Debugger.stall_params_deliver.threhold_rpm,
+                Debugger.stall_params_deliver.time_ms);
+            //丝杆堵转检测
+            stall_detected |= Launcher.check_igniter_stall(
+                Debugger.stall_params_igniter.limit_output,
+                Debugger.stall_params_igniter.threhold_rpm, 
+                Debugger.stall_params_igniter.time_ms);
+            //yaw轴堵转检测
+            stall_detected |= Yawer.yaw_stall_check(
+                Debugger.stall_params_yaw.limit_output,
+                Debugger.stall_params_yaw.threhold_rpm,
+                Debugger.stall_params_yaw.time_ms);
+            
+            if (stall_detected) 
+            {
+                Robot.Status.current_state = SYS_ERROR;
+            }
+        }
 
         if (Robot.Status.current_state != SYS_OFFLINE && 
             Robot.Status.current_state != SYS_CHECKING&&

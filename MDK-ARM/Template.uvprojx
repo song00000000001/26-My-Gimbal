@@ -2898,6 +2898,11 @@
               <FileType>5</FileType>
               <FilePath>..\USP\Application\Robot_Module\robot_config.h</FilePath>
             </File>
+            <File>
+              <FileName>robot_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\USP\Application\Robot_Module\robot_types.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

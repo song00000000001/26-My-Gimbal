@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stdint.h"
+#include "robot_types.h"
 #include "Yaw_control.h"
 #include "launcher_driver.h"
 
@@ -125,7 +125,12 @@ extern Launcher_Driver Launcher; // 发射驱动类
 extern Missle_YawController_Classdef Yawer; // yaw控制类
 extern Robot_Ctrl_t Robot; 
 
-#include "launcher_driver.h"
+typedef struct {
+    float limit_output;
+    float threhold_rpm;
+    uint32_t time_ms;
+} stall_params_t;
+
 // 2. 新增调试数据结构体
 typedef struct {
     // 标志位
@@ -133,6 +138,10 @@ typedef struct {
     //电机状态
     Control_Mode_e debug_mode_deliver[2]; // 左右滑块的独立模式
     Control_Mode_e debug_mode_igniter;    // 丝杆模式
+    //堵转参数
+    stall_params_t stall_params_deliver;
+    stall_params_t stall_params_igniter;
+    stall_params_t stall_params_yaw;
 } Debug_Data_t;
 
 extern Debug_Data_t Debugger; // 声明全局变量
@@ -155,5 +164,5 @@ typedef struct {
 }calibration_speed_t;
 
 extern calibration_speed_t calibration_speed;
-/************************ COPYRIGHT(C) SCUT-ROBOTLAB **************************/
+
 
