@@ -54,10 +54,11 @@ typedef enum {
 //主状态枚举
 typedef enum {
     SYS_OFFLINE = 0,    // 离线
-    SYS_ERROR,           // 错误状态,一般是运行中电机失控装限位开关，或者触发堵转保护
+    //SYS_ERROR,           // 错误状态,一般是运行中电机失控装限位开关，或者触发堵转保护
     SYS_DEBUG,           // 调试状态
     SYS_CHECKING,       // 自检中
     SYS_CALIBRATING,    // 归零/校准中
+	SYS_CALIBRATED,      // 校准完成,归位
     SYS_STANDBY,        // 待机/手动
     SYS_AUTO_PREP,      // 自动发射准备 (回缓冲区)
     SYS_AUTO_FIRE       // 自动发射进行中
@@ -87,7 +88,7 @@ typedef struct {
     } Status;
 } Robot_Monitor_t;
 
-// [反馈 Feedback]: 运行中的实时数据
+//[反馈 Feedback]: 运行中的实时数据
 typedef struct {
     System_State_e current_state; // 当前主状态
     yaw_control_state_e yaw_control_state;//yaw轴控制状态

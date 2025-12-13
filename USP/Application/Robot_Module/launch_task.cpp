@@ -48,9 +48,9 @@ void LaunchCtrl(void *arg)
 
     //校准速度初始化
     calibration_speed={
-	.yaw_calibration_speed=-600,
-	.deliver_calibration_speed=6000,
-    .igniter_calibration_speed=-2000
+	.yaw_calibration_speed=-300,
+	.deliver_calibration_speed=600,
+    .igniter_calibration_speed=-800
     };
 
     // 任务频率控制
@@ -120,25 +120,9 @@ void LaunchCtrl(void *arg)
         需要重新进行限位校准，此时如果拨右摇杆朝下则会反向旋转对应电机，
         拨左摇杆取消使能则进入check状态，
         */
-		
-        if(Robot.Status.current_state != SYS_CALIBRATING){
-            if(SW_IGNITER_OFF||SW_YAW_L_OFF||SW_YAW_R_OFF||SW_DELIVER_L_OFF||SW_DELIVER_R_OFF){
-                Robot.Status.current_state = SYS_ERROR; // 进入错误状态
-            }
-        } 
-        
-       
+
         switch (Robot.Status.current_state)
         {
-		case SYS_ERROR:
-		{
-            // 恢复条件：手动失能
-            if (Robot.Flag.Status.rc_connected&& !Robot.Cmd.sys_enable) {
-                Robot.Status.current_state = SYS_CHECKING;
-            }
-		}  
-		break;
-		
         case SYS_DEBUG:
         {
              // 在 Debug 模式下：
@@ -217,8 +201,22 @@ void LaunchCtrl(void *arg)
             // 2. 全部校准完毕后，切换到待机状态
             //校准完毕跳转待机状态
             if (Robot.Flag.Status.is_calibrated) {
+                Robot.Status.current_state = SYS_CALIBRATED;
+            }
+            break;
+        //校准完毕时，总有一个限位开关被触发，防止误触发限位开关进入error状态
+        //因此加一个校准完毕后给角度环到安全位置的状态停留，直到都到达指定位置后再进入待机状态
+        case SYS_CALIBRATED:
+        {
+            Launcher.target_igniter_angle=POS_IGNITER;  // 默认力度
+            Launcher.target_deliver_angle=POS_BUFFER;   // 回缓冲
+            Yawer.yaw_target=0;
+            if(Launcher.is_deliver_at_target()&&Launcher.is_igniter_at_target()&&Yawer.isMotorAngleReached(5.0f))
+            {
                 Robot.Status.current_state = SYS_STANDBY;
             }
+
+        }
             break;
 
         case SYS_STANDBY:
@@ -261,7 +259,12 @@ void LaunchCtrl(void *arg)
         */
         Yawer.yaw_state_machine(Robot.Status.yaw_control_state, DR16_Snap.LX_Norm, DR16_Snap.LY_Norm);
 
+        /*todo
+        song
+        堵转保护后进入校准会导致滑块电机装上限位开关停不下来，后续排查清楚原因再引入，先注释掉
+        */
         // 2. 堵转保护 (全局生效，除 Debug/Offline)
+        #if 0
         if (Robot.Status.current_state != SYS_OFFLINE  
             && Robot.Status.current_state != SYS_ERROR 
             //&& Robot.Status.current_state != SYS_DEBUG  // Debug时可能会手动扭角度环。
@@ -292,18 +295,36 @@ void LaunchCtrl(void *arg)
             if (stall_detected) 
             {
                 Robot.Status.current_state = SYS_ERROR;
+                //防止卡死在堵转保护状态，需要将pid目标重置为当前值，并且清空输出
+                Launcher.target_deliver_angle = Launcher.DeliverMotor[0].getMotorTotalAngle();
+                Launcher.target_deliver_angle = Launcher.DeliverMotor[1].getMotorTotalAngle();
+                Launcher.target_igniter_angle = Launcher.IgniterMotor.getMotorTotalAngle();
+                Yawer.yaw_target = Yawer.YawMotor.getMotorTotalAngle();
+                Launcher.pid_deliver_spd[0].Target=0;
+                Launcher.pid_deliver_spd[1].Target=0;
+                Launcher.pid_igniter_spd.Target=0;
+                Yawer.PID_Yaw_Speed.Target=0;
+                //计算 PID,使输出为0
+                Launcher.adjust();
+                Yawer.adjust();
+                Launcher.pid_deliver_spd[0].Out=0;
+                Launcher.pid_deliver_spd[1].Out=0;
+                Launcher.pid_igniter_spd.Out=0;
+                Yawer.PID_Yaw_Speed.Out=0;
+                //Launcher.clear_all_motor_output();
             }
         }
-
+        #endif
+		 //计算 PID
+		Launcher.adjust();
+		Yawer.adjust();
+			
         if (Robot.Status.current_state != SYS_OFFLINE && 
             Robot.Status.current_state != SYS_CHECKING&&
-            Robot.Status.current_state != SYS_ERROR &&
             Robot.Cmd.sys_enable
         ) 
         {
-            //计算 PID
-            Launcher.adjust();
-            Yawer.adjust();
+           
             //输出电流
             Launcher.out_all_motor_speed();
             Yawer.yaw_out_motor_speed();

@@ -63,7 +63,7 @@ void Service_Devices_Init(void)
 	增大任务优先级
 	将dr16失联等实时性要求高的逻辑放到另一个任务中，防止主控制任务意外卡死(使用互斥锁或者vtaskdelay等阻塞函数)
 	*/
-	//xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size, NULL, PriorityAboveNormal, &Vision_Task_Handle);
+	xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size, NULL, PriorityAboveNormal, &Vision_Task_Handle);
 	//xTaskCreate(Yaw_Task, "App.Yaw_Task", Normal_Stack_Size, NULL, PriorityAboveNormal, &Yaw_Task_Handle);
 #if USE_SRML_DR16
 	xTaskCreate(tskDR16, "App.DR16", Small_Stack_Size, NULL, PrioritySuperHigh, &DR16_Handle);
@@ -91,7 +91,7 @@ void Vision_Task(void *arg)
 	{
 		vTaskDelayUntil(&xLastWakeTime_t, 1);
 		vision_send_pack.mode = 3;
-		/*
+		#if 0
 		if (DR16.GetStatus() == DR16_ESTABLISHED && DR16.GetS1() == SW_DOWN) // 左拨杆拨到下，进入视觉模式
 		{
 			vision_send_pack.tracker_bit = 1;
@@ -105,7 +105,7 @@ void Vision_Task(void *arg)
 		{
 			vision_recv_pack.target_mode = 0;
 		}
-		*/
+		#endif
 		//	 SRML_UART_Transmit_DMA(&UART_pack);
 		vTaskDelay(1);
 	}

@@ -130,21 +130,20 @@ void Launcher_Driver::adjust()
             pid_deliver_pos[i].clean_intergral();
         }
     }
-    if(mode_deliver[0]==MODE_ANGLE){
+    if(mode_igniter==MODE_ANGLE){
         // 串级PID: 位置环 -> 速度环
         pid_igniter_pos.Target = target_igniter_angle;
         //这里加入限幅保护
         pid_igniter_pos.Target=std_lib::constrain(pid_igniter_pos.Target, IGNITER_MIN_POS, IGNITER_MAX_POS);
         pid_igniter_pos.Current = IgniterMotor.getMotorTotalAngle();
         pid_igniter_pos.Adjust();
-        pid_igniter_spd.Target = pid_igniter_pos.Out;
         //速度环的输入为角度环输出
-        pid_igniter_spd.Target = pid_deliver_pos[0].Out;
+        pid_igniter_spd.Target = pid_igniter_pos.Out;
         //速度环
         pid_igniter_spd.Current = IgniterMotor.getMotorSpeed();
         pid_igniter_spd.Adjust();
     }
-    else if(mode_deliver[0]==MODE_SPEED){
+    else if(mode_igniter==MODE_SPEED){
         pid_igniter_spd.Current = IgniterMotor.getMotorSpeed();
         pid_igniter_spd.Adjust();
     }
@@ -158,6 +157,11 @@ void Launcher_Driver::adjust()
 
 void Launcher_Driver::start_calibration()
 {
+    //清空标志位,以便多次校准
+	Yawer.Yaw_Init_flag=0;
+    is_deliver_homed[0] = false;
+    is_deliver_homed[1] = false;
+    is_igniter_homed = false;
     // 只有在未校准或强制请求时调用
     for(int i=0; i<2; i++) {
         mode_deliver[i] = MODE_SPEED;
@@ -195,7 +199,7 @@ void Launcher_Driver::check_calibration_logic()
         }
     }
 
-    if (!is_deliver_homed[0]) {
+    if (!is_deliver_homed[1]) {
         // 如果碰到开关 (假设低电平触发)
         if (SW_DELIVER_R_OFF) {
 			pid_deliver_spd[1].clean_intergral();

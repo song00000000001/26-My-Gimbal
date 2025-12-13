@@ -100,9 +100,9 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_st
     {
     case MANUAL_AIM:
         // 手动微调逻辑
-        Launcher.target_igniter_angle-=LY * 0.002f;
+        Launcher.target_igniter_angle-=LY * 0.02f;
         Launcher.target_igniter_angle=std_lib::constrain(Launcher.target_igniter_angle, IGNITER_MIN_POS, IGNITER_MAX_POS);
-        yaw_target -= LX * 0.002f;
+        yaw_target -= LX * 0.02f;
         yaw_target = std_lib::constrain(yaw_target, -10.2f, 10.2f);
         update(yaw_target);
         break;
@@ -110,10 +110,12 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_st
     {
         //读取调参板设置的发射数据
         //根据发射计数选择数据槽数组
-        uint8_t slot_index=DartDataSlot[Robot.Status.dart_count];
+        uint8_t slot_index=DartDataSlot[Robot.Status.dart_count]+1;
+
         //根据目标类型选择数据组数据
         //yaw数据
-        yaw_target=DartsData[slot_index].YawCorrectionAngle[HitTarget];
+        //yaw_target=DartsData[slot_index].YawCorrectionAngle[HitTarget];
+        yaw_target=DartsData[1].YawCorrectionAngle[0];
         yaw_target=std_lib::constrain(yaw_target, -10.2f, 10.2f);
         /*
         todo
@@ -121,7 +123,7 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_st
         这里用了外面的类，不太好改，就先放这里吧
         */
         //发射力度数据
-        Launcher.target_igniter_angle=DartsData[slot_index].Ignitergoal[HitTarget];
+        Launcher.target_igniter_angle=DartsData[1].Ignitergoal[0];
         Launcher.target_igniter_angle=std_lib::constrain(Launcher.target_igniter_angle, IGNITER_MIN_POS, IGNITER_MAX_POS);
         update(yaw_target); // 更改Yaw轴角度
     }
@@ -146,22 +148,22 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_st
             yaw_target += 0;
         }
         yaw_target = std_lib::constrain(yaw_target, -10.2f, 10.2f);
-        Yawer.update(yaw_target);
+        update(yaw_target);
         default_yaw_target[HitTarget] = yaw_target;
         //计算电机pid
-        Yawer.adjust();
+        adjust();
         */
         }
-        Yawer.disable();
+        disable();
         break;
     case YAW_CALIBRATING:
         //校准模式
         //进行校准，校准完成后，自动改变校准标志
-        Yawer.calibration();
+        calibration();
         mode_YAW = MODE_SPEED; //校准过程中采用速度模式
         break;
     default:
-        Yawer.disable();
+        disable();
         break;
     }
 
@@ -185,4 +187,9 @@ bool Missle_YawController_Classdef::yaw_stall_check(float limit_output, float th
     }
 
     return is_stalled;
+}
+
+bool Missle_YawController_Classdef::isMotorAngleReached(float threshold)
+{
+    return std::abs(PID_Yaw_Angle.Error) <= threshold;
 }

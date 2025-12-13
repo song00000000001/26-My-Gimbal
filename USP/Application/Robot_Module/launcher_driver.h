@@ -37,17 +37,18 @@ private:
     GPIO_PinState (*read_switch_Ign)(void);
 
     /* --- 2. 算法对象 (Private) --- */
+   
+ 
+public:
+bool is_deliver_homed[2];       // 是否已完成归零
+bool is_igniter_homed;
+
+
     myPID pid_deliver_spd[2];
     myPID pid_deliver_pos[2];
     myPID pid_deliver_sync;    // 双电机同步PID
     myPID pid_igniter_spd;
     myPID pid_igniter_pos;
-    
-    bool is_deliver_homed[2];       // 是否已完成归零
-    bool is_igniter_homed;
-
-public:
-
     // 发射子状态机
     Fire_State_e fire_state = FIRE_IDLE;
 
@@ -100,6 +101,7 @@ public:
     // 堵转检测 (无电流计版)
     bool check_deliver_stall(float limit_output,float threhold_rpm, uint32_t time_ms);
     bool check_igniter_stall(float limit_output,float threhold_rpm, uint32_t time_ms);
+
 };
 
 #endif
