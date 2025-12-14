@@ -357,13 +357,14 @@ void Launcher_Driver::Run_Firing_Sequence()
             if ((current_time - state_timer) > 2000) {
                 state_timer= current_time;
                 Robot.Status.dart_count++; // 计数+1
+                servo_igniter_lock;
                 fire_state = FIRE_PULL_DOWN_2;
             }
             break;
 
-        // 滑块回缓冲区
+        // 滑块回底部
         case FIRE_PULL_DOWN_2:
-            target_deliver_angle=(POS_BUFFER);
+            target_deliver_angle=(POS_BOTTOM);
             if (is_deliver_at_target(5)) {
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_2;
@@ -409,6 +410,7 @@ void Launcher_Driver::Run_Firing_Sequence()
             servo_igniter_unlock; // 解锁扳机舵机，发射
             if ((current_time - state_timer) > 3000) {
                 Robot.Status.dart_count++; // 计数+1
+                servo_igniter_lock;
                 state_timer= current_time;
                 fire_state = FIRE_RELOAD_LIFT_3;
             }
@@ -483,6 +485,7 @@ void Launcher_Driver::Run_Firing_Sequence()
             servo_igniter_unlock; // 解锁扳机舵机，发射
             if ((current_time - state_timer) > 3000) {
                 Robot.Status.dart_count++; // 计数+1
+                servo_igniter_lock;
                 state_timer= current_time;
                 fire_state = FIRE_RELOAD_LIFT_4;
             }
@@ -503,6 +506,7 @@ void Launcher_Driver::Run_Firing_Sequence()
             servo_transfomer_unlock; // 松开卡镖舵机，转移下一发到发射区
             if ((current_time - state_timer) >200) {
                 servo_transfomer_lock; // 重新卡住卡镖舵机
+                servo_igniter_lock;
                 state_timer = current_time;
                 fire_state = FIRE_PULL_DOWN_4;
             }
@@ -557,6 +561,7 @@ void Launcher_Driver::Run_Firing_Sequence()
             servo_igniter_unlock; // 解锁扳机舵机，发射
             if ((current_time - state_timer) > 3000) {
                 Robot.Status.dart_count++; // 计数+1
+                servo_igniter_lock;
                 state_timer= current_time;
                 fire_state = FIRE_IDLE; // 完成发射，回到闲置状态
                 //每打4发,就需要将S1回中再下按,否则不会继续发射

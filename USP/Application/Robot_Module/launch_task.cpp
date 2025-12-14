@@ -95,7 +95,7 @@ void LaunchCtrl(void *arg)
         主任务不能被阻塞。
         */
         // 尝试拿锁，参数为 0 表示：拿不到立刻返回，不等待，不阻塞
-        //if (xSemaphoreTake(DR16_mutex, 0) == pdTRUE){
+        if (xSemaphoreTake(DR16_mutex, 0) == pdTRUE){
             // 1. 拿到了锁：更新快照
             DR16_Snap.Status = DR16.GetStatus();
             DR16_Snap.LX_Norm = DR16.Get_LX_Norm();
@@ -106,7 +106,7 @@ void LaunchCtrl(void *arg)
             DR16_Snap.S2 = DR16.GetS2();
             
             // 2. 释放锁
-        //    xSemaphoreGive(DR16_mutex);}
+            xSemaphoreGive(DR16_mutex);}
 
         if (DR16_Snap.Status != DR16_ESTABLISHED) {
             Robot.Flag.Status.rc_connected = false;
