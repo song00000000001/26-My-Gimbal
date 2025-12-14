@@ -140,18 +140,7 @@ void tskDR16(void *arg)
         xSemaphoreTake(DR16_mutex, portMAX_DELAY);
         DR16.Check_Link(xTaskGetTickCount());
         xSemaphoreGive(DR16_mutex);
-        /*       
-        todo:
-        song 
-        // 4. 处理掉线逻辑示例
-        xSemaphoreTake(DR16_mutex, portMAX_DELAY);
-        if (DR16.GetStatus() != DR16_ESTABLISHED)
-        {
-             // 执行掉线后的安全措施
-        }
-        xSemaphoreGive(DR16_mutex);
-        以上的逻辑考虑封入类中，不过互斥锁似乎不好封装进去。
-        */
+
 	}
 }
 #endif

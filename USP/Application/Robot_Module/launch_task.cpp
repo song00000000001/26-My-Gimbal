@@ -91,17 +91,22 @@ void LaunchCtrl(void *arg)
         // 1. 更新遥控器快照数据 & 处理遥控器逻辑
         /*todo
         song
-        互斥锁需要测试
+        互斥锁需要测试。
+        主任务不能被阻塞。
         */
-        //xSemaphoreTake(DR16_mutex, portMAX_DELAY);
-		DR16_Snap.Status=DR16.GetStatus();
-        DR16_Snap.LX_Norm=DR16.Get_LX_Norm();
-        DR16_Snap.LY_Norm=DR16.Get_LY_Norm();
-        DR16_Snap.RX_Norm=DR16.Get_RX_Norm();
-        DR16_Snap.RY_Norm=DR16.Get_RY_Norm();
-        DR16_Snap.S1=DR16.GetS1();
-        DR16_Snap.S2=DR16.GetS2();
-        //xSemaphoreGive(DR16_mutex);
+        // 尝试拿锁，参数为 0 表示：拿不到立刻返回，不等待，不阻塞
+        //if (xSemaphoreTake(DR16_mutex, 0) == pdTRUE){
+            // 1. 拿到了锁：更新快照
+            DR16_Snap.Status = DR16.GetStatus();
+            DR16_Snap.LX_Norm = DR16.Get_LX_Norm();
+            DR16_Snap.LY_Norm = DR16.Get_LY_Norm();
+            DR16_Snap.RX_Norm = DR16.Get_RX_Norm();
+            DR16_Snap.RY_Norm = DR16.Get_RY_Norm();
+            DR16_Snap.S1 = DR16.GetS1();
+            DR16_Snap.S2 = DR16.GetS2();
+            
+            // 2. 释放锁
+        //    xSemaphoreGive(DR16_mutex);}
 
         if (DR16_Snap.Status != DR16_ESTABLISHED) {
             Robot.Flag.Status.rc_connected = false;
