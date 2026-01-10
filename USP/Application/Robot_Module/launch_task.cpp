@@ -241,8 +241,8 @@ void LaunchCtrl(void *arg)
                 Yawer.yaw_target=0;
             }
             if(Launcher.is_calibrated()){
-                Launcher.target_igniter_angle=IGNITER_OFFSET_POS;  // 回到安全位置
-                Launcher.target_deliver_angle=POS_BUFFER;   // 回缓冲
+                Launcher.target_igniter_angle=IGNITER_OFFSET_POS;  // 回到缓冲位置
+                //Launcher.target_deliver_angle=POS_BUFFER;   // 回缓冲
             }
 
             //检查限位开关并处理校准逻辑
@@ -272,8 +272,20 @@ void LaunchCtrl(void *arg)
             break;
 
         case SYS_STANDBY:
+            // --- 待机（发射暂停）状态 ---
+            // 发射指令检测
             if (Robot.Cmd.autofire_enable&& !Robot.Flag.Status.stop_continus_fire) {
                 Robot.Status.current_state = SYS_AUTO_PREP;
+            }
+            if(Launcher.mode_deliver[0]==MODE_SPEED||Launcher.mode_deliver[1]==MODE_SPEED){
+                #if 0
+                //由于自动发射中增加了滑块电机速度环校准逻辑，因此在待机中如果是速度环模式一定要失能滑块电机。（不然不会检查停止条件，会直接失控撞限位开关）
+                Launcher.pid_deliver_spd[0].Target=0;
+                Launcher.pid_deliver_spd[1].Target=0;
+                #else
+                //但是也可以继续校准，只要在这里检测就行。校准完后会回缓冲
+                Launcher.check_calibration_logic();
+                #endif
             }
             break;
             
@@ -282,7 +294,7 @@ void LaunchCtrl(void *arg)
             //Launcher.target_igniter_angle=POS_IGNITER;  // 默认发射力度
             
             // 检查是否到位
-            if (Launcher.is_deliver_at_target(5) && Launcher.is_igniter_at_target(5)) 
+            if (Launcher.is_igniter_at_target(5)) 
             {  
                 Robot.Status.current_state = SYS_AUTO_FIRE;
             }

@@ -119,7 +119,7 @@ void Launcher_Driver::start_calibration()
     // 只有在未校准或强制请求时调用
     for(int i=0; i<2; i++) {
         mode_deliver[i] = MODE_SPEED;
-        pid_deliver_spd[i].Target = calibration_speed.deliver_calibration_speed;
+        //pid_deliver_spd[i].Target = calibration_speed.deliver_calibration_speed;这里的速度在check逻辑里设置
         // 清除积分，防止上次残留
         pid_deliver_spd[i].clean_intergral();
         pid_deliver_pos[i].clean_intergral();
@@ -149,8 +149,17 @@ void Launcher_Driver::check_calibration_logic()
             is_deliver_homed[0] = true;
             
             // 3. 设定当前位置为初始目标
+            #if 0
             target_deliver_angle = DELIVER_OFFSET_POS;
+            #else
+            //修改为回缓冲区
+            target_deliver_angle=POS_BUFFER;   // 回缓冲
+            #endif
         }
+    }
+    //为了方便stanby状态下失能电机（速度目标为0）后，进入发射状态时能方便的恢复速度，这里加入速度设置（所以前面start里的速度设置可以删了。）
+    else{
+        pid_deliver_spd[0].Target = calibration_speed.deliver_calibration_speed;  
     }
 
     if (!is_deliver_homed[1]) {
@@ -166,8 +175,15 @@ void Launcher_Driver::check_calibration_logic()
             is_deliver_homed[1] = true;
             
             // 3. 设定当前位置为初始目标
+            #if 0
             target_deliver_angle = DELIVER_OFFSET_POS;
+            #else
+            target_deliver_angle=POS_BUFFER;   // 回缓冲
+            #endif
         }
+    }
+    else{
+        pid_deliver_spd[1].Target = calibration_speed.deliver_calibration_speed;  
     }
 
     // --- 丝杆归零逻辑 ---
@@ -258,6 +274,23 @@ if (Robot.Cmd.fire_command&&is_deliver_at_target(5)) {
 }
 */
 
+// 发射状态机中校准滑块电机
+void Launcher_Driver::start_deliver_calibration()
+{
+    //调整滑块电机状态
+    for(int i=0;i<2;i++){
+        //清空标志位
+        is_deliver_homed[i] = false;
+        //设置速度环模式
+        mode_deliver[i] = MODE_SPEED;
+        //设置校准速度
+        pid_deliver_spd[i].Target = calibration_speed.deliver_calibration_speed;
+        // 清除积分，防止上次残留
+        pid_deliver_spd[i].clean_intergral();
+        pid_deliver_pos[i].clean_intergral();
+    }
+}
+  
 /*发射状态机*/
 void Launcher_Driver::Run_Firing_Sequence()
 {
@@ -266,7 +299,7 @@ void Launcher_Driver::Run_Firing_Sequence()
     switch (fire_state)
     {
         case FIRE_IDLE:
-            // 确保滑块在缓冲区
+            //确保滑块在缓冲区
             target_deliver_angle=(POS_BUFFER);
             servo_igniter_lock; // 锁止扳机舵机
 			
@@ -275,12 +308,24 @@ void Launcher_Driver::Run_Firing_Sequence()
                 fire_state = FIRE_IGNITER_DELAY;
             }
             break;
+        //点火延时
 		case FIRE_IGNITER_DELAY:
 			if ((current_time - state_timer) > 500) {
                 state_timer = current_time;
-                fire_state = FIRE_PULL_DOWN_1;
+                fire_state = FIRE_CALIBRATION_1;
+                start_deliver_calibration();
             }
 			break;
+
+        //滑块校准
+        case FIRE_CALIBRATION_1:
+            check_calibration_logic();
+            if(is_calibrated()){
+                state_timer = current_time;
+                fire_state = FIRE_PULL_DOWN_1;
+            }
+            break;
+
         //下拉滑块到底部扳机
         case FIRE_PULL_DOWN_1:
             target_deliver_angle=(POS_BOTTOM);
@@ -313,7 +358,9 @@ void Launcher_Driver::Run_Firing_Sequence()
                 state_timer = current_time;
                 
                 //测试时为了方便实现拨一次杆打一发,在这里修改跳转逻辑
-                #if 1
+                //恢复多发逻辑。
+                
+                #if 0
                     fire_state = FIRE_SHOOTING_4;
                 #else
                     fire_state = FIRE_SHOOTING_1;
@@ -329,6 +376,16 @@ void Launcher_Driver::Run_Firing_Sequence()
                 state_timer= current_time;
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
+                fire_state = FIRE_CALIBRATION_2;
+                start_deliver_calibration();
+            }
+            break;
+
+        //滑块校准
+        case FIRE_CALIBRATION_2:
+            check_calibration_logic();
+            if(is_calibrated()){
+                state_timer = current_time;
                 fire_state = FIRE_PULL_DOWN_2;
             }
             break;
@@ -336,7 +393,18 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 滑块回底部
         case FIRE_PULL_DOWN_2:
             target_deliver_angle=(POS_BOTTOM);
+            /*todo
+            song
+            这里往年是直接发射，即相信视觉在发射前已经调整好了位置。
+            目前不加yaw和行程条件的原因是，如果滑块拉到底了，却一直不发射，很危险。除非加更复杂的超时逻辑。所以先这样，一步步来。
+            后面的发射流程基本也要加，因为是一镖一参。
+            */
+            #if 0
+            //这里在发射前yaw和行程电机可能会根据调参板或者视觉微调，故加入所有电机检查条件
+            if (is_deliver_at_target(5)&&is_igniter_at_target(5)&&Yawer.isMotorAngleReached(5.0f)) {
+            #else
             if (is_deliver_at_target(5)) {
+            #endif
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_2;
             }
@@ -403,10 +471,20 @@ void Launcher_Driver::Run_Firing_Sequence()
             if ((current_time - state_timer) >200) {
                 servo_transfomer_lock; // 重新卡住卡镖舵机
                 state_timer = current_time;
-                fire_state = FIRE_PULL_DOWN_3;
+                fire_state = FIRE_CALIBRATION_3;
+                start_deliver_calibration();
             }
             break;
         
+        // 校准滑块
+        case FIRE_CALIBRATION_3:
+            check_calibration_logic();
+            if(is_calibrated()){
+                state_timer = current_time;
+                fire_state = FIRE_PULL_DOWN_3;
+            }
+            break;
+
         //下拉滑块到底部扳机
         case FIRE_PULL_DOWN_3:
             target_deliver_angle=(POS_BOTTOM);
@@ -479,6 +557,16 @@ void Launcher_Driver::Run_Firing_Sequence()
                 servo_transfomer_lock; // 重新卡住卡镖舵机
                 servo_igniter_lock;
                 state_timer = current_time;
+                fire_state = FIRE_CALIBRATION_4;
+                start_deliver_calibration();
+            }
+            break;
+
+        // 校准滑块
+        case FIRE_CALIBRATION_4:
+            check_calibration_logic();
+            if(is_calibrated()){
+                state_timer = current_time;
                 fire_state = FIRE_PULL_DOWN_4;
             }
             break;
@@ -536,10 +624,10 @@ void Launcher_Driver::Run_Firing_Sequence()
                 state_timer= current_time;
                 fire_state = FIRE_IDLE; // 完成发射，回到闲置状态
                 //每打4发,就需要将S1回中再下按,否则不会继续发射
-                //if(Robot.Status.dart_count>0&&Robot.Status.dart_count%4==0){
-                Robot.Flag.Status.stop_continus_fire=true;
-                Robot.Status.current_state = SYS_STANDBY;
-                //}
+                if(Robot.Status.dart_count%4==0){
+                    Robot.Flag.Status.stop_continus_fire=true;
+                    Robot.Status.current_state = SYS_STANDBY;
+                }
             }
             break;    
 
