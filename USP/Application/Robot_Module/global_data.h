@@ -106,7 +106,7 @@ typedef struct {
 //调试数据结构体
 typedef struct {
     // 标志位
-    bool enable_debug_mode; // 在watch窗口改为true以进入调试模式(配合遥控器)
+    uint8_t enable_debug_mode; // 在watch窗口改为true以进入调试模式(配合遥控器)
     //电机状态
     Control_Mode_e debug_mode_deliver[2]; // 左右滑块的独立模式
     Control_Mode_e debug_mode_igniter;    // 丝杆模式

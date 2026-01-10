@@ -2,25 +2,6 @@
 #include "robot_config.h"
 #include "global_data.h"
 
-
-// 舵机宏
-#define servo_igniter_unlock    __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1,servo_ccr.igniter_ccr_unlock ) // 扳机舵机解锁      ,120卡住,170ok
-#define servo_igniter_lock      __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1,servo_ccr.igniter_ccr_lock ) // 扳机舵机锁止
-
-/*todo
-song
-查出引脚填写在下面。
-定义装填舵机和转移舵机的宏
-*/
-//装填舵机即升降机左右的舵机，上为升，下为下降，下降即装填飞镖，上升即清空发射区
-#define servo_loader_up1     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, servo_ccr.loader1_ccr_up)   // 装填舵机左，上升
-#define servo_loader_down1   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, servo_ccr.loader1_ccr_down)  // 装调舵机左，下降
-#define servo_loader_up2     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_2, servo_ccr.loader2_ccr_up)  // 装填舵机右，上升
-#define servo_loader_down2   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_2, servo_ccr.loader2_ccr_down)  // 装填舵机右，下降
-//转移舵机即动作舱储存区的卡镖舵机，负责将新镖从储存区转移到发射区
-#define servo_transfomer_lock     __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_4, servo_ccr.transfomer_ccr_lock)  // 卡镖舵机维持卡镖
-#define servo_transfomer_unlock   __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_4, servo_ccr.transfomer_ccr_unlock)  // 卡镖舵机松开卡镖
-
 // 构造函数
 Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
     : DeliverMotor{abstractMotor<Motor_C620>(id_l), abstractMotor<Motor_C620>(id_r)},//这里的警报可以忽略,因为编译通过了
@@ -203,13 +184,6 @@ void Launcher_Driver::check_calibration_logic()
 }
 
 void Launcher_Driver::key_check(){  
-
-    if(SW_YAW_L_OFF){
-        check_progress |= MASK_YAW_L;
-    }
-    if(SW_YAW_R_OFF){
-        check_progress |= MASK_YAW_R;
-    }
     if(SW_DELIVER_L_OFF){
         check_progress |= MASK_DELIVER_L;
     }
@@ -219,7 +193,12 @@ void Launcher_Driver::key_check(){
     if(SW_IGNITER_OFF){
         check_progress |= MASK_IGNITER;
     }
-    
+    if(SW_YAW_L_OFF){
+        check_progress |= MASK_YAW_L;
+    }
+    if(SW_YAW_R_OFF){
+        check_progress |= MASK_YAW_R;
+    }  
 }
 
 void Launcher_Driver::out_all_motor_speed(){
@@ -570,10 +549,17 @@ void Launcher_Driver::Run_Firing_Sequence()
     }
 }
 
-void Launcher_Driver::servo_pwm_test(){
+void Launcher_Driver::servo_pwm_test_lock_up(){
     servo_transfomer_lock;
     servo_loader_up1;
     servo_loader_up2;
     servo_igniter_lock;
+}
+
+void Launcher_Driver::servo_pwm_test_unlock_down(){
+    servo_transfomer_unlock;
+    servo_loader_down1;
+    servo_loader_down2;
+    servo_igniter_unlock;
 }
 

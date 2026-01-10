@@ -88,7 +88,7 @@ public:
 
     //抽象电机对象
     abstractMotor<Motor_C620> DeliverMotor[2];  // [0]=Left, [1]=Right
-    abstractMotor<Motor_C610> IgniterMotor;
+    abstractMotor<Motor_C620> IgniterMotor;
 
     // 记录哪几个开关已经检测过了 (Bitmask)
     uint8_t check_progress; 
@@ -125,7 +125,8 @@ public:
     void Run_Firing_Sequence();
 
     //舵机PWM测试
-    void servo_pwm_test();
+    void servo_pwm_test_lock_up();
+    void servo_pwm_test_unlock_down();
 };
 
 #endif

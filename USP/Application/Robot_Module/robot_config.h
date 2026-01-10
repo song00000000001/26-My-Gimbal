@@ -6,9 +6,9 @@
 
 /* ================= 电机 ID 定义 ================= */
 #define ID_YAW                        2     // 云台偏航,can2
-#define ID_IGNITER                    1     // 扳机丝杆,can1   
+#define ID_DELIVER_L                  1     // 左同步轮,can1
 #define ID_DELIVER_R                  3     // 右同步轮,can1
-#define ID_DELIVER_L                  4     // 左同步轮,can1
+#define ID_IGNITER                    4     // 扳机丝杆,can1 
 
 /* ================= 电机极性定义 ================= */
 // 1 或 -1
@@ -65,7 +65,13 @@ void test_servo_action();
 #define SW_YAW_R_GPIO_Port            GPIOA
 #define SW_YAW_L_Pin                  GPIO_PIN_7
 #define SW_YAW_L_GPIO_Port            GPIOA
-
+/*轻触开关映射表
+deliver_L:PC4
+deliver_R:PA5
+igniter:PC14
+yaw_R:PA6
+yaw_L:PA7
+*/
 #define READ_SW_DELIVER_L  HAL_GPIO_ReadPin(SW_DELIVER_L_GPIO_Port,SW_DELIVER_L_Pin)
 #define READ_SW_DELIVER_R HAL_GPIO_ReadPin(SW_DELIVER_R_GPIO_Port,SW_DELIVER_R_Pin)
 #define READ_SW_IGNITER HAL_GPIO_ReadPin(SW_IGNITER_GPIO_Port,SW_IGNITER_Pin)
@@ -79,6 +85,29 @@ void test_servo_action();
 #define SW_YAW_R_OFF (HAL_GPIO_ReadPin(SW_YAW_R_GPIO_Port, SW_YAW_R_Pin))==GPIO_PIN_RESET
 #define SW_YAW_L_OFF (HAL_GPIO_ReadPin(SW_YAW_L_GPIO_Port, SW_YAW_L_Pin))==GPIO_PIN_RESET
 
+// 舵机宏
+
+
+#define servo_igniter_unlock    __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1,servo_ccr.igniter_ccr_unlock ) // 扳机舵机解锁      ,120卡住,170ok
+//PA8,100~500
+#define servo_igniter_lock      __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1,servo_ccr.igniter_ccr_lock ) // 扳机舵机锁止
+
+/*todo
+song
+查出引脚填写在下面。
+定义装填舵机和转移舵机的宏
+*/
+//装填舵机即升降机左右的舵机，上为升，下为下降，下降即装填飞镖，上升即清空发射区
+//PB6,50~250
+#define servo_loader_up1     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, servo_ccr.loader1_ccr_up)   // 装填舵机左，上升
+#define servo_loader_down1   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, servo_ccr.loader1_ccr_down)  // 装调舵机左，下降
+//PB7
+#define servo_loader_up2     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_2, servo_ccr.loader2_ccr_up)  // 装填舵机右，上升
+#define servo_loader_down2   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_2, servo_ccr.loader2_ccr_down)  // 装填舵机右，下降
+//转移舵机即动作舱储存区的卡镖舵机，负责将新镖从储存区转移到发射区
+//PA11,100~500
+#define servo_transfomer_lock     __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_4, servo_ccr.transfomer_ccr_lock)  // 卡镖舵机维持卡镖
+#define servo_transfomer_unlock   __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_4, servo_ccr.transfomer_ccr_unlock)  // 卡镖舵机松开卡镖
 
 #ifdef __cplusplus
 }
