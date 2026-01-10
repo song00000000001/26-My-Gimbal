@@ -133,7 +133,7 @@ public:
     void servo_pwm_test_unlock_down();
 
     // 发射状态机中校准滑块电机
-    void Launcher_Driver::start_deliver_calibration();
+    void start_deliver_calibration();
 };
 
 #endif

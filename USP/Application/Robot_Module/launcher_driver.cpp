@@ -359,7 +359,6 @@ void Launcher_Driver::Run_Firing_Sequence()
                 
                 //测试时为了方便实现拨一次杆打一发,在这里修改跳转逻辑
                 //恢复多发逻辑。
-                
                 #if 0
                     fire_state = FIRE_SHOOTING_4;
                 #else
@@ -402,12 +401,16 @@ void Launcher_Driver::Run_Firing_Sequence()
             #if 0
             //这里在发射前yaw和行程电机可能会根据调参板或者视觉微调，故加入所有电机检查条件
             if (is_deliver_at_target(5)&&is_igniter_at_target(5)&&Yawer.isMotorAngleReached(5.0f)) {
-            #else
-            if (is_deliver_at_target(5)) {
-            #endif
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_2;
             }
+            #else
+            if (is_deliver_at_target(5)) {
+                state_timer = current_time;
+                fire_state = FIRE_WAIT_BOTTOM_2;
+            }
+            #endif
+                
             break;
             
         //底部等待
