@@ -84,7 +84,7 @@ void LaunchCtrl(void *arg)
     Yawer.PID_Yaw_Angle.DeadZone = 0.01f;
     Yawer.PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 18000);
 
-    
+    Launcher.servo_pwm_test_lock_up();
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1);

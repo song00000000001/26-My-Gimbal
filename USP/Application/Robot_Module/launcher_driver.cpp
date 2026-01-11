@@ -119,7 +119,7 @@ void Launcher_Driver::start_calibration()
     // 只有在未校准或强制请求时调用
     for(int i=0; i<2; i++) {
         mode_deliver[i] = MODE_SPEED;
-        //pid_deliver_spd[i].Target = calibration_speed.deliver_calibration_speed;这里的速度在check逻辑里设置
+        pid_deliver_spd[i].Target = calibration_speed.deliver_calibration_speed;//这里的速度在check逻辑里设置
         // 清除积分，防止上次残留
         pid_deliver_spd[i].clean_intergral();
         pid_deliver_pos[i].clean_intergral();
@@ -300,10 +300,12 @@ void Launcher_Driver::Run_Firing_Sequence()
     {
         case FIRE_IDLE:
             //确保滑块在缓冲区
-            target_deliver_angle=(POS_BUFFER);
+            //target_deliver_angle=(POS_BUFFER);
             servo_igniter_lock; // 锁止扳机舵机
-			
-            if (is_deliver_at_target(5)) {
+			servo_loader_up1;
+            servo_loader_up2;
+			servo_transfomer_lock;
+            if (1||is_deliver_at_target(5)) {
 				state_timer = current_time;
                 fire_state = FIRE_IGNITER_DELAY;
             }
@@ -441,7 +443,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         case FIRE_RELOAD_LOWER_2:
             servo_loader_down1;
             servo_loader_down2;
-            if ((current_time - state_timer) >500) {
+            if ((current_time - state_timer) >1500) {
                 state_timer = current_time;
                 fire_state = FIRE_SHOOTING_2;
             }
@@ -450,7 +452,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 射击    
         case FIRE_SHOOTING_2:
             servo_igniter_unlock; // 解锁扳机舵机，发射
-            if ((current_time - state_timer) > 3000) {
+            if ((current_time - state_timer) > 2000) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
                 state_timer= current_time;
@@ -526,7 +528,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         case FIRE_RELOAD_LOWER_3:
             servo_loader_down1;
             servo_loader_down2;
-            if ((current_time - state_timer) >500) {
+            if ((current_time - state_timer) >1500) {
                 state_timer = current_time;
                 fire_state = FIRE_SHOOTING_3;
             }
@@ -535,7 +537,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 射击
         case FIRE_SHOOTING_3:
             servo_igniter_unlock; // 解锁扳机舵机，发射
-            if ((current_time - state_timer) > 3000) {
+            if ((current_time - state_timer) > 2000) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
                 state_timer= current_time;
@@ -612,7 +614,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         case FIRE_RELOAD_LOWER_4:
             servo_loader_down1;
             servo_loader_down2;
-            if ((current_time - state_timer) >500) {
+            if ((current_time - state_timer) >1500) {
                 state_timer = current_time;
                 fire_state = FIRE_SHOOTING_4;
             }
@@ -621,7 +623,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 射击    
         case FIRE_SHOOTING_4:
             servo_igniter_unlock; // 解锁扳机舵机，发射
-            if ((current_time - state_timer) > 3000) {
+            if ((current_time - state_timer) > 2000) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
                 state_timer= current_time;
@@ -649,7 +651,7 @@ void Launcher_Driver::servo_pwm_test_lock_up(){
 
 void Launcher_Driver::servo_pwm_test_unlock_down(){
     servo_transfomer_unlock;
-    servo_loader_down1;
+	servo_loader_down1;
     servo_loader_down2;
     servo_igniter_unlock;
 }

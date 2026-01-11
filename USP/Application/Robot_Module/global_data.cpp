@@ -59,6 +59,6 @@ servo_ccr_debug servo_ccr={
     100,    //loader2_ccr_up
     235,    //loader2_ccr_down
 
-    126,    //transfomer_ccr_lock
-    170     //transfomer_ccr_unlock
+    205,    //transfomer_ccr_lock
+    180     //transfomer_ccr_unlock
 };
