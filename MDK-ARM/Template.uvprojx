@@ -2852,6 +2852,11 @@
               <FileType>8</FileType>
               <FilePath>..\USP\Application\Robot_Module\launch_task.cpp</FilePath>
             </File>
+            <File>
+              <FileName>loader_task.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Application\Robot_Module\loader_task.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -2876,6 +2881,11 @@
               <FileName>launcher_driver.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\USP\Application\Robot_Module\launcher_driver.h</FilePath>
+            </File>
+            <File>
+              <FileName>launcher_driver_fire_sequence.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Application\Robot_Module\launcher_driver_fire_sequence.cpp</FilePath>
             </File>
           </Files>
         </Group>

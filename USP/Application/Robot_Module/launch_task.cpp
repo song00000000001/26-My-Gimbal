@@ -63,7 +63,7 @@ void LaunchCtrl(void *arg)
     //校准速度初始化
     calibration_speed={
 	.yaw_calibration_speed=-300,
-	.deliver_calibration_speed=600,
+	.deliver_calibration_speed=1200,
     .igniter_calibration_speed=-1000
     };
 
@@ -72,8 +72,8 @@ void LaunchCtrl(void *arg)
     Launcher.pid_deliver_sync.SetPIDParam(-0.4f, 0.0f, 0.0f, 8000, 16000);
     
     for(int i=0; i<2; i++) {
-        Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16380);
-        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0, 0.0, 1000, 8000);
+        Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16384);
+        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0, 0.0, 1000, 10000);
     }
     
     Launcher.pid_igniter_spd.SetPIDParam(15.0, 0.0, 0.0, 3000, 12000);
@@ -287,6 +287,8 @@ void LaunchCtrl(void *arg)
                 Launcher.check_calibration_logic();
                 #endif
             }
+			//else
+                //Launcher.target_deliver_angle=(POS_BUFFER);
             break;
             
         case SYS_AUTO_PREP:
