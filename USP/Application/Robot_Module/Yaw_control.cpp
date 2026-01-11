@@ -107,7 +107,7 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_st
     {
         //读取调参板设置的发射数据
         //根据发射计数选择数据槽数组
-        uint8_t slot_index=DartDataSlot[Robot.Status.dart_count]+1;
+        uint8_t slot_index=DartDataSlot[Robot.Status.dart_count%4]+1;
         /*
         todo
         song

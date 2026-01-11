@@ -28,6 +28,7 @@ typedef enum {
     FIRE_IDLE = 0,          // 闲置/决策状态
 	FIRE_IGNITER_DELAY,
     //第一发
+    FIRE_CALIBRATION_1,    // 校准滑块电机
     FIRE_PULL_DOWN_1,       // 滑块下拉
     FIRE_WAIT_BOTTOM_1,     // 底部等待
     FIRE_RETURN_UP_1,       // 滑块回缓冲区
@@ -35,6 +36,7 @@ typedef enum {
     FIRE_SHOOTING_1,        // 射击
 
     //第二发
+    FIRE_CALIBRATION_2,    // 校准滑块电机
     FIRE_PULL_DOWN_2,       // 滑块下拉
     FIRE_WAIT_BOTTOM_2,     // 底部等待
     FIRE_RETURN_UP_2,       // 滑块回缓冲区
@@ -43,6 +45,7 @@ typedef enum {
     FIRE_SHOOTING_2,        // 射击
 
     //第三发
+    FIRE_CALIBRATION_3,    // 校准滑块电机
     FIRE_RELOAD_LIFT_3,      // 升降机上升
     FIRE_RELOAD_RELEASE_3,   // 卡镖释放
     FIRE_PULL_DOWN_3,        // 滑块下拉
@@ -53,6 +56,7 @@ typedef enum {
     FIRE_SHOOTING_3,         // 射击
 
     //第四发
+    FIRE_CALIBRATION_4,    // 校准滑块电机
     FIRE_RELOAD_LIFT_4,      // 升降机上升
     FIRE_RELOAD_RELEASE_4,   // 卡镖释放
     FIRE_PULL_DOWN_4,        // 滑块下拉
@@ -127,6 +131,9 @@ public:
     //舵机PWM测试
     void servo_pwm_test_lock_up();
     void servo_pwm_test_unlock_down();
+
+    // 发射状态机中校准滑块电机
+    void start_deliver_calibration();
 };
 
 #endif
