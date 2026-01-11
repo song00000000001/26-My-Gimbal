@@ -2,6 +2,7 @@
   * @file   launcher_driver.h
   * @brief  发射机构底层驱动 (无业务逻辑)
   */
+ 
 #ifndef _LAUNCHER_DRIVER_H_
 #define _LAUNCHER_DRIVER_H_
 
@@ -68,6 +69,13 @@ typedef enum {
           
 } Fire_State_e;
 #endif
+typedef enum {
+    LOAD_MODE_UP = 0,       // 升降机强制处于顶部（待机/复位）
+    LOAD_MODE_FOLLOW,       // 随动模式：根据滑块位置线性计算高度
+    LOAD_MODE_PARAL,        // 平行
+    LOAD_MODE_FULL_DOWN,    // 最低,脱离飞镖
+} Loader_Target_Mode_e;
+
 class Launcher_Driver
 {
 private:
@@ -95,10 +103,13 @@ public:
     abstractMotor<Motor_C620> IgniterMotor;
 
     // 记录哪几个开关已经检测过了 (Bitmask)
-    uint8_t check_progress; 
+    uint8_t check_progress=0; 
     // 目标位置，debug时可以
     float target_deliver_angle;     // 滑块目标角度 (位置模式用)
     float target_igniter_angle;     // 丝杆目标角度
+
+    //装填状态机
+    Loader_Target_Mode_e loader_target_mode = LOAD_MODE_UP; 
 
     Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign);
     
@@ -134,6 +145,10 @@ public:
 
     // 发射状态机中校准滑块电机
     void start_deliver_calibration();
+    //装填舵机封装
+    void loader_servo_1_ctrl(uint16_t ccr);
+    void loader_servo_2_ctrl(uint16_t ccr);
+    
 };
 
 #endif

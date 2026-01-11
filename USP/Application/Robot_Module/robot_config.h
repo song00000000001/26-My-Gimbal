@@ -28,13 +28,13 @@
 #define POS_BUFFER -20          //缓冲区位置
 #define POS_WAITLOAD -300       //等待装填位置
 #define POS_IGNITER 50         //默认力度,igniter位置
-#define POS_BOTTOM -620         //拉栓位置
+#define POS_BOTTOM -645         //拉栓位置
 
 //igniter最小/大位置
 #define IGNITER_MIN_POS 2.0f
 #define IGNITER_MAX_POS 100.0f
 //deliver最小/大位置
-#define POS_DELIVER_MIN -625.0f
+#define POS_DELIVER_MIN -648.0f
 #define POS_DELIVER_MAX -5.0f
 
 
@@ -46,12 +46,7 @@ extern "C"{
 
 
 //舵机动作组
-void Loader_Clamps_ClampAll(void);
-void Loader_Clamps_ReleaseAll(void);
-void Loader_Clamps_Release1(void);
-void Loader_Clamps_Release2(void);
-void Loader_Clamps_Release3(void);
-void test_servo_action();
+
 
 // ================= 开关引脚定义 =================
 #define SW_DELIVER_L_Pin              GPIO_PIN_4

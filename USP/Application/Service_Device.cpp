@@ -39,10 +39,10 @@
 TaskHandle_t DR16_Handle;
 TaskHandle_t Rx_Referee_Handle;
 TaskHandle_t LaunchCtrl_Handle;
-TaskHandle_t motor_HAndle;
+//TaskHandle_t motor_HAndle;
 TaskHandle_t Loader_Ctrl_Handle;
 TaskHandle_t Vision_Task_Handle;
-TaskHandle_t Yaw_Task_Handle;
+//TaskHandle_t Yaw_Task_Handle;
 /* Private function declarations ---------------------------------------------*/
 void tskDR16(void *arg);
 void Rx_Referee(void *arg);
@@ -64,7 +64,7 @@ void Service_Devices_Init(void)
 	将dr16失联等实时性要求高的逻辑放到另一个任务中，防止主控制任务意外卡死(使用互斥锁或者vtaskdelay等阻塞函数)
 	*/
 	xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size, NULL, PriorityAboveNormal, &Vision_Task_Handle);
-	//xTaskCreate(Yaw_Task, "App.Yaw_Task", Normal_Stack_Size, NULL, PriorityAboveNormal, &Yaw_Task_Handle);
+	xTaskCreate(Loader_Ctrl, "App.Loader_Ctrl", Normal_Stack_Size, NULL, PriorityAboveNormal, &Loader_Ctrl_Handle);
 #if USE_SRML_DR16
 	xTaskCreate(tskDR16, "App.DR16", Small_Stack_Size, NULL, PrioritySuperHigh, &DR16_Handle);
 #endif
