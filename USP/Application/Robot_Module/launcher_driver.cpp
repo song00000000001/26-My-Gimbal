@@ -26,7 +26,7 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
     float deliver_ratio = (2 * PI * 18.62f) / (360 * 51);
     DeliverMotor[0].angle_unit_convert = deliver_ratio;
     DeliverMotor[1].angle_unit_convert = deliver_ratio;
-    IgniterMotor.angle_unit_convert = 4.0f / (360.f * 36.f); 
+    IgniterMotor.angle_unit_convert = 4.0f / (360.f * 19.0f); 
 
 
     // 自检开关检测进度初始化
