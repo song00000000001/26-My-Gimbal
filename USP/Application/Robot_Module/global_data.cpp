@@ -8,6 +8,7 @@
 VisionRecvData_t vision_recv_pack;//电视接收包
 VisionSendData_t vision_send_pack;//电视发送包
 uint32_t vision_last_recv_time = 0; // 视觉最后接收时间,communication.cpp中更新,server发送时使用
+
 /*todo
 song
 1.确认视觉数据结构体内容
@@ -61,4 +62,11 @@ servo_ccr_debug servo_ccr={
 
     220,    //transfomer_ccr_lock
     180     //transfomer_ccr_unlock
+};
+
+protocol_status_t Protocol_Status[4]={
+    {false,0,100,0.0f,0.5f}, //CAN1,MOTOR_DELIVER_L
+    {false,0,100,0.0f,0.5f}, //CAN1,MOTOR_DELIVER_R
+    {false,0,100,0.0f,0.5f}, //CAN1,MOTOR_IGNITER
+    {false,0,100,0.0f,0.5f}  //CAN2,MOTOR_YAW
 };

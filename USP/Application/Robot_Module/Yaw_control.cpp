@@ -74,7 +74,18 @@ void Missle_YawController_Classdef::adjust()
     }
     PID_Yaw_Speed.Current = YawMotor.getMotorSpeed();
     PID_Yaw_Speed.Adjust();
-    
+
+    //意外触发限位开关log
+    if(Yaw_Init_flag == 2){
+        if(SW_YAW_L_OFF)
+        {
+            LOG_WARN("Yaw Left Limit Switch Triggered when calibrated");
+        }
+        if(SW_YAW_R_OFF)
+        {
+            LOG_WARN("Yaw Right Limit Switch Triggered when calibrated");
+        }
+    }
 }
 
 void Missle_YawController_Classdef::disable()
@@ -89,16 +100,38 @@ void Missle_YawController_Classdef::yaw_out_motor_speed(){
     YawMotor.setMotorCurrentOut(PID_Yaw_Speed.Out);
 }
 
-void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e yaw_state,float LX,float LY){
-    
-    switch (yaw_state)
+void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_state,float RC_X,float RC_Y){
+    /*todo
+    song
+    修改yaw轴子状态机状态控制，由摇杆控制转为设备连接状态控制。即如果调参板连上了，就用调参板,否则用遥控器。
+    如果视觉连上了，就优先用视觉，否则检查调参板，最后才是遥控器，如果遥控也没连上，就失能。
+    */
+    if(Robot.Flag.Status.vision_connected)//视觉连接
+    {
+        *yaw_state = VISION_AIM;
+    }
+    else if(Robot.Flag.Status.tool_panel_connected)//调参板连接
+    {
+        *yaw_state = CORRECT_AIM;
+    }
+    /*
+    else if(DR16_Snap.S2==)//拨动摇杆
+    {
+        *yaw_state = MANUAL_AIM;
+    }
+    else
+    {
+        *yaw_state = DISABLE_MOTOR;
+    }   
+    */
+    switch (*yaw_state)
     {
     case MANUAL_AIM:
         // 手动微调逻辑
-        Launcher.target_igniter_angle-=LY * 0.02f;
+        Launcher.target_igniter_angle-=RC_Y * 0.02f;
         //这里直接用角度（实际上是距离）限幅，因为丝杆和滑块电机可以得到简单的线性映射关系，抽象电机库可以直接配置映射参数。
         Launcher.target_igniter_angle=std_lib::constrain(Launcher.target_igniter_angle, IGNITER_MIN_POS, IGNITER_MAX_POS);
-        yaw_target -= LX * 0.02f;
+        yaw_target -= RC_X * 0.02f;
         //这里的限幅和其他电机不同,用的是镖架整体朝向的角度值,在update里进行三角函数转换后还会对电机编码器角度再限幅一次。
         yaw_target = std_lib::constrain(yaw_target, -10.2f, 10.2f);
         update(yaw_target);

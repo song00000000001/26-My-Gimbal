@@ -1,9 +1,11 @@
 #pragma once
 #include "SRML.h"
-#include "stm32f4xx_hal.h"
 #include "tim.h"    
-#include "stm32f4xx_hal_tim.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 /* ================= 电机 ID 定义 ================= */
 #define ID_YAW                        2     // 云台偏航,can2
 #define ID_DELIVER_L                  1     // 左同步轮,can1
@@ -27,7 +29,7 @@
 
 #define POS_BUFFER -20          //缓冲区位置
 #define POS_WAITLOAD -300       //等待装填位置
-#define POS_IGNITER 50         //默认力度,igniter位置
+#define POS_IGNITER 10         //默认力度,igniter位置
 #define POS_BOTTOM -645         //拉栓位置
 
 //igniter最小/大位置
@@ -37,16 +39,12 @@
 #define POS_DELIVER_MIN -648.0f
 #define POS_DELIVER_MAX -5.0f
 
-
 //以下用到了c语言函数,需要加extern "C"修饰
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-
-
 //舵机动作组
-
 
 // ================= 开关引脚定义 =================
 #define SW_DELIVER_L_Pin              GPIO_PIN_4
@@ -126,3 +124,7 @@ yaw_L:PA7
 
 // 定义全部通过的目标值 (0b11111 = 0x1F)
 #define MASK_ALL_PASSED (MASK_DELIVER_L | MASK_DELIVER_R | MASK_IGNITER | MASK_YAW_L | MASK_YAW_R)
+
+#ifdef __cplusplus
+}
+#endif

@@ -51,7 +51,7 @@ public:
         yaw_calibrating:校准模式
     */
     
-    void yaw_state_machine(yaw_control_state_e yaw_state,float LX,float LY);
+    void yaw_state_machine(yaw_control_state_e *yaw_state,float RC_X,float RC_Y);
     // 判断yaw轴是否到达目标角度
     bool isMotorAngleReached(float threshold);
         

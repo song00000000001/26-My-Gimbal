@@ -97,6 +97,14 @@ void packDecoder(uint8_t * _addr,uint8_t len)
     DartsData[ParamChangePack.param_indx].Ignitergoal[Base] =ParamChangePack.base_launch;
     DartsData[ParamChangePack.param_indx].YawCorrectionAngle[Outpost] = ParamChangePack.outpost_yaw;
     DartsData[ParamChangePack.param_indx].YawCorrectionAngle[Base] = ParamChangePack.base_yaw;
+
+    /*todo
+    song
+    这里临时增加调参板连接状态维护逻辑
+    后期可以考虑加一个定时器任务，定时检查
+    */
+    Robot.Flag.Status.tool_panel_connected=true;
+
   }
   if(_addr[1] == 0x03) //命令码0x03 修改打击目标
   {

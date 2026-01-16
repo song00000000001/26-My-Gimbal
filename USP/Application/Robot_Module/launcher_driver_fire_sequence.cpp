@@ -85,6 +85,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 射击
         case FIRE_SHOOTING_1:
             servo_igniter_unlock; // 解锁扳机舵机，发射
+            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
             // 等待发射完成
             if ((current_time - state_timer) > after_fire_delay) {
                 state_timer= current_time;
@@ -169,6 +170,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 射击    
         case FIRE_SHOOTING_2:
             servo_igniter_unlock; // 解锁扳机舵机，发射
+            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
             if ((current_time - state_timer) > after_fire_delay) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
@@ -257,6 +259,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 射击
         case FIRE_SHOOTING_3:
             servo_igniter_unlock; // 解锁扳机舵机，发射
+            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
             if ((current_time - state_timer) > after_fire_delay) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
@@ -345,6 +348,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 射击    
         case FIRE_SHOOTING_4:
             servo_igniter_unlock; // 解锁扳机舵机，发射
+            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
             if ((current_time - state_timer) > after_fire_delay) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
@@ -361,5 +365,12 @@ void Launcher_Driver::Run_Firing_Sequence()
         default:
             fire_state = FIRE_IDLE;
             break;
+    }
+    // 记录发射子状态切换
+    static Fire_State_e last_fire_state = FIRE_IDLE;
+    if (fire_state != last_fire_state) 
+    {
+        LOG_INFO("Fire State Change: %d -> %d", last_fire_state,fire_state);
+        last_fire_state = fire_state;
     }
 }

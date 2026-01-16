@@ -106,11 +106,29 @@ void Launcher_Driver::adjust()
         pid_igniter_pos.clean_intergral();
         pid_igniter_spd.clean_intergral();
     }
-
+    //校准后,限位开关意外触发记录
+    if(is_calibrated()){
+        if(SW_DELIVER_L_OFF) {
+            LOG_WARN("Left Deliver Limit Switch Triggered when calibrated");
+        }
+        if(SW_DELIVER_R_OFF){
+            LOG_WARN("Right Deliver Limit Switch Triggered when calibrated");
+        }
+        if(SW_IGNITER_OFF){
+            LOG_WARN("Left Deliver Limit Switch Triggered when calibrated");
+        }
+    }     
 }
-
+/*todo
+song
+在can接收那里写一个电机失联判断
+    if (DeliverMotor[0].)) {
+        LOG_ERROR("Deliver Motor 0 Connection LOST!");
+    }    
+*/
 void Launcher_Driver::start_calibration()
 {
+    LOG_INFO("Launcher Calibration Started");
     //清空标志位,以便多次校准
 	Yawer.Yaw_Init_flag=0;
     is_deliver_homed[0] = false;
@@ -133,13 +151,12 @@ void Launcher_Driver::start_calibration()
 
 void Launcher_Driver::check_calibration_logic()
 {
-    // --- 滑块归零逻辑 ---
-    // 定义局部数组方便遍历 [0]=L, [1]=R
     if (!is_deliver_homed[0]) {
-        // 如果碰到开关 (假设低电平触发)
         if (SW_DELIVER_L_OFF) {
+            LOG_INFO("Deliver Motor L Homing Triggered (Switch Hit)");
+            pid_deliver_pos[0].clean_intergral();
 			pid_deliver_spd[0].clean_intergral();
-			 // 1. 消除编码器累积误差 (归零)
+            // 1. 消除编码器累积误差 (归零)
 			DeliverMotor[0].baseAngle -= DeliverMotor[0].getMotorTotalAngle();
 			
             pid_deliver_pos[0].Target=DELIVER_OFFSET_POS;
@@ -163,8 +180,9 @@ void Launcher_Driver::check_calibration_logic()
     }
 
     if (!is_deliver_homed[1]) {
-        // 如果碰到开关 (假设低电平触发)
         if (SW_DELIVER_R_OFF) {
+            LOG_INFO("Deliver Motor R Homing Triggered (Switch Hit)");
+            pid_deliver_pos[1].clean_intergral();
 			pid_deliver_spd[1].clean_intergral();
 			// 1. 消除编码器累积误差 (归零)
             DeliverMotor[1].baseAngle -= DeliverMotor[1].getMotorTotalAngle();
@@ -189,6 +207,7 @@ void Launcher_Driver::check_calibration_logic()
     // --- 丝杆归零逻辑 ---
     if (!is_igniter_homed) {
         if (SW_IGNITER_OFF) {
+            LOG_INFO("Igniter Motor Homing Triggered (Switch Hit)");
             pid_igniter_pos.clean_intergral();
             pid_igniter_spd.clean_intergral();
             IgniterMotor.baseAngle -= IgniterMotor.getMotorTotalAngle();
@@ -202,18 +221,23 @@ void Launcher_Driver::check_calibration_logic()
 void Launcher_Driver::key_check(){  
     if(SW_DELIVER_L_OFF){
         check_progress |= MASK_DELIVER_L;
+        LOG_INFO("Switch Deliver L Checked,all switch check status:%s",check_progress);   
     }
     if(SW_DELIVER_R_OFF){
         check_progress |= MASK_DELIVER_R;
+        LOG_INFO("Switch Deliver R Checked,all switch check status:%s",check_progress);
     }
     if(SW_IGNITER_OFF){
         check_progress |= MASK_IGNITER;
+        LOG_INFO("Switch Igniter Checked,all switch check status:%s",check_progress);
     }
     if(SW_YAW_L_OFF){
         check_progress |= MASK_YAW_L;
+        LOG_INFO("Switch Yaw L Checked,all switch check status:%s",check_progress);
     }
     if(SW_YAW_R_OFF){
         check_progress |= MASK_YAW_R;
+        LOG_INFO("Switch Yaw R Checked,all switch check status:%s",check_progress);
     }  
 }
 
@@ -277,6 +301,7 @@ if (Robot.Cmd.fire_command&&is_deliver_at_target(5)) {
 // 发射状态机中校准滑块电机
 void Launcher_Driver::start_deliver_calibration()
 {
+    LOG_INFO("Deliver Calibration Started in Firing Sequence");
     //调整滑块电机状态
     for(int i=0;i<2;i++){
         //清空标志位

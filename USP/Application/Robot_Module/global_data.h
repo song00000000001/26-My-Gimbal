@@ -3,7 +3,11 @@
 #include "robot_types.h"
 #include "Yaw_control.h"
 #include "launcher_driver.h"
+#include "openlog.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #pragma pack(1)
     struct VisionRecvData_t
@@ -84,6 +88,8 @@ typedef struct {
         bool rc_connected;      // 遥控器连接
         bool is_calibrated; // 系统是否已完全校准
         bool stop_continus_fire;    // 停止连发标志位
+        bool tool_panel_connected; //调参板连接状态
+        bool vision_connected; //视觉连接状态
     } Status;
 } Robot_Monitor_t;
 
@@ -149,6 +155,17 @@ typedef struct
     uint16_t transfomer_ccr_unlock;
 }servo_ccr_debug;
 
+//定义通信协议状态结构体，包括时间窗口内收到的包的情况，是否连接等
+typedef struct 
+{
+    bool connected;
+    uint16_t rx_count;
+    uint16_t rx_max_count;
+    float rx_rate;
+    float rx_rate_threshold;
+}protocol_status_t;
+
+extern protocol_status_t Protocol_Status[4]; //4个电机的通信状态
 extern Launcher_Driver Launcher; 
 extern Missle_YawController_Classdef Yawer; 
 extern Robot_Ctrl_t Robot; 
@@ -162,3 +179,23 @@ extern uint32_t vision_last_recv_time ;
 extern VisionRecvData_t vision_recv_pack;
 extern VisionSendData_t vision_send_pack;
 extern servo_ccr_debug servo_ccr;
+extern openlog_classdef<16> OpenLog;
+
+
+
+/*
+1. 写入内容到当前缓冲
+2. 提交当前缓冲，让后台任务去发送
+*/
+#define ROBOT_LOG(level, format, ...) do { \
+    OpenLog.record("[%s] " format "\r\n", level, ##__VA_ARGS__); \
+    OpenLog.push_buff(); \
+} while(0)
+
+#define LOG_INFO(format, ...)  ROBOT_LOG("INFO", format, ##__VA_ARGS__)
+#define LOG_WARN(format, ...)  ROBOT_LOG("WARN", format, ##__VA_ARGS__)
+#define LOG_ERROR(format, ...) ROBOT_LOG("ERROR", format, ##__VA_ARGS__)
+
+#ifdef __cplusplus
+}
+#endif
