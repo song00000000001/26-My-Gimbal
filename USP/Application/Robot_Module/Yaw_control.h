@@ -57,6 +57,9 @@ public:
         
     // 判断yaw轴是否初始化完成
     inline bool is_Yaw_Init() { return (Yaw_Init_flag == 2); }
+    //校准细化
+    inline bool is_Yaw_L_calibrated() { return (Yaw_Init_flag >= 1); }
+    inline bool is_Yaw_R_calibrated() { return (Yaw_Init_flag == 2); }
 };
 
 #endif

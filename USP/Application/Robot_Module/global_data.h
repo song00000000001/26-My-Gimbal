@@ -86,7 +86,7 @@ typedef struct {
     } Check;
     struct {
         bool rc_connected;      // 遥控器连接
-        bool is_calibrated; // 系统是否已完全校准
+        uint8_t is_calibrated; // 系统是否已完全校准
         bool stop_continus_fire;    // 停止连发标志位
         bool tool_panel_connected; //调参板连接状态
         bool vision_connected; //视觉连接状态

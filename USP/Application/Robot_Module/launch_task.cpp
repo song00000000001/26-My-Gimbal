@@ -252,31 +252,48 @@ void LaunchCtrl(void *arg)
         
         case SYS_CALIBRATING:
             Robot.Status.yaw_control_state = YAW_CALIBRATING;
-
+            //更新校准标志位
+            if(Yawer.is_Yaw_L_calibrated()){
+                Robot.Flag.Status.is_calibrated|=MASK_YAW_L_CALIBRATED;
+            }
+            if(Yawer.is_Yaw_R_calibrated()){
+                Robot.Flag.Status.is_calibrated|=MASK_YAW_R_CALIBRATED;
+            }
+            if(Launcher.is_deliver_R_calibrated()){
+                Robot.Flag.Status.is_calibrated|=MASK_DELIVER_R_CALIBRATED;
+            }
+            if(Launcher.is_deliver_L_calibrated()){
+                Robot.Flag.Status.is_calibrated|=MASK_DELIVER_L_CALIBRATED;
+            }
+            if(Launcher.is_igniter_calibrated()){
+                Launcher.target_igniter_angle=IGNITER_OFFSET_POS;  // 回到缓冲位置
+                Robot.Flag.Status.is_calibrated|=MASK_IGNITER_CALIBRATED;
+            }
             //校准完毕后角度环到安全位置，到达后停止
             if(Yawer.is_Yaw_Init()){
                 Robot.Status.yaw_control_state = MANUAL_AIM; //校准完成后，进入手动模式
                 Yawer.mode_YAW = MODE_ANGLE; //切换回角度环
-                Yawer.yaw_target=0;
-                LOG_INFO("Yaw Axis Calibrated");
+                Yawer.yaw_target=0;//回到中间位置
             }
             if(Launcher.is_calibrated()){
-                Launcher.target_igniter_angle=IGNITER_OFFSET_POS;  // 回到缓冲位置
-                //Launcher.target_deliver_angle=POS_BUFFER;   // 回缓冲
-                LOG_INFO("Launcher System Calibrated");
+                /*
+                Launcher.target_deliver_angle=POS_BUFFER;   // 回缓冲位置
+                由于发射流程的校准需求,在check_calibration_logic();配置了角度环设置和回缓冲位置,这里就不设置了。
+                */
+            }
+
+            //日志记录校准位变化
+            static uint8_t last_calibration_progress = 0;
+            if (last_calibration_progress != Robot.Flag.Status.is_calibrated) {
+                LOG_INFO("Calibration Progress Updated: 0x%02X -> 0x%02X", last_calibration_progress, Robot.Flag.Status.is_calibrated);
+                last_calibration_progress = Robot.Flag.Status.is_calibrated;
             }
 
             //检查限位开关并处理校准逻辑
             Launcher.check_calibration_logic();
-            //更新全局校准标志位
-            Robot.Flag.Status.is_calibrated=Yawer.is_Yaw_Init()&&Launcher.is_calibrated();
-            /*todo
-            song
-            考虑优化成掩码模式，方便debug查看校准状态
-            或者干脆删掉。
-            */
+            
             //全部校准完毕后，切换到待机状态
-            if (Robot.Flag.Status.is_calibrated) {
+            if (Robot.Flag.Status.is_calibrated==MASK_ALL_CALIBRATED) {
                 Robot.Status.current_state = SYS_CALIBRATED;
             }
             break;

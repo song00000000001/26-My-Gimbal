@@ -79,13 +79,19 @@ void Launcher_Driver::Run_Firing_Sequence()
                 #else
                     fire_state = FIRE_SHOOTING_1;
                 #endif
+                /*这条日志虽然应该放在射击状态里，
+                但实际上是顺序执行并且跳转很快，
+                几乎不会出现触发了log但是瞬间单片机暂停打断的情况。
+                放在这里可以实现只触发一次的效果，避免发射状态延时期间重复打印日志。
+                */
+                LOG_INFO("Dart1 Fired! Total Count: %d", Robot.Status.dart_count + 1);
             }
             break;    
 
         // 射击
         case FIRE_SHOOTING_1:
             servo_igniter_unlock; // 解锁扳机舵机，发射
-            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
+           
             // 等待发射完成
             if ((current_time - state_timer) > after_fire_delay) {
                 state_timer= current_time;
@@ -164,13 +170,13 @@ void Launcher_Driver::Run_Firing_Sequence()
             if ((current_time - state_timer) >1) {
                 state_timer = current_time;
                 fire_state = FIRE_SHOOTING_2;
+                LOG_INFO("Dart2 Fired! Total Count: %d", Robot.Status.dart_count + 1);
             }
             break;
 
         // 射击    
         case FIRE_SHOOTING_2:
             servo_igniter_unlock; // 解锁扳机舵机，发射
-            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
             if ((current_time - state_timer) > after_fire_delay) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
@@ -253,13 +259,13 @@ void Launcher_Driver::Run_Firing_Sequence()
             if ((current_time - state_timer) >1) {
                 state_timer = current_time;
                 fire_state = FIRE_SHOOTING_3;
+                LOG_INFO("Dart3 Fired! Total Count: %d", Robot.Status.dart_count + 1);
             }
             break;
         
         // 射击
         case FIRE_SHOOTING_3:
             servo_igniter_unlock; // 解锁扳机舵机，发射
-            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
             if ((current_time - state_timer) > after_fire_delay) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
@@ -342,13 +348,13 @@ void Launcher_Driver::Run_Firing_Sequence()
             if ((current_time - state_timer) >1) {
                 state_timer = current_time;
                 fire_state = FIRE_SHOOTING_4;
+                LOG_INFO("Dart4 Fired! Total Count: %d", Robot.Status.dart_count + 1);
             }
             break;
 
         // 射击    
         case FIRE_SHOOTING_4:
             servo_igniter_unlock; // 解锁扳机舵机，发射
-            LOG_INFO("Dart Fired! Total Count: %d", Robot.Status.dart_count + 1);
             if ((current_time - state_timer) > after_fire_delay) {
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;

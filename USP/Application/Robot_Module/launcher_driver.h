@@ -125,7 +125,11 @@ public:
     void adjust();
 
     // 获取当前状态，用于任务层判断是否可以下一步
-    bool is_calibrated();          // 全系统是否已校准
+    bool is_calibrated();          // 三电机是否已校准
+    bool is_deliver_L_calibrated();
+    bool is_deliver_R_calibrated();
+    bool is_igniter_calibrated();
+
     bool is_deliver_at_target(float threshold);   // 滑块是否到位
     bool is_igniter_at_target(float threshold);   // 丝杆是否到位
     

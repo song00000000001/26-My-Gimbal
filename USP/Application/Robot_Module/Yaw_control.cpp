@@ -74,7 +74,7 @@ void Missle_YawController_Classdef::adjust()
     }
     PID_Yaw_Speed.Current = YawMotor.getMotorSpeed();
     PID_Yaw_Speed.Adjust();
-
+    #if 0 //由于限位开关延迟问题，容易误触发，这里先注释掉
     //意外触发限位开关log
     if(Yaw_Init_flag == 2){
         if(SW_YAW_L_OFF)
@@ -86,6 +86,7 @@ void Missle_YawController_Classdef::adjust()
             LOG_WARN("Yaw Right Limit Switch Triggered when calibrated");
         }
     }
+    #endif
 }
 
 void Missle_YawController_Classdef::disable()
