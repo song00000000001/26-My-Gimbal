@@ -425,7 +425,7 @@ void Task_LogTransmit(void *arg){
         //如果有待发送的数据包，则发送一个，否则内部会跳过
         while (OpenLog.Send() == 0);
         #endif
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
