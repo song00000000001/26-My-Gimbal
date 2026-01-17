@@ -22,7 +22,13 @@
 
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+/*uart list
+U1: vision
+U2: DR16
+U3: tool panal
+U4: LOG
 
+*/
 
 #if USE_SRML_CAN
 TaskHandle_t CAN1SendPort_Handle;
@@ -54,7 +60,7 @@ void Task_ParamChanger(void *arg);
  */
 uint32_t OpenLog_Transmit(uint8_t *buff, uint16_t len)
 {
-  SRML_UART_Transmit_DMA(3, buff, len);
+  SRML_UART_Transmit_DMA(5, buff, len);
   return 0;
 }
 

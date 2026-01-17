@@ -61,7 +61,13 @@ void Loader_Ctrl(void *arg)
         default:
             break;
         }
-       
+
+        //日志记录装填子状态
+        static Loader_Target_Mode_e last_loader_mode = LOAD_MODE_UP;
+        if (last_loader_mode != Launcher.loader_target_mode) {
+            LOG_INFO("Loader target mode changed: %d -> %d", last_loader_mode, Launcher.loader_target_mode);
+            last_loader_mode = Launcher.loader_target_mode;
+        }
 
         // 更新硬件
         #if 1

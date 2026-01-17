@@ -89,6 +89,9 @@ void LaunchCtrl(void *arg)
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1);
     uint32_t main_task_now = xTaskGetTickCount();
+	LOG_INFO("Launch Control Task Started.\n");
+    LOG_INFO("Initial System State: %d,yaw_control_state: %d,loader_target_mode: %d\n", 
+        Robot.Status.current_state, Robot.Status.yaw_control_state, Launcher.loader_target_mode);
     for (;;)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
@@ -120,12 +123,14 @@ void LaunchCtrl(void *arg)
         可能会影响性能,需要测试。
         也可以只在状态变化时打印。
         */
+		#if 0	
         static DR16_Snapshot_t last_DR16_Snap = DR16_Snap;
         if(memcmp(&last_DR16_Snap, &DR16_Snap, sizeof(DR16_Snapshot_t)) != 0) {
             LOG_INFO("DR16 Updated: S1=%d, S2=%d, LX=%.2f, LY=%.2f, RX=%.2f, RY=%.2f", 
                 DR16_Snap.S1, DR16_Snap.S2, DR16_Snap.LX_Norm, DR16_Snap.LY_Norm, DR16_Snap.RX_Norm, DR16_Snap.RY_Norm);
             memcpy(&last_DR16_Snap, &DR16_Snap, sizeof(DR16_Snapshot_t));
         }
+		#endif
 
         // 处理遥控器连接状态及模式切换
         if (DR16_Snap.Status != DR16_ESTABLISHED) {
@@ -368,6 +373,8 @@ void LaunchCtrl(void *arg)
             //舵机测试放在这里，这样只需要失能就可以测试舵机
             if (Debugger.enable_debug_mode==1) {
 				Launcher.key_check();
+				Robot.Flag.Check.limit_sw_ok = (Launcher.check_progress == MASK_ALL_PASSED);
+
             }
             else if(Debugger.enable_debug_mode==2){
                 Launcher.servo_pwm_test_unlock_down();

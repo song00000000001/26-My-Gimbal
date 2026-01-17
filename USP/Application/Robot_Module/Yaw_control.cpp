@@ -216,6 +216,13 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
         break;
     }
 
+    //日志记录yaw子状态
+    static yaw_control_state_e last_yaw_state = MANUAL_AIM;
+    if (last_yaw_state != *yaw_state) {
+        LOG_INFO("Yaw Control State Change: %d -> %d", last_yaw_state, *yaw_state);
+        last_yaw_state = *yaw_state;
+    }
+
 }
 
 

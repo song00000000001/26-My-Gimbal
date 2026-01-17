@@ -72,7 +72,7 @@ void Service_Devices_Init(void)
 #if USE_SRML_REFEREE
 	xTaskCreate(Rx_Referee, "Rx_Referee", Normal_Stack_Size, NULL, PriorityNormal, &Rx_Referee_Handle);
 #endif
-#if 0
+#if 1
     xTaskCreate(Task_LogTransmit,"log.tx_task",Normal_Stack_Size,NULL,PriorityLow,&log_Handle);
 #elif 0
     xTaskCreate(Task_protocal_status_monitor,"protocal.status",Normal_Stack_Size,NULL,PriorityLow,&protocol_status_monitor_Handle);
