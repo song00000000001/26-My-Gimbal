@@ -34,7 +34,7 @@ extern "C" {
 
 //igniter最小/大位置
 #define IGNITER_MIN_POS 2.0f
-#define IGNITER_MAX_POS 100.0f
+#define IGNITER_MAX_POS 200.0f
 //deliver最小/大位置
 #define POS_DELIVER_MIN -648.0f
 #define POS_DELIVER_MAX -5.0f

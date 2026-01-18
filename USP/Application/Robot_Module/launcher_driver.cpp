@@ -133,6 +133,7 @@ void Launcher_Driver::start_calibration()
 {
     LOG_INFO("Launcher Calibration Started");
     //清空标志位,以便多次校准
+    Robot.Flag.Status.is_calibrated=0;
 	Yawer.Yaw_Init_flag=0;
     is_deliver_homed[0] = false;
     is_deliver_homed[1] = false;

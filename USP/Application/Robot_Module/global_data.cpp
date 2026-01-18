@@ -54,11 +54,11 @@ servo_ccr_debug servo_ccr={
     170,    //igniter_ccr_unlock
     270,    //igniter_ccr_lock
 
-    205,    //loader1_ccr_up
+    210,    //loader1_ccr_up
     75,     //loader1_ccr_down
 
-    118,    //loader2_ccr_up
-    250,    //loader2_ccr_down
+    100,    //loader2_ccr_up
+    230,    //loader2_ccr_down
 
     220,    //transfomer_ccr_lock
     180     //transfomer_ccr_unlock
@@ -70,3 +70,6 @@ protocol_status_t Protocol_Status[4]={
     {false,0,100,0.0f,0.5f}, //CAN1,MOTOR_IGNITER
     {false,0,100,0.0f,0.5f}  //CAN2,MOTOR_YAW
 };
+
+bool is_loader_simulating = false;    // 模拟标志位
+float simulated_loader_pos = -20.0f; // 模拟滑块位置

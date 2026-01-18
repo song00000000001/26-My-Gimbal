@@ -20,7 +20,14 @@ todo:
 
 date:2025/12/10/0:47
 */
-
+inline const char* Get_SW_Str(uint8_t sw) {
+    switch (sw) {
+        case SW_UP:   return "UP";
+        case SW_MID:  return "MID";
+        case SW_DOWN: return "DOWN";
+        default:      return "NONE";
+    }
+}
 
 /*发射主控任务*/
 void LaunchCtrl(void *arg)
@@ -59,14 +66,21 @@ void LaunchCtrl(void *arg)
         .debug_mode_deliver={MODE_SPEED,MODE_SPEED},
         .debug_mode_igniter=MODE_SPEED ,
     };
-
+#if 1
     //校准速度初始化
     calibration_speed={
 	.yaw_calibration_speed=-300,
+	.deliver_calibration_speed=600,
+    .igniter_calibration_speed=-600
+    };
+#else
+	//校准速度初始化
+    calibration_speed={
+	.yaw_calibration_speed=-500,
 	.deliver_calibration_speed=1200,
     .igniter_calibration_speed=-1000
     };
-
+	#endif
     
     // PID 参数初始化
     Launcher.pid_deliver_sync.SetPIDParam(-0.4f, 0.0f, 0.0f, 8000, 16000);
@@ -84,7 +98,6 @@ void LaunchCtrl(void *arg)
     Yawer.PID_Yaw_Angle.DeadZone = 0.01f;
     Yawer.PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 18000);
 
-    Launcher.servo_pwm_test_lock_up();
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1);
@@ -144,10 +157,14 @@ void LaunchCtrl(void *arg)
         //由于上面打印信息太多,改为只打印开关变化
 		static uint8_t last_S1 = DR16_Snap.S1;
         static uint8_t last_S2 = DR16_Snap.S2;
-        if (last_S1 != DR16_Snap.S1 || last_S2 != DR16_Snap.S2) {
-            LOG_INFO("DR16 Switch Updated: S1=%d -> %d, S2=%d -> %d", 
-                last_S1, DR16_Snap.S1, last_S2, DR16_Snap.S2);
+        if (last_S1 != DR16_Snap.S1) {
+            LOG_INFO("DR16 Switch Updated: S1=%s -> %s", 
+                Get_SW_Str(last_S1), Get_SW_Str(DR16_Snap.S1));
             last_S1 = DR16_Snap.S1;
+        }
+        if (last_S2 != DR16_Snap.S2) {
+            LOG_INFO("DR16 Switch Updated: S2=%s -> %s", 
+                Get_SW_Str(last_S2), Get_SW_Str(DR16_Snap.S2));
             last_S2 = DR16_Snap.S2;
         }
 		#endif
@@ -230,6 +247,7 @@ void LaunchCtrl(void *arg)
         case SYS_START_UP:
             if(main_task_now-Launcher.calibration_start_time>500){
                 //注意,这里启动了校准过程,会配置电机为速度环,直到撞到限位开关
+				Launcher.servo_pwm_test_lock_up();
                 Launcher.start_calibration();
                 Robot.Status.current_state=SYS_HOMING;
             }
@@ -261,6 +279,7 @@ void LaunchCtrl(void *arg)
                 Yawer.yaw_target=0;//回到中间位置
             }
             if(Launcher.is_calibrated()){
+                Launcher.target_igniter_angle=IGNITER_OFFSET_POS;  // 回到缓冲位置
                 /*
                 Launcher.target_deliver_angle=POS_BUFFER;   // 回缓冲位置
                 由于发射流程的校准需求,在check_calibration_logic();配置了角度环设置和回缓冲位置,这里就不设置了。

@@ -154,6 +154,7 @@ typedef struct {
     //电机状态
     Control_Mode_e debug_mode_deliver[2]; // 左右滑块的独立模式
     Control_Mode_e debug_mode_igniter;    // 丝杆模式
+    int16_t debug_loader_pos; //调试滑块位置
 } Debug_Data_t;
 
 // 校准速度结构体
@@ -218,7 +219,8 @@ extern VisionRecvData_t vision_recv_pack;
 extern VisionSendData_t vision_send_pack;
 extern servo_ccr_debug servo_ccr;
 extern openlog_classdef<16> OpenLog;
-
+extern bool is_loader_simulating;    // 模拟标志位
+extern float simulated_loader_pos; // 模拟滑块位置
 
 
 /*
@@ -226,13 +228,20 @@ extern openlog_classdef<16> OpenLog;
 2. 提交当前缓冲，让后台任务去发送
 信号量保护，只等待1个RTOS节拍，防止主任务阻塞
 */
+#if 0
 #define ROBOT_LOG(level, format, ...) do { \
-    if (xSemaphoreTake(OpenLog_mutex, 1) == pdTRUE) { \
+    if (xSemaphoreTake(OpenLog_mutex, 0) == pdTRUE) { \
         OpenLog.record("[%s] " format "\r\n", level, ##__VA_ARGS__); \
         OpenLog.push_buff(); \
         xSemaphoreGive(OpenLog_mutex); \
     } \
 } while(0)
+#else
+#define ROBOT_LOG(level, format, ...) do { \
+    OpenLog.record("[%s] " format "\r\n", level, ##__VA_ARGS__); \
+    OpenLog.push_buff(); \
+} while(0)
+#endif
 
 #define LOG_INFO(format, ...)  ROBOT_LOG("INFO", format, ##__VA_ARGS__)
 #define LOG_WARN(format, ...)  ROBOT_LOG("WARN", format, ##__VA_ARGS__)

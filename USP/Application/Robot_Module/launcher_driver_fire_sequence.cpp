@@ -2,8 +2,9 @@
 #include "robot_config.h"
 #include "global_data.h"
 
-uint16_t before_fire_delay=300,put_delay=300,after_fire_delay=1000,relapse_delay=100,loader_up_delay=200;
+static uint16_t before_fire_delay=300,put_delay=300,after_fire_delay=1000,relapse_delay=100,loader_up_delay=700;
 
+#define down_and_fire_test 1
   
 /*发射状态机*/
 void Launcher_Driver::Run_Firing_Sequence()
@@ -27,7 +28,11 @@ void Launcher_Driver::Run_Firing_Sequence()
 		case FIRE_IGNITER_DELAY:
 			if ((current_time - state_timer) > before_fire_delay) {
                 state_timer = current_time;
+                #if down_and_fire_test
+                fire_state = FIRE_CALIBRATION_2;
+                #else
                 fire_state = FIRE_CALIBRATION_1;
+                #endif
                 start_deliver_calibration();
             }
 			break;
@@ -190,7 +195,13 @@ void Launcher_Driver::Run_Firing_Sequence()
             loader_target_mode=LOAD_STOWED;
             if ((current_time - state_timer) >loader_up_delay) {
                 state_timer = current_time;
+                #if down_and_fire_test
+                fire_state = FIRE_IDLE;
+                Robot.Flag.Status.stop_continus_fire=true;
+                Robot.Status.current_state = SYS_AUTOFIRE_SUSPEND;
+                #else
                 fire_state = FIRE_RELOAD_RELEASE_3;
+                #endif
             }
             break;
 

@@ -2857,6 +2857,11 @@
               <FileType>8</FileType>
               <FilePath>..\USP\Application\Robot_Module\loader_task.cpp</FilePath>
             </File>
+            <File>
+              <FileName>loader_test_task.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Application\Robot_Module\loader_test_task.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
