@@ -22,7 +22,7 @@ DartAimEnumdef HitTarget;
 //发射数据池,每组数据包含一次发射(包含两种目标)的yaw和igniter目标数据,总共是4个浮点数
 DartDataStructdef DartsData[16]; 
 //发射数据映射表,调参板会调整这个表,而本地使用这个表来在发射数据池选择哪一组数据
-uint8_t DartDataSlot[5]={0,1,2,3,4};
+uint8_t DartDataSlot[4]={1,2,3,4};
 
 // 实例化驱动,发射类在发射主控任务中使用,service_communication.cpp中更新电机数据
 Launcher_Driver Launcher(ID_DELIVER_L, ID_DELIVER_R, ID_IGNITER); 
@@ -71,5 +71,38 @@ protocol_status_t Protocol_Status[4]={
     {false,0,100,0.0f,0.5f}  //CAN2,MOTOR_YAW
 };
 
-bool is_loader_simulating = false;    // 模拟标志位
-float simulated_loader_pos = -20.0f; // 模拟滑块位置
+
+
+
+/*发射流程延时参数说明
+put_delay
+指滑块到底部后，升降机从动态同步到平行位置的等待缓冲时间，同时也让滑台能卡上扳机，防止滑台来回太快扳机因为摩擦力没弹回去导致没扣住。给300应该够。
+before_fire_delay
+指滑块在升降机下方经过并回到缓冲区后，升降机从平行位置降到底和镖体分离的缓冲时间。
+after_fire_delay
+指发射后等待时间，单位ms，是为了给发射动作留时间，防止发射到一半滑块又回去相撞。制导镖200mm行程发射时间为133ms,1000ms足够保险。
+relapse_delay
+指卡镖舵机松开后等待时间，单位ms，是为了给镖体转移到发射区留时间，防止舵机太快锁住卡不住。测试时带制导镖完全转移时间为139ms。但是给100ms也没问题。完全放的掉。
+loader_up_delay指升降机上升到顶部的等待时间，单位ms，是为了给升降机上升留时间，防止还没上去卡镖舵机就动作了。带制导镖上升时间为667ms。
+*/
+
+#if CONSERVATIVE_TEST_PARAMS
+// 使用保守测试参数
+fire_sequence_delay_params_t fire_sequence_delay_params={
+    1000,    //put_delay
+    1000,    //before_fire_delay
+    1000,    //after_fire_delay
+    200,     //relapse_delay
+    1000,     //loader_up_delay
+    1000     //wait_for_aim_delay
+};
+#else
+fire_sequence_delay_params_t fire_sequence_delay_params={
+    300,    //put_delay
+    500,    //before_fire_delay
+    500,    //after_fire_delay
+    100,    //relapse_delay
+    700,     //loader_up_delay
+    500     //wait_for_aim_delay
+};
+#endif
