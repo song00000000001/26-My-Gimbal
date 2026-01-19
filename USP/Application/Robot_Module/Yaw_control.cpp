@@ -107,13 +107,20 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
     修改yaw轴子状态机状态控制，由摇杆控制转为设备连接状态控制。即如果调参板连上了，就用调参板,否则用遥控器。
     如果视觉连上了，就优先用视觉，否则检查调参板，最后才是遥控器，如果遥控也没连上，就失能。
     */
-    if(Robot.Flag.Status.vision_connected)//视觉连接
+    //由于没校准就触发以下状态会造成bug，先加个校准完成的判断
+    if(!is_Yaw_Init())
     {
-        *yaw_state = YAW_VISION_AIM;
+        *yaw_state = YAW_CALIBRATING;
     }
-    else if(Robot.Flag.Status.tool_panel_connected)//调参板连接
-    {
-        *yaw_state = YAW_CORRECT_AIM;
+    else{
+        if(Robot.Flag.Status.vision_connected)//视觉连接
+        {
+            *yaw_state = YAW_VISION_AIM;
+        }
+        else if(Robot.Flag.Status.tool_panel_connected)//调参板连接
+        {
+            *yaw_state = YAW_CORRECT_AIM;
+        }
     }
     switch (*yaw_state)
     {
@@ -151,6 +158,18 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
         Launcher.target_igniter_angle=DartsData[1].Ignitergoal[0];
         Launcher.target_igniter_angle=std_lib::constrain(Launcher.target_igniter_angle, IGNITER_MIN_POS, IGNITER_MAX_POS);
         update(yaw_target); // 更改Yaw轴角度
+
+        //记录角度和力度变化，为了方便找到数据变化点，用warn等级输出，并且加上当前发射计数,将yaw和行程合并输出
+        static float last_yaw_target=0;
+        static float last_igniter_target=0;
+        if(std::abs(last_yaw_target - yaw_target) > 0.01f || std::abs(last_igniter_target - Launcher.target_igniter_angle) > 0.01f)
+        {
+            LOG_WARN("----Dart num:%d Target Update----", Robot.Status.dart_count);
+            LOG_WARN("Yaw Target: %.2f -> %.2f,Igniter Target: %.2f -> %.2f", 
+                last_yaw_target, yaw_target, last_igniter_target, Launcher.target_igniter_angle);
+            last_yaw_target = yaw_target;
+            last_igniter_target = Launcher.target_igniter_angle;
+        }
     }
         break;
     case YAW_VISION_AIM:

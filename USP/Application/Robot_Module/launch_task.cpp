@@ -66,22 +66,35 @@ void LaunchCtrl(void *arg)
         .debug_mode_deliver={MODE_SPEED,MODE_SPEED},
         .debug_mode_igniter=MODE_SPEED ,
     };
-#if 1
+    #if CONSERVATIVE_TEST_PARAMS
     //校准速度初始化
     calibration_speed={
 	.yaw_calibration_speed=-300,
 	.deliver_calibration_speed=600,
     .igniter_calibration_speed=-600
     };
-#else
+    // PID 参数初始化
+    Launcher.pid_deliver_sync.SetPIDParam(-0.4f, 0.0f, 0.0f, 8000, 10000);
+    
+    for(int i=0; i<2; i++) {
+        Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 14000);
+        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0, 0.0, 1000, 6000);
+    }
+    
+    Launcher.pid_igniter_spd.SetPIDParam(15.0, 0.0, 0.0, 3000, 8000);
+    Launcher.pid_igniter_pos.SetPIDParam(3000.0, 0.0, 0.0, 3000, 4000);
+
+    Yawer.PID_Yaw_Angle.SetPIDParam(15, 0, 0, 0, 200);
+    Yawer.PID_Yaw_Angle.I_SeparThresh = 8;
+    Yawer.PID_Yaw_Angle.DeadZone = 0.01f;
+    Yawer.PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 12000);
+    #else
 	//校准速度初始化
     calibration_speed={
-	.yaw_calibration_speed=-500,
+	.yaw_calibration_speed=-600,
 	.deliver_calibration_speed=1200,
-    .igniter_calibration_speed=-1000
+    .igniter_calibration_speed=-1200
     };
-	#endif
-    
     // PID 参数初始化
     Launcher.pid_deliver_sync.SetPIDParam(-0.4f, 0.0f, 0.0f, 8000, 16000);
     
@@ -97,11 +110,13 @@ void LaunchCtrl(void *arg)
     Yawer.PID_Yaw_Angle.I_SeparThresh = 8;
     Yawer.PID_Yaw_Angle.DeadZone = 0.01f;
     Yawer.PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 18000);
-
+	#endif
+    
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1);
     uint32_t main_task_now = xTaskGetTickCount();
+
 	LOG_INFO("Launch Control Task Started.\n");
     #if enum_X_Macros_disable
     LOG_INFO("Initial System State: %d,yaw_control_state: %d,loader_target_mode: %d\n", 
@@ -337,8 +352,11 @@ void LaunchCtrl(void *arg)
             
         case SYS_AUTO_PREP:
             // --- 自动发射准备 ---
+            #if 0
             Launcher.target_igniter_angle=POS_IGNITER;  // 默认发射力度
-            
+            #else
+            Launcher.target_igniter_angle=Launcher.IgniterMotor.getMotorTotalAngle();
+			#endif
             // 检查是否到位
             if (Launcher.is_igniter_at_target(5)) 
             {  

@@ -2,10 +2,21 @@
 #include "robot_config.h"
 #include "global_data.h"
 
-static uint16_t before_fire_delay=300,put_delay=300,after_fire_delay=1000,relapse_delay=100,loader_up_delay=700;
-
-#define down_and_fire_test 1
   
+#if CONSERVATIVE_TEST_PARAMS
+static uint16_t before_fire_delay=1000,put_delay=1000,after_fire_delay=1000,relapse_delay=200,loader_up_delay=1000;
+#else
+static uint16_t before_fire_delay=500,put_delay=300,after_fire_delay=500,relapse_delay=100,loader_up_delay=700;
+#endif
+
+//以下是单次发射某一发流程的宏切换,1为开启，0为关闭,,不可同时开启多个,会造成状态机混乱
+//第一发测试
+#define first_signle_fire_test 0
+//第二发测试用的宏
+#define down_and_fire_test 0
+//第三发测试用的宏
+#define third_signle_fire_test 0
+
 /*发射状态机*/
 void Launcher_Driver::Run_Firing_Sequence()
 {
@@ -30,10 +41,13 @@ void Launcher_Driver::Run_Firing_Sequence()
                 state_timer = current_time;
                 #if down_and_fire_test
                 fire_state = FIRE_CALIBRATION_2;
+                start_deliver_calibration();
+                #elif third_signle_fire_test
+                fire_state = FIRE_RELOAD_LIFT_3;
                 #else
                 fire_state = FIRE_CALIBRATION_1;
-                #endif
                 start_deliver_calibration();
+                #endif
             }
 			break;
 
@@ -102,7 +116,13 @@ void Launcher_Driver::Run_Firing_Sequence()
                 state_timer= current_time;
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
-                fire_state = FIRE_CALIBRATION_2;
+                #if first_signle_fire_test 
+                    fire_state = FIRE_IDLE;
+                    Robot.Flag.Status.stop_continus_fire=true;
+                    Robot.Status.current_state = SYS_AUTOFIRE_SUSPEND;
+                #else
+                    fire_state = FIRE_CALIBRATION_2;
+                #endif
                 start_deliver_calibration();
             }
             break;
@@ -255,6 +275,7 @@ void Launcher_Driver::Run_Firing_Sequence()
             break;
 
         // 缓冲区等待
+        // 升降机下降，装填下一发
         case FIRE_WAIT_UP_3:
             if ((current_time - state_timer) > before_fire_delay) {
                 state_timer = current_time;
@@ -265,7 +286,6 @@ void Launcher_Driver::Run_Firing_Sequence()
         song
         这里可以和上面的缓冲区等待合并
         */
-        // 升降机下降，装填下一发
         case FIRE_RELOAD_LOWER_3:
             if ((current_time - state_timer) >1) {
                 state_timer = current_time;
@@ -281,7 +301,13 @@ void Launcher_Driver::Run_Firing_Sequence()
                 Robot.Status.dart_count++; // 计数+1
                 servo_igniter_lock;
                 state_timer= current_time;
+                #if  third_signle_fire_test
+                fire_state = FIRE_IDLE;
+                Robot.Flag.Status.stop_continus_fire=true;
+                Robot.Status.current_state = SYS_AUTOFIRE_SUSPEND;
+                #else
                 fire_state = FIRE_RELOAD_LIFT_4;
+                #endif
             }
             break;
 
