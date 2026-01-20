@@ -155,6 +155,11 @@ typedef struct {
     Control_Mode_e debug_mode_igniter;    // 丝杆模式
     int16_t debug_loader_pos; //调试滑块位置
     uint8_t debug_fire_type; //调整发射类型，0为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。
+
+    bool is_loader_simulating;    // 模拟标志位
+    float simulated_loader_pos; // 模拟滑块位置
+    bool four_dart_four_params_enable; //四发四参功能启用标志位
+    float dual_loader_mechanical_error_correction; //双滑块机械装配误差校准修正
 } Debug_Data_t;
 
 // 校准速度结构体
@@ -204,6 +209,19 @@ typedef struct
     float rx_rate_threshold;
 }protocol_status_t;
 
+//定义发射流程延时参数结构体
+//用于调整发射流程中的各个延时参数
+typedef struct 
+{
+    uint16_t put_delay;
+    uint16_t before_fire_delay;
+    uint16_t after_fire_delay;
+    uint16_t relapse_delay;
+    uint16_t loader_up_delay;   
+    uint16_t wait_for_aim_delay;
+}fire_sequence_delay_params_t;
+
+
 extern protocol_status_t Protocol_Status[4]; //4个电机的通信状态
 extern Launcher_Driver Launcher; 
 extern Missle_YawController_Classdef Yawer; 
@@ -219,9 +237,7 @@ extern VisionRecvData_t vision_recv_pack;
 extern VisionSendData_t vision_send_pack;
 extern servo_ccr_debug servo_ccr;
 extern openlog_classdef<16> OpenLog;
-extern bool is_loader_simulating;    // 模拟标志位
-extern float simulated_loader_pos; // 模拟滑块位置
-
+extern fire_sequence_delay_params_t fire_sequence_delay_params;
 
 /*
 1. 写入内容到当前缓冲

@@ -138,16 +138,21 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
     {
         //读取调参板设置的发射数据
         //根据发射计数选择数据槽数组
-        uint8_t slot_index=DartDataSlot[Robot.Status.dart_count%4]+1;
-        /*
-        todo
+        uint8_t slot_index=1;//测试用，固定数据槽1
+        
+        /*todo
         song
-        这里没用参数映射表,而是统一用1号位参数,方便调试。
-        后期有装填后再改4发一发一参。
+        这里因为目前没有四发镖,做不到四发四参测试,所以先固定用数据槽1的数据进行测试
+        以后有条件了再改回来
         */
+        if(Debugger.four_dart_four_params_enable)
+        {
+            slot_index=(Robot.Status.dart_count-1)%4+1;
+            //第一发就是[(1-1)%4=0],读取第[0]号数据槽,也就是数据内容1
+        }
 
         //根据目标类型选择数据组数据
-        yaw_target=DartsData[1].YawCorrectionAngle[0];
+        yaw_target=DartsData[slot_index].YawCorrectionAngle[0];//这里的0是指前哨站，1是基地。由于调参板默认先显示前哨站数据，所以先用0。实际上只打基地。这个约定要沟通好。
         yaw_target=std_lib::constrain(yaw_target, -10.2f, 10.2f);
         /*
         todo
@@ -155,7 +160,7 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
         这里用了外面的类，不太好改，就先放这里吧
         */
         //发射力度数据
-        Launcher.target_igniter_angle=DartsData[1].Ignitergoal[0];
+        Launcher.target_igniter_angle=DartsData[slot_index].Ignitergoal[0];
         Launcher.target_igniter_angle=std_lib::constrain(Launcher.target_igniter_angle, IGNITER_MIN_POS, IGNITER_MAX_POS);
         update(yaw_target); // 更改Yaw轴角度
 
@@ -164,7 +169,7 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
         static float last_igniter_target=0;
         if(std::abs(last_yaw_target - yaw_target) > 0.01f || std::abs(last_igniter_target - Launcher.target_igniter_angle) > 0.01f)
         {
-            LOG_WARN("----Dart num:%d Target Update----", Robot.Status.dart_count);
+            LOG_WARN("Dart num:%d Target Update,date slot: %d", Robot.Status.dart_count, slot_index);
             LOG_WARN("Yaw Target: %.2f -> %.2f,Igniter Target: %.2f -> %.2f", 
                 last_yaw_target, yaw_target, last_igniter_target, Launcher.target_igniter_angle);
             last_yaw_target = yaw_target;

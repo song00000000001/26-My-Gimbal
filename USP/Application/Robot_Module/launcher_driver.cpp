@@ -161,6 +161,7 @@ void Launcher_Driver::check_calibration_logic()
 			pid_deliver_spd[0].clean_intergral();
             // 1. 消除编码器累积误差 (归零)
 			DeliverMotor[0].baseAngle -= DeliverMotor[0].getMotorTotalAngle();
+			//DeliverMotor[0].baseAngle -= Debugger.dual_loader_mechanical_error_correction; //双滑块机械装配误差校准修正
             // 2. 切换到位置模式
             mode_deliver[0] = MODE_ANGLE;
             // 3. 设定当前位置为回缓冲区
@@ -320,4 +321,30 @@ void Launcher_Driver::loader_servo_2_ctrl(uint16_t ccr){
         ccr=std_lib::constrain(ccr, servo_ccr.loader2_ccr_up, servo_ccr.loader2_ccr_down);
     
     __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_2, ccr);  // 装填舵机右，上升
+}
+
+void Launcher_Driver::servo_igniter_lock_f(){
+    servo_igniter_lock;// 扳机舵机锁止
+}
+
+void Launcher_Driver::servo_igniter_unlock_f(){
+    servo_igniter_unlock;// 扳机舵机解锁
+}
+
+void Launcher_Driver::servo_transfomer_lock_f(){
+    servo_transfomer_lock;// 变压器舵机锁止
+}   
+
+void Launcher_Driver::servo_transfomer_unlock_f(){
+    servo_transfomer_unlock;// 变压器舵机解锁
+}
+
+void Launcher_Driver::servo_loader12_up_f(){
+    servo_loader_up1;// 装填舵机1上升
+    servo_loader_up2;// 装填舵机2上升
+}
+
+void Launcher_Driver::servo_loader12_down_f(){
+    servo_loader_down1;// 装填舵机1下降
+    servo_loader_down2;// 装填舵机2下降
 }

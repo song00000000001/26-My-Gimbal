@@ -31,7 +31,7 @@ extern "C" {
 #define IGNITER_OFFSET_POS   3   // igniter复位位置
 
 #define POS_BUFFER -20          //缓冲区位置
-#define POS_BOTTOM -645         //拉栓位置
+#define POS_BOTTOM -650         //拉栓位置
 
 #define POS_IGNITER 90         //默认力度,igniter位置
 
@@ -39,7 +39,7 @@ extern "C" {
 #define IGNITER_MIN_POS 2.0f
 #define IGNITER_MAX_POS 200.0f
 //deliver最小/大位置
-#define POS_DELIVER_MIN -648.0f
+#define POS_DELIVER_MIN -655.0f
 #define POS_DELIVER_MAX -5.0f
 
 //以下用到了c语言函数,需要加extern "C"修饰
