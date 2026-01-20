@@ -206,6 +206,7 @@ public:
 
     bool is_deliver_at_target(float threshold);   // 滑块是否到位
     bool is_igniter_at_target(float threshold);   // 丝杆是否到位
+    bool is_deliver_sync_ok(float threshold); // 滑块同步误差是否在阈值内
     
     // 自检状态检查按键状态
     void key_check();

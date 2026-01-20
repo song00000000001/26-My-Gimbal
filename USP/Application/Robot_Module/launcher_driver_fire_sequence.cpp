@@ -74,7 +74,9 @@ void Launcher_Driver::Run_Firing_Sequence()
         //滑块校准
         case FIRE_CALIBRATION_1:
             check_calibration_logic();
-            if(is_calibrated()){
+            //如果真出现限位开关触碰时机不同,导致实际需要一点时间进行同步的话，这里的条件是有问题的，这样会导致边拉下边同步，很危险，容易损失滑台。
+            //所以需要增加同步误差检测，确保同步误差在允许范围内才进入下一状态。
+            if(is_calibrated()&&is_deliver_sync_ok(Debugger.deliver_sync_threshold)){
                 state_timer = current_time;
                 fire_state = FIRE_PULL_DOWN_1;
             }
@@ -192,7 +194,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         //滑块校准
         case FIRE_CALIBRATION_2:
             check_calibration_logic();
-            if(is_calibrated()){
+            if(is_calibrated()&&is_deliver_sync_ok(Debugger.deliver_sync_threshold)){
                 state_timer = current_time;
                 fire_state = FIRE_PULL_DOWN_2;
             }
@@ -301,7 +303,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 校准滑块
         case FIRE_CALIBRATION_3:
             check_calibration_logic();
-            if(is_calibrated()){
+            if(is_calibrated()&&is_deliver_sync_ok(Debugger.deliver_sync_threshold)) {
                 state_timer = current_time;
                 fire_state = FIRE_PULL_DOWN_3;
             }
@@ -410,7 +412,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 校准滑块
         case FIRE_CALIBRATION_4:
             check_calibration_logic();
-            if(is_calibrated()){
+            if(is_calibrated()&&is_deliver_sync_ok(Debugger.deliver_sync_threshold)){
                 state_timer = current_time;
                 fire_state = FIRE_PULL_DOWN_4;
             }

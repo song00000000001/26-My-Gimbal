@@ -160,13 +160,13 @@ void Launcher_Driver::check_calibration_logic()
             pid_deliver_pos[0].clean_intergral();
 			pid_deliver_spd[0].clean_intergral();
             // 1. 消除编码器累积误差 (归零)
-			DeliverMotor[0].baseAngle -= DeliverMotor[0].getMotorTotalAngle();
+			DeliverMotor[0].baseAngle -= (DeliverMotor[0].getMotorTotalAngle()+Debugger.dual_loader_mechanical_error_correction);
 			//DeliverMotor[0].baseAngle -= Debugger.dual_loader_mechanical_error_correction; //双滑块机械装配误差校准修正
             // 2. 切换到位置模式
             mode_deliver[0] = MODE_ANGLE;
             // 3. 设定当前位置为回缓冲区
-            pid_deliver_pos[0].Target=POS_BUFFER;
-            target_deliver_angle=POS_BUFFER;
+            //pid_deliver_pos[0].Target=POS_BUFFER;
+            target_deliver_angle=DELIVER_OFFSET_POS;
             // 4. 标记为已归零            
             is_deliver_homed[0] = true;
         }
@@ -179,8 +179,8 @@ void Launcher_Driver::check_calibration_logic()
 			pid_deliver_spd[1].clean_intergral();
             DeliverMotor[1].baseAngle -= DeliverMotor[1].getMotorTotalAngle();
             mode_deliver[1] = MODE_ANGLE;
-            pid_deliver_pos[1].Target=POS_BUFFER;
-            target_deliver_angle=POS_BUFFER;  
+            //pid_deliver_pos[1].Target=POS_BUFFER;
+            target_deliver_angle=DELIVER_OFFSET_POS;  
             is_deliver_homed[1] = true;
         }
     }
@@ -193,7 +193,7 @@ void Launcher_Driver::check_calibration_logic()
             pid_igniter_spd.clean_intergral();
             IgniterMotor.baseAngle -= IgniterMotor.getMotorTotalAngle();
             mode_igniter = MODE_ANGLE;
-            pid_igniter_pos.Target=IGNITER_OFFSET_POS;
+            //pid_igniter_pos.Target=IGNITER_OFFSET_POS;
             target_igniter_angle = IGNITER_OFFSET_POS;
             is_igniter_homed = true;
         }
@@ -271,6 +271,11 @@ bool Launcher_Driver::is_deliver_at_target(float threshold) {
 bool Launcher_Driver::is_igniter_at_target(float threshold) {
     float err=abs(IgniterMotor.getMotorTotalAngle() - target_igniter_angle);
     return (err < threshold);
+}
+
+bool Launcher_Driver::is_deliver_sync_ok(float threshold) {
+    float diff = fabsf(DeliverMotor[0].getMotorTotalAngle() - DeliverMotor[1].getMotorTotalAngle());
+    return (diff < threshold);
 }
 
 // 发射状态机中校准滑块电机

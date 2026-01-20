@@ -160,6 +160,7 @@ typedef struct {
     float simulated_loader_pos; // 模拟滑块位置
     bool four_dart_four_params_enable; //四发四参功能启用标志位
     float dual_loader_mechanical_error_correction; //双滑块机械装配误差校准修正
+	float deliver_sync_threshold; //滑块同步误差阈值
 } Debug_Data_t;
 
 // 校准速度结构体

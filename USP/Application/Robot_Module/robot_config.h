@@ -27,7 +27,7 @@ extern "C" {
 
 /* 常量定义 */
 
-#define DELIVER_OFFSET_POS   -20  // deliver碰到开关后设置的初始坐标
+#define DELIVER_OFFSET_POS   -5  // deliver碰到开关后设置的初始坐标
 #define IGNITER_OFFSET_POS   3   // igniter复位位置
 
 #define POS_BUFFER -20          //缓冲区位置
