@@ -161,6 +161,7 @@ void Launcher_Driver::check_calibration_logic()
 			pid_deliver_spd[0].clean_intergral();
             // 1. 消除编码器累积误差 (归零)
 			DeliverMotor[0].baseAngle -= DeliverMotor[0].getMotorTotalAngle();
+			//DeliverMotor[0].baseAngle -= Debugger.dual_loader_mechanical_error_correction; //双滑块机械装配误差校准修正
             // 2. 切换到位置模式
             mode_deliver[0] = MODE_ANGLE;
             // 3. 设定当前位置为回缓冲区

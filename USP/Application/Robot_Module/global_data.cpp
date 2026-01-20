@@ -51,16 +51,17 @@ A11-transfomer:126~170
 */
 
 servo_ccr_debug servo_ccr={
-    295,    //igniter_ccr_unlock
-    360,    //igniter_ccr_lock
+    250,    //igniter_ccr_unlock
+    320,    //igniter_ccr_lock
 
-    210,    //loader1_ccr_up
+    215,    //loader1_ccr_up
     75,     //loader1_ccr_down
 
-    100,    //loader2_ccr_up
+	
+    95,    //loader2_ccr_up
     230,    //loader2_ccr_down
 
-    220,    //transfomer_ccr_lock
+    235,    //transfomer_ccr_lock
     180     //transfomer_ccr_unlock
 };
 
@@ -92,7 +93,7 @@ fire_sequence_delay_params_t fire_sequence_delay_params={
     1000,    //put_delay
     1000,    //before_fire_delay
     1000,    //after_fire_delay
-    200,     //relapse_delay
+    300,     //relapse_delay
     1000,     //loader_up_delay
     1000     //wait_for_aim_delay
 };
@@ -101,7 +102,7 @@ fire_sequence_delay_params_t fire_sequence_delay_params={
     300,    //put_delay
     500,    //before_fire_delay
     500,    //after_fire_delay
-    100,    //relapse_delay
+    300,    //relapse_delay
     700,     //loader_up_delay
     500     //wait_for_aim_delay
 };

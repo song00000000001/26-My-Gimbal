@@ -96,7 +96,7 @@ void Task_load_test_ctrl(void *arg)
 
                 case 13: // 释放卡镖舵机 100ms
                     Launcher.servo_transfomer_unlock_f();
-                    if (now - test_timer > 100) {
+                    if (now - test_timer > fire_sequence_delay_params.relapse_delay) {
                         Launcher.servo_transfomer_lock_f();  
                         test_step = 14;
                         test_timer = now;

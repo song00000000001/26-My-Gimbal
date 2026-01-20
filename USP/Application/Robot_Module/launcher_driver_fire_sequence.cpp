@@ -126,6 +126,7 @@ void Launcher_Driver::Run_Firing_Sequence()
                 几乎不会出现触发了log但是瞬间单片机暂停打断的情况。
                 放在这里可以实现只触发一次的效果，避免发射状态延时期间重复打印日志。
                 */
+				fire_state = FIRE_WAIT_AIM_1;
                 LOG_WARN("Dart1 Fired! Total Count: %d", Robot.Status.dart_count);
             }
             break;    

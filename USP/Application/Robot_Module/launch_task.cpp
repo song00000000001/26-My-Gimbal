@@ -68,7 +68,9 @@ void LaunchCtrl(void *arg)
         .debug_loader_pos=POS_BOTTOM,
         .debug_fire_type=0, //调整发射类型，0为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。  
         .is_loader_simulating=false,
-        .simulated_loader_pos=-20.0f
+        .simulated_loader_pos=-650.0f,
+        .four_dart_four_params_enable=true,//四发四参功能启用标志位，默认禁用，调试中启用。
+        .dual_loader_mechanical_error_correction=2.0//双滑块机械装配误差校准修正,目前靠0号,即发射方向左滑块减2.2mm(向下)解决。
     };
     #if CONSERVATIVE_TEST_PARAMS
     //校准速度初始化
