@@ -41,14 +41,14 @@ void Task_load_test_ctrl(void *arg)
                 {
                     uint32_t elapsed = now - test_timer;
                     Launcher.loader_target_mode = LOAD_DYNAMIC_SYNC;
-                    is_loader_simulating = true; // 强制 Loader_Ctrl 使用模拟位置
+                    Debugger.is_loader_simulating = true; // 强制 Loader_Ctrl 使用模拟位置
 
                     if (elapsed < 2000) {
                         float t = (float)elapsed / 2000.0f;
                         // 从 POS_BUFFER (-20) 线性模拟到 POS_BOTTOM (-645)
-                        simulated_loader_pos = POS_BUFFER + t * (POS_BOTTOM - POS_BUFFER);
+                        Debugger.simulated_loader_pos = POS_BUFFER + t * (POS_BOTTOM - POS_BUFFER);
                     } else {
-                        simulated_loader_pos = POS_BOTTOM;
+                        Debugger.simulated_loader_pos = POS_BOTTOM;
                         test_step = 2;
                         test_timer = now;
                     }
@@ -56,9 +56,9 @@ void Task_load_test_ctrl(void *arg)
                 break;
 
                 case 2: // 平行位置 (Preload) 延时 1s
-                    is_loader_simulating = false;
+                    Debugger.is_loader_simulating = false;
                     Launcher.loader_target_mode = LOAD_PRE_LOAD;
-                    if (now - test_timer > 1000) {
+                    if (now - test_timer >  fire_sequence_delay_params.put_delay) {
                         test_step = 3;
                         test_timer = now;
                     }
@@ -66,7 +66,7 @@ void Task_load_test_ctrl(void *arg)
 
                 case 3: // 到底 (Engaged) 停住 1s
                     Launcher.loader_target_mode = LOAD_ENGAGED;
-                    if (now - test_timer > 1000) {
+                    if (now - test_timer >  fire_sequence_delay_params.before_fire_delay) {
                         test_step = 4;
                     }
                     break;
@@ -80,7 +80,7 @@ void Task_load_test_ctrl(void *arg)
                 /* ======= 流程 B: 升降机 + 卡镖出仓测试 (S2=Down) ======= */
                 case 11: // 降到底稳定 1s
                     Launcher.loader_target_mode = LOAD_ENGAGED;
-                    if (now - test_timer > 1000) {
+                    if (now - test_timer >  fire_sequence_delay_params.after_fire_delay) {
                         test_step = 12;
                         test_timer = now;
                     }
@@ -88,16 +88,16 @@ void Task_load_test_ctrl(void *arg)
 
                 case 12: // 直接上升到顶并延时 200ms
                     Launcher.loader_target_mode = LOAD_STOWED;
-                    if (now - test_timer > 700) {
+                    if (now - test_timer >  fire_sequence_delay_params.loader_up_delay) {
                         test_step = 13;
                         test_timer = now;
                     }
                     break;
 
                 case 13: // 释放卡镖舵机 100ms
-                    servo_transfomer_unlock;
-                    if (now - test_timer > 100) {
-                        servo_transfomer_lock;  
+                    Launcher.servo_transfomer_unlock_f();
+                    if (now - test_timer > fire_sequence_delay_params.relapse_delay) {
+                        Launcher.servo_transfomer_lock_f();  
                         test_step = 14;
                         test_timer = now;
                     }
@@ -114,13 +114,13 @@ void Task_load_test_ctrl(void *arg)
                 {
                     uint32_t elapsed = now - test_timer;
                     Launcher.loader_target_mode = LOAD_DYNAMIC_SYNC;
-                    is_loader_simulating = true;
+                    Debugger.is_loader_simulating = true;
                     
                     if (elapsed < 2000) {
                         float t = (float)elapsed / 2000.0f;
-                        simulated_loader_pos = POS_BUFFER + t * (POS_BOTTOM - POS_BUFFER);
+                        Debugger.simulated_loader_pos = POS_BUFFER + t * (POS_BOTTOM - POS_BUFFER);
                     } else {
-                        simulated_loader_pos = POS_BOTTOM;
+                        Debugger.simulated_loader_pos = POS_BOTTOM;
                         test_step = 16;
                         test_timer = now;
                     }
@@ -128,7 +128,7 @@ void Task_load_test_ctrl(void *arg)
                 break;
 
                 case 16: // 衔接流程 A 的平行 1s
-                    is_loader_simulating = false;
+                    Debugger.is_loader_simulating = false;
                     Launcher.loader_target_mode = LOAD_PRE_LOAD;
                     if (now - test_timer > 1000) {
                         test_step = 17;
@@ -143,7 +143,7 @@ void Task_load_test_ctrl(void *arg)
 
                 default:
                     test_step = 0;
-                    is_loader_simulating = false;
+                    Debugger.is_loader_simulating = false;
                     break;
             }
         }

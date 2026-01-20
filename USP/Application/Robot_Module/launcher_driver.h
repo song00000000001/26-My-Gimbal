@@ -62,19 +62,19 @@ typedef enum {
 //1. 定义 X-列表：
 #define FIRE_STATE_LIST(X) \
     X(FIRE_IDLE)               \
-    X(FIRE_IGNITER_DELAY)      \
     X(FIRE_CALIBRATION_1)      \
     X(FIRE_PULL_DOWN_1)        \
     X(FIRE_WAIT_BOTTOM_1)      \
     X(FIRE_RETURN_UP_1)        \
     X(FIRE_WAIT_UP_1)          \
+    X(FIRE_WAIT_AIM_1)         \
     X(FIRE_SHOOTING_1)         \
     X(FIRE_CALIBRATION_2)      \
     X(FIRE_PULL_DOWN_2)        \
     X(FIRE_WAIT_BOTTOM_2)      \
     X(FIRE_RETURN_UP_2)        \
     X(FIRE_WAIT_UP_2)          \
-    X(FIRE_RELOAD_LOWER_2)     \
+    X(FIRE_WAIT_AIM_2)         \
     X(FIRE_SHOOTING_2)         \
     X(FIRE_CALIBRATION_3)      \
     X(FIRE_RELOAD_LIFT_3)      \
@@ -83,7 +83,7 @@ typedef enum {
     X(FIRE_WAIT_BOTTOM_3)      \
     X(FIRE_RETURN_UP_3)        \
     X(FIRE_WAIT_UP_3)          \
-    X(FIRE_RELOAD_LOWER_3)     \
+    X(FIRE_WAIT_AIM_3)         \
     X(FIRE_SHOOTING_3)         \
     X(FIRE_CALIBRATION_4)      \
     X(FIRE_RELOAD_LIFT_4)      \
@@ -91,8 +91,8 @@ typedef enum {
     X(FIRE_PULL_DOWN_4)        \
     X(FIRE_WAIT_BOTTOM_4)      \
     X(FIRE_RETURN_UP_4)        \
+    X(FIRE_WAIT_AIM_4)         \
     X(FIRE_WAIT_UP_4)          \
-    X(FIRE_RELOAD_LOWER_4)     \
     X(FIRE_SHOOTING_4)
 // 自动生成枚举定义
 enum Fire_State_e {
@@ -206,6 +206,7 @@ public:
 
     bool is_deliver_at_target(float threshold);   // 滑块是否到位
     bool is_igniter_at_target(float threshold);   // 丝杆是否到位
+    bool is_deliver_sync_ok(float threshold); // 滑块同步误差是否在阈值内
     
     // 自检状态检查按键状态
     void key_check();
@@ -227,6 +228,13 @@ public:
     void loader_servo_1_ctrl(uint16_t ccr);
     void loader_servo_2_ctrl(uint16_t ccr);
     
+    //由于其他cpp直接使用舵机容易报假错，这里稍微封装一下
+    void servo_igniter_lock_f();
+    void servo_igniter_unlock_f();
+    void servo_transfomer_lock_f();
+    void servo_transfomer_unlock_f();
+    void servo_loader12_up_f();
+    void servo_loader12_down_f();
 };
 
 #endif

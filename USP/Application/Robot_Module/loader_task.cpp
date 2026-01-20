@@ -21,8 +21,8 @@ typedef struct {
 } loader_servo_params_t;
 
 loader_servo_params_t loader_servo_params={
-    24, //预加载位置偏移量
-    15, //平行装填位置偏移量
+    20, //预加载位置偏移量
+    10, //平行装填位置偏移量
     5   //顶端位置偏移量
 };
 
@@ -37,8 +37,8 @@ void Loader_Ctrl(void *arg)
     {
         // 获取当前滑块位置
         // 修改位置获取逻辑：若处于模拟测试，则使用 simulated_loader_pos
-        if (is_loader_simulating) {
-            current_pos = simulated_loader_pos;
+        if (Debugger.is_loader_simulating) {
+            current_pos = Debugger.simulated_loader_pos;
         } 
         else if (Debugger.enable_debug_mode == 1) {
             current_pos=Debugger.debug_loader_pos;

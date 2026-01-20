@@ -42,7 +42,7 @@ void LaunchCtrl(void *arg)
     //yaw轴控制状态初始化为失能
     Robot.Status.yaw_control_state=YAW_MANUAL_AIM;
     //初始化飞镖发射数量
-    Robot.Status.dart_count=0;
+    Robot.Status.dart_count=1;
     //初始自检限位开关标志位失能
 	Robot.Flag.Check.limit_sw_ok=false;
     //初始校准标志位失能
@@ -66,7 +66,12 @@ void LaunchCtrl(void *arg)
         .debug_mode_deliver={MODE_SPEED,MODE_SPEED},
         .debug_mode_igniter=MODE_SPEED ,
         .debug_loader_pos=POS_BOTTOM,
-        .debug_fire_type=0 //调整发射类型，0为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。  
+        .debug_fire_type=3, //调整发射类型，0为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。  
+        .is_loader_simulating=false,
+        .simulated_loader_pos=-650.0f,
+        .four_dart_four_params_enable=false,//四发四参功能启用标志位，默认禁用，调试中启用。
+        .dual_loader_mechanical_error_correction=3.0,//双滑块机械装配误差校准修正,目前靠0号,即发射方向左滑块减2.2mm(向下)解决。
+        .deliver_sync_threshold=0.5 //滑块同步误差阈值
     };
     #if CONSERVATIVE_TEST_PARAMS
     //校准速度初始化
@@ -76,7 +81,7 @@ void LaunchCtrl(void *arg)
     .igniter_calibration_speed=-600
     };
     // PID 参数初始化
-    Launcher.pid_deliver_sync.SetPIDParam(-0.4f, 0.0f, 0.0f, 8000, 10000);
+    Launcher.pid_deliver_sync.SetPIDParam(-1.0f, 0.0f, 0.0f, 8000, 10000);
     
     for(int i=0; i<2; i++) {
         Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 14000);
@@ -98,7 +103,7 @@ void LaunchCtrl(void *arg)
     .igniter_calibration_speed=-1200
     };
     // PID 参数初始化
-    Launcher.pid_deliver_sync.SetPIDParam(-0.4f, 0.0f, 0.0f, 8000, 16000);
+    Launcher.pid_deliver_sync.SetPIDParam(-0.8f, 0.0f, 0.0f, 8000, 16000);
     
     for(int i=0; i<2; i++) {
         Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16384);
