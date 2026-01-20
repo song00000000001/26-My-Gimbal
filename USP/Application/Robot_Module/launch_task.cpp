@@ -489,7 +489,7 @@ void LaunchCtrl(void *arg)
             #endif
             last_state = Robot.Status.current_state;
         }
-        
+
         MotorMsgPack(Tx_Buff1, Yawer.YawMotor);
         xQueueSend(CAN2_TxPort, &Tx_Buff1.Id1ff, 0);
         //R=0，L=1
