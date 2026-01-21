@@ -56,6 +56,8 @@ void Launcher_Driver::adjust()
         pid_deliver_sync.clean_intergral();
     }
 
+    bool deliver_speed_peek[2]={false,false};
+
     for (int i = 0; i < 2; i++) {
         //按需执行角度环
         if(mode_deliver[i]==MODE_ANGLE){
@@ -79,7 +81,29 @@ void Launcher_Driver::adjust()
             pid_deliver_pos[i].Current = DeliverMotor[i].getMotorTotalAngle();
             pid_deliver_pos[i].Adjust();
             //速度环的输入为角度环输出加同步补偿
-            pid_deliver_spd[i].Target = pid_deliver_pos[i].Out + sync_comp[i];
+            //同步输出可能造成饱和,增加削峰处理
+            if(fabs(pid_deliver_pos[i].Out + sync_comp[i])>8000)
+                deliver_speed_peek[i]=true;
+            if(i==1){
+                if(deliver_speed_peek[0]||deliver_speed_peek[1]){
+                    //有一个饱和则进行削峰
+                    if(fabs(pid_deliver_pos[0].Out + sync_comp[0])>fabs(pid_deliver_pos[1].Out + sync_comp[1])){
+                        //0更大,削峰0
+                        pid_deliver_spd[0].Target = pid_deliver_pos[0].Out;
+                        pid_deliver_spd[1].Target = pid_deliver_pos[1].Out + 2*sync_comp[1];
+                    }
+                    else{
+                        //1更大,削峰1
+                        pid_deliver_spd[0].Target = pid_deliver_pos[0].Out + 2*sync_comp[0];
+                        pid_deliver_spd[1].Target = pid_deliver_pos[1].Out;
+                    }
+                }
+                else{
+                    pid_deliver_spd[0].Target = pid_deliver_pos[0].Out + sync_comp[0];
+                    pid_deliver_spd[1].Target = pid_deliver_pos[1].Out + sync_comp[1];
+                }
+                
+            }
             //速度环
             pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();
             pid_deliver_spd[i].Adjust();
