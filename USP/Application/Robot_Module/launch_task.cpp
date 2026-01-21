@@ -192,15 +192,12 @@ void LaunchCtrl(void *arg)
             //s2
             //为了防止抢占校准状态,增加校准状态判断
             if(Robot.Status.current_state!=SYS_HOMING&&Yawer.is_Yaw_Init()){
-                if(DR16_Snap.S2==SW_UP){
-                    Robot.Status.yaw_control_state=YAW_MANUAL_AIM;
-                }
-                else if(DR16_Snap.S2==SW_MID){
-                    
+                // 紧急预案,当发射暂停时,LY手动接管滑块电机角度环位置控制。
+                if(DR16_Snap.S2==SW_DOWN){
+                    Robot.Flag.Status.emergency_override=true;
                 }
                 else{
-                    //激活紧急预案
-                    Robot.Flag.Status.emergency_override=true;
+                    Robot.Flag.Status.emergency_override=false;
                 }
             }
     
@@ -360,29 +357,30 @@ void LaunchCtrl(void *arg)
             }
 			//else
                 //Launcher.target_deliver_angle=(POS_BUFFER);
-            // 紧急预案,当发射暂停时,LY手动接管滑块电机角度环位置控制。
-            if(DR16_Snap.S2==SW_DOWN){
-                Robot.Flag.Status.emergency_override=true;
-            }
-            else{
-                Robot.Flag.Status.emergency_override=false;
-            }
+            
             if(Robot.Flag.Status.emergency_override){
                 Launcher.emergency_override_control(DR16_Snap.RY_Norm);
             }
             //日志记录紧急预案状态变化
             static bool last_emergency_override = false;
             if (last_emergency_override != Robot.Flag.Status.emergency_override) {
-                LOG_INFO("Emergency Override State Changed: %s -> %s", 
-                    last_emergency_override ? "ENABLED" : "DISABLED",
-                    Robot.Flag.Status.emergency_override ? "ENABLED" : "DISABLED");
                 last_emergency_override = Robot.Flag.Status.emergency_override;
                 if(Robot.Flag.Status.emergency_override){
-                    LOG_WARN("Emergency Override Activated: Manual Control of Deliver Motor Engaged.");
-                    Launcher.target_deliver_angle=Launcher.DeliverMotor[0].getMotorTotalAngle(); //激活时保持当前位置
+                    //记录激活紧急预案
+                    LOG_ERROR("Emergency Override Activated: Manual Control of Deliver Motor Engaged.deliver");
+                    //同时记录滑块和行程电机位置
+                    LOG_ERROR("Deliver L Motor Angle: %.2f,Deliver R Motor Angle: %.2f,Igniter Motor Angle: %.2f", 
+                    Launcher.DeliverMotor[0].getMotorAngle(), 
+                    Launcher.DeliverMotor[1].getMotorAngle(),
+                    Launcher.IgniterMotor.getMotorAngle());
+                    //激活时保持当前位置
+                    Launcher.target_deliver_angle=Launcher.DeliverMotor[0].getMotorTotalAngle(); 
                     //锁止扳机
                     Launcher.servo_igniter_lock_f();
-                    //Launcher.target_deliver_angle=POS_BOTTOM; //激活时立即把滑块拉下去。但如果反应速度和遥控控制速度足够快，也可以不加，免得增加变量。
+                    //激活时立即把滑块拉下去。但如果反应速度和遥控控制速度足够快，也可以不加，免得增加变量。
+                    //Launcher.target_deliver_angle=POS_BOTTOM; 
+                    //立即复位igniter,减小蓄力行程,降低危险。
+                    Launcher.target_igniter_angle=IGNITER_OFFSET_POS; 
                 }
                 else{
                     LOG_WARN("Emergency Override Deactivated: Returning to Automatic Control of Deliver Motor.");
