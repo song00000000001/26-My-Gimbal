@@ -59,6 +59,7 @@ void Launcher_Driver::adjust()
     for (int i = 0; i < 2; i++) {
         //按需执行角度环
         if(mode_deliver[i]==MODE_ANGLE){
+            #if 0
             // 串级PID: 位置环 -> 速度环
             float target_with_sync = target_deliver_angle + sync_comp[i];
             //target_with_sync=std_lib::constrain(target_with_sync,POS_DELIVER_MIN,POS_DELIVER_MAX);
@@ -72,6 +73,17 @@ void Launcher_Driver::adjust()
             //速度环
             pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();
             pid_deliver_spd[i].Adjust();
+            #else
+            //修改同步pid,输出为速度环,防止位置环饱和
+            pid_deliver_pos[i].Target=std_lib::constrain(target_deliver_angle,POS_DELIVER_MIN,POS_DELIVER_MAX);
+            pid_deliver_pos[i].Current = DeliverMotor[i].getMotorTotalAngle();
+            pid_deliver_pos[i].Adjust();
+            //速度环的输入为角度环输出加同步补偿
+            pid_deliver_spd[i].Target = pid_deliver_pos[i].Out + sync_comp[i];
+            //速度环
+            pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();
+            pid_deliver_spd[i].Adjust();
+            #endif
         }
         else if(mode_deliver[i]==MODE_SPEED){
             pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();

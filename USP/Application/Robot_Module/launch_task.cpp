@@ -84,20 +84,21 @@ void LaunchCtrl(void *arg)
     .igniter_calibration_speed=-600
     };
     // PID 参数初始化
-    Launcher.pid_deliver_sync.SetPIDParam(-1.0f, 0.0f, 0.0f, 8000, 10000);
+    Launcher.pid_deliver_sync.SetPIDParam(-500.0f, 0.0f, 0.0f, 0, 8000);
     
+	//速度环输出限幅14000,curzuida最大7900,输出限幅改为16380,cur最大8200.
     for(int i=0; i<2; i++) {
-        Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 14000);
-        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0, 0.0, 1000, 6000);
+        Launcher.pid_deliver_spd[i].SetPIDParam(18.0f, 1.0f, 0.0f, 2000, 16380);
+        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0f, 0.0f, 1000, 8000);
     }
     
-    Launcher.pid_igniter_spd.SetPIDParam(15.0, 0.0, 0.0, 3000, 8000);
-    Launcher.pid_igniter_pos.SetPIDParam(3000.0, 0.0, 0.0, 3000, 4000);
+    Launcher.pid_igniter_spd.SetPIDParam(15.0f, 0.0f, 0.0f, 3000, 12000);
+    Launcher.pid_igniter_pos.SetPIDParam(3000.0f, 0.0f, 0.0f, 3000, 6000);
 
-    Yawer.PID_Yaw_Angle.SetPIDParam(15, 0, 0, 0, 200);
+    Yawer.PID_Yaw_Angle.SetPIDParam(35, 0, 0, 0, 300);
     Yawer.PID_Yaw_Angle.I_SeparThresh = 8;
     Yawer.PID_Yaw_Angle.DeadZone = 0.01f;
-    Yawer.PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 12000);
+    Yawer.PID_Yaw_Speed.SetPIDParam(35, 0, 0, 0, 12000);
     #else
 	//校准速度初始化
     calibration_speed={
@@ -106,7 +107,7 @@ void LaunchCtrl(void *arg)
     .igniter_calibration_speed=-1200
     };
     // PID 参数初始化
-    Launcher.pid_deliver_sync.SetPIDParam(-0.8f, 0.0f, 0.0f, 8000, 16000);
+    Launcher.pid_deliver_sync.SetPIDParam(-0.5f, 0.0f, 0.0f, 8000, 16000);
     
     for(int i=0; i<2; i++) {
         Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16384);
@@ -116,10 +117,10 @@ void LaunchCtrl(void *arg)
     Launcher.pid_igniter_spd.SetPIDParam(15.0, 0.0, 0.0, 3000, 12000);
     Launcher.pid_igniter_pos.SetPIDParam(3000.0, 0.0, 0.0, 3000, 6000);
 
-    Yawer.PID_Yaw_Angle.SetPIDParam(15, 0, 0, 0, 300);
+    Yawer.PID_Yaw_Angle.SetPIDParam(35, 0, 0, 0, 300);
     Yawer.PID_Yaw_Angle.I_SeparThresh = 8;
     Yawer.PID_Yaw_Angle.DeadZone = 0.01f;
-    Yawer.PID_Yaw_Speed.SetPIDParam(20, 0, 0, 0, 18000);
+    Yawer.PID_Yaw_Speed.SetPIDParam(35, 0, 0, 0, 12000);
 	#endif
     
     // 任务频率控制

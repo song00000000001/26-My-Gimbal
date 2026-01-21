@@ -273,7 +273,9 @@ void Launcher_Driver::Run_Firing_Sequence()
 
         // 升降机上升，准备装填第三发
         case FIRE_RELOAD_LIFT_3:
-            loader_target_mode=LOAD_STOWED;
+            
+		
+		loader_target_mode=LOAD_STOWED;
             if ((current_time - state_timer) > fire_sequence_delay_params.loader_up_delay) {
                 state_timer = current_time;
                 if(Debugger.debug_fire_type==2)
