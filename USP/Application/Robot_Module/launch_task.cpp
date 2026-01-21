@@ -71,7 +71,8 @@ void LaunchCtrl(void *arg)
         .simulated_loader_pos=-650.0f,
         .four_dart_four_params_enable=false,//四发四参功能启用标志位，默认禁用，调试中启用。
         .dual_loader_mechanical_error_correction=3.0,//双滑块机械装配误差校准修正,目前靠0号,即发射方向左滑块减2.2mm(向下)解决。
-        .deliver_sync_threshold=0.5 //滑块同步误差阈值
+        .deliver_sync_threshold=0.5, //滑块同步误差阈值
+        .initial_calibration_flag=false //初始化校准标志位，用于跳过遥控失联校准流程。
     };
     #if CONSERVATIVE_TEST_PARAMS
     //校准速度初始化
@@ -211,7 +212,15 @@ void LaunchCtrl(void *arg)
         {
             // 恢复条件：遥控器重连
             if (Robot.Flag.Status.rc_connected) {
-                Robot.Status.current_state = SYS_MANUAL_TEST_KEY;
+                if(!Debugger.initial_calibration_flag){
+                    Robot.Status.current_state = SYS_MANUAL_TEST_KEY;
+                    LOG_INFO("RC Connected, Transition to MANUAL_TEST_KEY State.");
+                    Debugger.initial_calibration_flag=true; //设置初始校准标志位为真,防止重复进入校准。
+                }
+                else{
+                    Robot.Status.current_state = SYS_AUTOFIRE_SUSPEND;
+                    LOG_INFO("RC Connected, Transition to AUTOFIRE_SUSPEND State.");
+                }
             }
         }
         break;
