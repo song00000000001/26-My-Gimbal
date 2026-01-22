@@ -51,7 +51,7 @@ A11-transfomer:126~170
 */
 
 servo_ccr_debug servo_ccr={
-    210,    //igniter_ccr_unlock
+    195,    //igniter_ccr_unlock
     290,    //igniter_ccr_lock
 
     210,    //loader1_ccr_up

@@ -87,8 +87,9 @@ void LaunchCtrl(void *arg)
     Launcher.pid_deliver_sync.SetPIDParam(-500.0f, 0.0f, 0.0f, 0, 8000);
     
 	//速度环输出限幅14000,curzuida最大7900,输出限幅改为16380,cur最大8200.
+    //电机极限速度-9257,给8000限幅裕度充足,给9000就基本跑在极限附近.
     for(int i=0; i<2; i++) {
-        Launcher.pid_deliver_spd[i].SetPIDParam(18.0f, 1.0f, 0.0f, 2000, 16380);
+        Launcher.pid_deliver_spd[i].SetPIDParam(10.0f, 1.0f, 0.0f, 2000, 16380);
         Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0f, 0.0f, 1000, 8000);
     }
     

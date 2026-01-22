@@ -89,7 +89,16 @@ void Task_VofaMonitor(void *arg){
 		//VofaMonitor::setDatas(3, data3, data4, data5);
 		//VofaMonitor::setDatas(6, data6, data7, data8, data9);
 		/* 选择串口id */
-        VofaMonitor::setDatas(0,Yawer.YawMotor.getMotorTotalAngle() ,Yawer.YawMotor.getMotorSpeed());
+        if(Debugger.enable_debug_mode==0) 
+            continue;
+        else if(Debugger.enable_debug_mode==1)
+            VofaMonitor::setDatas(0,
+            Launcher.DeliverMotor[0].getMotorTotalAngle(),Launcher.DeliverMotor[1].getMotorTotalAngle(),
+            Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[1].Target,
+            Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[1].Current);
+        else if(Debugger.enable_debug_mode==2)
+            VofaMonitor::setDatas(0,Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[0].Out);
+        
 		VofaMonitor::send(4);
 	}
 }
