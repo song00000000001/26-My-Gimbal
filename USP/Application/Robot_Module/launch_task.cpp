@@ -66,7 +66,7 @@ void LaunchCtrl(void *arg)
         .debug_mode_deliver={MODE_SPEED,MODE_SPEED},
         .debug_mode_igniter=MODE_SPEED ,
         .debug_loader_pos=POS_BOTTOM,
-        .debug_fire_type=3, //调整发射类型，0为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。  
+        .debug_fire_type=1, //调整发射类型，0为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。  
         .is_loader_simulating=false,
         .simulated_loader_pos=-650.0f,
         .four_dart_four_params_enable=false,//四发四参功能启用标志位，默认禁用，调试中启用。
@@ -95,7 +95,7 @@ void LaunchCtrl(void *arg)
     
     Launcher.pid_igniter_spd.SetPIDParam(15.0f, 0.0f, 0.0f, 3000, 12000);
     Launcher.pid_igniter_pos.SetPIDParam(3000.0f, 0.0f, 0.0f, 3000, 6000);
-
+    
     Yawer.PID_Yaw_Angle.SetPIDParam(35, 0, 0, 0, 300);
     Yawer.PID_Yaw_Angle.I_SeparThresh = 8;
     Yawer.PID_Yaw_Angle.DeadZone = 0.01f;
