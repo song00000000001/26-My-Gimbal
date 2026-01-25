@@ -105,6 +105,23 @@ void Task_VofaMonitor(void *arg){
             
 			);
         }
+        else if(Debugger.enable_debug_mode==7){
+            VofaMonitor::setDatas(0, 
+                // 1. 观察基础期望：原本想跑多少？
+                Launcher.pid_deliver_pos[0].Out,       // [通道0] 基础位置环输出 (理论上左右差不多)
+                
+                // 2. 观察最终指令：算法让它跑多少？(观察是否被削峰，是否有差值)
+                Launcher.pid_deliver_spd[0].Target,    // [通道1] 左电机最终速度目标
+                Launcher.pid_deliver_spd[1].Target,    // [通道2] 右电机最终速度目标
+                
+                // 3. 观察实际响应：实际跑了多少？
+                Launcher.DeliverMotor[0].getMotorSpeed(), // [通道3] 左实际速度
+                Launcher.DeliverMotor[1].getMotorSpeed(), // [通道4] 右实际速度
+
+                // 4. 观察同步误差：误差收敛情况
+                Launcher.pid_deliver_sync.Current         // [通道5] 两电机位置差 (Diff)
+            );
+        }
 		VofaMonitor::send(4);
 	}
 }

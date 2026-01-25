@@ -40,73 +40,98 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
 // ================= 动作接口 =================
 void Launcher_Driver::adjust()
 {
-    // 1. 计算同步误差 (仅在两个都进入位置模式后)
+    /*
+    代码逻辑解释：通用溢出处理：
+    我没有使用复杂的 if(i==1) 或硬编码 2*Sync，而是采用了一个更通用的逻辑：计算溢出量（Overflow）。
+    比如目标是 8500，限幅 8000，溢出量就是 +500。比如目标是 -8200，限幅 -8000，溢出量就是 -200。
+    维持相对差：假设左边算出来是 8500（溢出+500），右边是 7500（溢出 0）。
+    我们取最大溢出量 +500。左边：$8500 - 500 = 8000$。右边：$7500 - 500 = 7000$。
+    结果：左边顶着限幅跑，右边自动降速，两者的差值依然是 1000，实现了“削峰”效果，而且逻辑非常直观，不需要担心正负号问题。
+
+    解决双 8000 问题：假设位置环都输出 8000。
+    同步补偿算出：左+500，右-500。Raw Target：左 8500，右 7500。
+    溢出量：左 +500，右 0。最大溢出：+500。修正后：左 8000，右 7000。
+    
+    结论：即使两边原本的基础输出都是 8000，这个算法依然能工作。
+    这种写法将计算与执行分离，避免了重复计算速度环的 Bug，也让削峰逻辑变得健壮。
+    */
+    // ================= Step 1: 计算同步补偿量 =================
     float sync_comp[2] = {0, 0};
+    
+    // 仅在两个都进入位置模式时计算同步
     if (mode_deliver[0] == MODE_ANGLE && mode_deliver[1] == MODE_ANGLE) {
-        // R - L (假设右边减去左边为误差)
+        // 计算位置差 (假设 R - L)
         float diff = DeliverMotor[1].getMotorTotalAngle() - DeliverMotor[0].getMotorTotalAngle();
         pid_deliver_sync.Target = 0;
         pid_deliver_sync.Current = diff;
         pid_deliver_sync.Adjust();
-        // 补偿: R快了就减R加L
-        sync_comp[1] = -pid_deliver_sync.Out;
+
+        // sync_comp[0] 加给左边, sync_comp[1] 加给右边
         sync_comp[0] =  pid_deliver_sync.Out;
+        sync_comp[1] = -pid_deliver_sync.Out;
     } 
     else {
         pid_deliver_sync.clean_intergral();
     }
 
-    // 2. 第一遍循环：计算位置环输出，并检测是否发生饱和（Peak Detection）
-    bool deliver_speed_peek[2] = {false, false};
-    
+    // ================= Step 2: 计算位置环输出 & 预判速度目标 =================
+    float raw_speed_target[2] = {0, 0}; // 暂存未削峰的目标速度
+    bool is_saturated[2] = {false, false}; // 标记是否超限
+    const float SPEED_LIMIT = DELIVER_PID_ANGLE_OUTMAX; // 速度限幅阈值
+
     for (int i = 0; i < 2; i++) {
         if(mode_deliver[i] == MODE_ANGLE){
             pid_deliver_pos[i].Target = std_lib::constrain(target_deliver_angle, POS_DELIVER_MIN, POS_DELIVER_MAX);
             pid_deliver_pos[i].Current = DeliverMotor[i].getMotorTotalAngle();
             pid_deliver_pos[i].Adjust();
             
-            // 检查如果不削峰，速度目标是否会超过 8000 的阈值
-            if(fabs(pid_deliver_pos[i].Out + sync_comp[i]) > 8000) {
-                deliver_speed_peek[i] = true;
+            // 原始目标 = 位置环输出 + 同步补偿
+            raw_speed_target[i] = pid_deliver_pos[i].Out + sync_comp[i];
+            
+            // 检查是否超过限幅
+            if (fabs(raw_speed_target[i]) > SPEED_LIMIT) {
+                is_saturated[i] = true;
             }
         }
     }
 
-    // 3. 第二遍循环：根据削峰逻辑计算最终速度环目标，并执行速度环
-    for (int i = 0; i < 2; i++) {
-        if(mode_deliver[i] == MODE_ANGLE){
+    // ================= Step 3: 统一削峰逻辑 (解决双边8000问题) =================
+    if (mode_deliver[0] == MODE_ANGLE && mode_deliver[1] == MODE_ANGLE) {
+        // 只要有一边饱和，就需要进行整体调整，维持相对差值
+        if (is_saturated[0] || is_saturated[1]) {
+            // 策略：找出溢出了多少，然后两边同时减去这个溢出量
+            // 这样既能保证不超过限幅，又能维持 sync_comp 带来的速度差
             
-            // 只有当两个电机都在 ANGLE 模式时才应用同步和削峰逻辑
-            if(mode_deliver[0] == MODE_ANGLE && mode_deliver[1] == MODE_ANGLE){
-                
-                float target_spd = 0;
+            float overflow[2] = {0, 0};
+            
+            // 计算各自的溢出量 (保留符号)
+            if (raw_speed_target[0] > SPEED_LIMIT)  overflow[0] = raw_speed_target[0] - SPEED_LIMIT;
+            if (raw_speed_target[0] < -SPEED_LIMIT) overflow[0] = raw_speed_target[0] + SPEED_LIMIT;
+            
+            if (raw_speed_target[1] > SPEED_LIMIT)  overflow[1] = raw_speed_target[1] - SPEED_LIMIT;
+            if (raw_speed_target[1] < -SPEED_LIMIT) overflow[1] = raw_speed_target[1] + SPEED_LIMIT;
 
-                // 如果任意一个电机饱和，则触发削峰逻辑
-                if(deliver_speed_peek[0] || deliver_speed_peek[1]){
-                    // 比较谁的饱和程度更高（幅度更大）
-                    if(fabs(pid_deliver_pos[0].Out + sync_comp[0]) > fabs(pid_deliver_pos[1].Out + sync_comp[1])){
-                        // 情况A: 左电机(0)更饱和/更大 -> 削峰左电机，加重右电机补偿
-                        if(i == 0) target_spd = pid_deliver_pos[0].Out; // 左侧移除同步补偿，仅跑基准速度
-                        if(i == 1) target_spd = pid_deliver_pos[1].Out + 2 * sync_comp[1]; // 右侧双倍补偿以维持相对差
-                    } 
-                    else {
-                        // 情况B: 右电机(1)更饱和/更大 -> 削峰右电机，加重左电机补偿
-                        if(i == 0) target_spd = pid_deliver_pos[0].Out + 2 * sync_comp[0];
-                        if(i == 1) target_spd = pid_deliver_pos[1].Out;
-                    }
-                } 
-                else {
-                    // 未饱和，正常施加同步补偿
-                    target_spd = pid_deliver_pos[i].Out + sync_comp[i];
-                }
-                pid_deliver_spd[i].Target = target_spd;
-            } 
-            else {
-                // 非同步状态，直接传递位置环输出
-                pid_deliver_spd[i].Target = pid_deliver_pos[i].Out;
+            // 找出最严重的那个溢出量 (绝对值最大)
+            // 比如左边溢出+500 (要减500)，右边没溢出，那就要两边都减500
+            // 如果左边溢出+500，右边溢出+200，那就要两边都减500（也就是迁就最慢的那个限制）
+            float max_overflow = 0;
+            if (fabs(overflow[0]) > fabs(overflow[1])) {
+                max_overflow = overflow[0];
+            } else {
+                max_overflow = overflow[1];
             }
 
-            // 执行速度环
+            // 应用削峰：两边同时减去最大的溢出量
+            raw_speed_target[0] -= max_overflow;
+            raw_speed_target[1] -= max_overflow;
+        }
+    }
+
+    // ================= Step 4: 执行速度环 =================
+    for (int i = 0; i < 2; i++) {
+        if(mode_deliver[i] == MODE_ANGLE){
+            // 使用处理过后的目标值
+            pid_deliver_spd[i].Target = raw_speed_target[i];
             pid_deliver_spd[i].Current = DeliverMotor[i].getMotorSpeed();
             pid_deliver_spd[i].Adjust();
         }
@@ -115,16 +140,16 @@ void Launcher_Driver::adjust()
             pid_deliver_spd[i].Adjust();
         }
         else{
-            // 失能状态清理
+            // 失能
             DeliverMotor[i].setMotorCurrentOut(0);
-            pid_deliver_pos[i].Target = pid_deliver_pos[i].Current;
+            pid_deliver_pos[i].clean_intergral();
+            pid_deliver_spd[i].clean_intergral();
             pid_deliver_pos[i].Out = 0;
             pid_deliver_spd[i].Target = 0;
             pid_deliver_spd[i].Out = 0;
-            pid_deliver_spd[i].clean_intergral();
-            pid_deliver_pos[i].clean_intergral();
         }
     }
+    
 
     if(mode_igniter==MODE_ANGLE){
         // 串级PID: 位置环 -> 速度环

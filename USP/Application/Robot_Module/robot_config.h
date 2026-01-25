@@ -7,8 +7,8 @@ extern "C" {
 #endif
 
 //保守测试参数切换宏
-#define CONSERVATIVE_TEST_PARAMS 1
-#define DELIVER_PID_ANGLE_OUTMAX 8000
+#define CONSERVATIVE_TEST_PARAMS 0
+#define DELIVER_PID_ANGLE_OUTMAX 8300.0f
 
 /* ================= 电机 ID 定义 ================= */
 #define ID_YAW                        2     // 云台偏航,can2
@@ -33,7 +33,7 @@ extern "C" {
 														                                        
 #define POS_BUFFER -20.0f          //缓冲区位置
 #define POS_BOTTOM -650.0f         //拉栓位置
-
+																 
 #define POS_IGNITER 90.0f         //默认力度,igniter位置
 
 //igniter最小/大位置

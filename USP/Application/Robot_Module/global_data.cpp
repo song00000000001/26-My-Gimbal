@@ -96,7 +96,7 @@ fire_sequence_delay_params_t fire_sequence_delay_params={
     300,     //relapse_delay
     1000,     //loader_up_delay
     1000,     //wait_for_aim_delay
-    15000    //deliver_pulldown_timeout
+    20000    //deliver_pulldown_timeout
 };
 #else
 fire_sequence_delay_params_t fire_sequence_delay_params={
