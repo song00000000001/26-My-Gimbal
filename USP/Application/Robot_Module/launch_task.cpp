@@ -89,8 +89,8 @@ void LaunchCtrl(void *arg)
 	//速度环输出限幅14000,curzuida最大7900,输出限幅改为16380,cur最大8200.
     //电机极限速度-9257,给8000限幅裕度充足,给9000就基本跑在极限附近.
     for(int i=0; i<2; i++) {
-        Launcher.pid_deliver_spd[i].SetPIDParam(10.0f, 1.0f, 0.0f, 2000, 16380);
-        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0f, 0.0f, 1000, 8000);
+        Launcher.pid_deliver_spd[i].SetPIDParam(10.0f, 1.0f, 0.0f, 2000, 14380);
+        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0f, 0.0f, 1000, 1000);
     }
     
     Launcher.pid_igniter_spd.SetPIDParam(15.0f, 0.0f, 0.0f, 3000, 12000);
@@ -108,11 +108,11 @@ void LaunchCtrl(void *arg)
     .igniter_calibration_speed=-1200
     };
     // PID 参数初始化
-    Launcher.pid_deliver_sync.SetPIDParam(-0.5f, 0.0f, 0.0f, 8000, 16000);
+    Launcher.pid_deliver_sync.SetPIDParam(-500.0f, 0.0f, 0.0f, 0, 8000);
     
     for(int i=0; i<2; i++) {
         Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16384);
-        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0, 0.0, 1000, 10000);
+        Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0, 0.0, 1000, 8000);
     }
     
     Launcher.pid_igniter_spd.SetPIDParam(15.0, 0.0, 0.0, 3000, 12000);

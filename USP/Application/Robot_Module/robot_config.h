@@ -8,6 +8,7 @@ extern "C" {
 
 //保守测试参数切换宏
 #define CONSERVATIVE_TEST_PARAMS 1
+#define DELIVER_PID_ANGLE_OUTMAX 8000
 
 /* ================= 电机 ID 定义 ================= */
 #define ID_YAW                        2     // 云台偏航,can2

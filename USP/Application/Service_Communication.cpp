@@ -19,6 +19,7 @@
 #include "openlog.h"
 #include "protocol.h"
 #include "global_data.h"
+#include "robot_config.h"
 
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -419,15 +420,25 @@ void Task_LogTransmit(void *arg){
 
     for (;;)
     {
-        #if 0
-        // 尝试发送所有待处理的缓冲区，直到 Send() 返回 1 (表示队列已空)
-        while (OpenLog.Send() == 0);
-        #else
-        //如果有待发送的数据包，则发送一个，否则内部会跳过
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+        //如果有待发送的数据包，则发送并返回0，否则返回1。这样写会造成发送过快。
         //while (OpenLog.Send() == 0);
         OpenLog.Send();
+
+        //校准后,限位开关意外触发记录
+        #if 1
+        //由于限位开关延迟问题，容易误触发，这里先注释掉
+        if(Launcher.is_calibrated()){
+            if(SW_DELIVER_L_OFF)LOG_ERROR("Left Deliver Limit Switch Triggered");
+            if(SW_DELIVER_R_OFF)LOG_ERROR("Right Deliver Limit Switch Triggered");
+            if(SW_IGNITER_OFF)LOG_ERROR("Igniter Limit Switch Triggered");
+        }     
+        if(Yawer.is_Yaw_Init()){
+            if(SW_YAW_L_OFF)LOG_ERROR("Left Yaw Limit Switch Triggered");
+            if(SW_YAW_R_OFF)LOG_ERROR("Right Yaw Limit Switch Triggered");
+        }
         #endif
-        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 

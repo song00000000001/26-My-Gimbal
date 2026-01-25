@@ -164,7 +164,6 @@ typedef struct {
     float dual_loader_mechanical_error_correction; //双滑块机械装配误差校准修正
 	float deliver_sync_threshold; //滑块同步误差阈值
     bool initial_calibration_flag; //初始化校准标志位，用于跳过遥控失联校准流程。
-
     float emegency_deliver_ctrl_speed;
 } Debug_Data_t;
 
@@ -225,6 +224,7 @@ typedef struct
     uint16_t relapse_delay;
     uint16_t loader_up_delay;   
     uint16_t wait_for_aim_delay;
+    uint16_t deliver_pulldown_timeout;
 }fire_sequence_delay_params_t;
 
 

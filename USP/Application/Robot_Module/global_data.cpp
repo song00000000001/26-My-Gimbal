@@ -51,7 +51,7 @@ A11-transfomer:126~170
 */
 
 servo_ccr_debug servo_ccr={
-    195,    //igniter_ccr_unlock
+    208,    //igniter_ccr_unlock
     260,    //igniter_ccr_lock
 
     210,    //loader1_ccr_up
@@ -84,6 +84,7 @@ after_fire_delay
 relapse_delay
 指卡镖舵机松开后等待时间，单位ms，是为了给镖体转移到发射区留时间，防止舵机太快锁住卡不住。测试时带制导镖完全转移时间为139ms。但是给100ms也没问题。完全放的掉。
 loader_up_delay指升降机上升到顶部的等待时间，单位ms，是为了给升降机上升留时间，防止还没上去卡镖舵机就动作了。带制导镖上升时间为667ms。
+deliver_pulldown_timeout指滑块下拉超时时间，单位ms，是为了防止滑块下拉过程中因为各种原因卡住导致一直等下去。正常下拉时间为2200ms左右，给4000ms足够保险。
 */
 
 #if CONSERVATIVE_TEST_PARAMS
@@ -94,7 +95,8 @@ fire_sequence_delay_params_t fire_sequence_delay_params={
     1000,    //after_fire_delay
     300,     //relapse_delay
     1000,     //loader_up_delay
-    1000     //wait_for_aim_delay
+    1000,     //wait_for_aim_delay
+    15000    //deliver_pulldown_timeout
 };
 #else
 fire_sequence_delay_params_t fire_sequence_delay_params={
@@ -103,6 +105,7 @@ fire_sequence_delay_params_t fire_sequence_delay_params={
     500,    //after_fire_delay
     300,    //relapse_delay
     700,     //loader_up_delay
-    500     //wait_for_aim_delay
+    500,     //wait_for_aim_delay
+    4000    //deliver_pulldown_timeout
 };
 #endif

@@ -91,14 +91,20 @@ void Task_VofaMonitor(void *arg){
 		/* 选择串口id */
         if(Debugger.enable_debug_mode==0) 
             continue;
-        else if(Debugger.enable_debug_mode==1)
+        else if(Debugger.enable_debug_mode==4)
             VofaMonitor::setDatas(0,
             Launcher.DeliverMotor[0].getMotorTotalAngle(),Launcher.DeliverMotor[1].getMotorTotalAngle(),
             Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[1].Target,
             Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[1].Current);
-        else if(Debugger.enable_debug_mode==2)
+        else if(Debugger.enable_debug_mode==5)
             VofaMonitor::setDatas(0,Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[0].Out);
-        
+        else if(Debugger.enable_debug_mode==6){
+            VofaMonitor::setDatas(0,Launcher.pid_deliver_sync.Current,Launcher.pid_deliver_sync.Out,//同步pid的now和输出
+            Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[0].Out,//左电机速度环的目标，now，输出
+            Launcher.pid_deliver_spd[1].Target,Launcher.pid_deliver_spd[1].Current,Launcher.pid_deliver_spd[1].Out
+            
+			);
+        }
 		VofaMonitor::send(4);
 	}
 }

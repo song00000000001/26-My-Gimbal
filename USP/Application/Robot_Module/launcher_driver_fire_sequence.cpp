@@ -86,20 +86,17 @@ void Launcher_Driver::Run_Firing_Sequence()
         //下拉滑块到底部扳机
         case FIRE_PULL_DOWN_1:
             target_deliver_angle=(POS_BOTTOM);
-            static  uint16_t pull_down_counter = 0;
             //防止滑块卡住无法到底部
-            pull_down_counter++;
             //如果超过4秒还没到底部就强制进入下一状态
-            if(pull_down_counter>4000){
+            //防止滑块卡住无法到底部
+            if(current_time - state_timer > fire_sequence_delay_params.deliver_pulldown_timeout){
                 LOG_ERROR("Deliver Motor Pull Down Timeout! Forcing Next State.");
-                pull_down_counter=0;
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_1;
             }
-            if (is_deliver_at_target(5)) {
+            if (is_deliver_at_target(5)&&target_deliver_angle==POS_BOTTOM) {//双重保险，确保不是因为目标位置被改了才误判到位
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_1;
-                pull_down_counter=0;//重置计数器
             }
             break;
 
@@ -114,7 +111,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 滑块回缓冲区
         case FIRE_RETURN_UP_1:
             target_deliver_angle=(POS_BUFFER);
-            if (is_deliver_at_target(5)) {
+            if (is_deliver_at_target(5)&&target_deliver_angle==POS_BUFFER) {//双重保险，确保不是因为目标位置被改了才误判到位
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_UP_1;
             }
@@ -205,7 +202,13 @@ void Launcher_Driver::Run_Firing_Sequence()
         case FIRE_PULL_DOWN_2:
             loader_target_mode=LOAD_DYNAMIC_SYNC;
             target_deliver_angle=(POS_BOTTOM);
-            if (is_deliver_at_target(5)) {
+            //如果超过4秒还没到底部就强制进入下一状态
+            if((current_time - state_timer) > fire_sequence_delay_params.deliver_pulldown_timeout){
+                LOG_ERROR("Deliver Motor Pull Down Timeout! Forcing Next State.");
+                state_timer = current_time;
+                fire_state = FIRE_WAIT_BOTTOM_2;
+            }
+            if (is_deliver_at_target(5)&&target_deliver_angle==POS_BOTTOM) {//双重保险，确保不是因为目标位置被改了才误判到位
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_2;
                 loader_target_mode=LOAD_PRE_LOAD;
@@ -223,7 +226,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 滑块回缓冲区
         case FIRE_RETURN_UP_2:
             target_deliver_angle=(POS_BUFFER);
-            if (is_deliver_at_target(5)) {
+            if (is_deliver_at_target(5)&&target_deliver_angle==POS_BUFFER) {//双重保险，确保不是因为目标位置被改了才误判到位
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_UP_2;
                 loader_target_mode=LOAD_ENGAGED;
@@ -314,7 +317,13 @@ void Launcher_Driver::Run_Firing_Sequence()
         case FIRE_PULL_DOWN_3:
             loader_target_mode=LOAD_DYNAMIC_SYNC;
             target_deliver_angle=(POS_BOTTOM);
-            if (is_deliver_at_target(5)) {
+            //如果超过4秒还没到底部就强制进入下一状态
+            if((current_time - state_timer) > fire_sequence_delay_params.deliver_pulldown_timeout){
+                LOG_ERROR("Deliver Motor Pull Down Timeout! Forcing Next State.");
+                state_timer = current_time;
+                fire_state = FIRE_WAIT_BOTTOM_3;
+            }
+            if (is_deliver_at_target(5)&&target_deliver_angle==POS_BOTTOM) {//双重保险，确保不是因为目标位置被改了才误判到位
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_3;
                 loader_target_mode=LOAD_PRE_LOAD;
@@ -423,7 +432,13 @@ void Launcher_Driver::Run_Firing_Sequence()
         case FIRE_PULL_DOWN_4:
             loader_target_mode=LOAD_DYNAMIC_SYNC;
             target_deliver_angle=(POS_BOTTOM);
-            if (is_deliver_at_target(5)) {
+            //如果超过4秒还没到底部就强制进入下一状态
+            if((current_time - state_timer) > fire_sequence_delay_params.deliver_pulldown_timeout){
+                LOG_ERROR("Deliver Motor Pull Down Timeout! Forcing Next State.");
+                state_timer = current_time;
+                fire_state = FIRE_WAIT_BOTTOM_4;
+            }
+            if (is_deliver_at_target(5)&&target_deliver_angle==POS_BOTTOM) {//双重保险，确保不是因为目标位置被改了才误判到位
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_BOTTOM_4;
                 loader_target_mode=LOAD_PRE_LOAD;
@@ -441,7 +456,7 @@ void Launcher_Driver::Run_Firing_Sequence()
         // 滑块回缓冲区
         case FIRE_RETURN_UP_4:
             target_deliver_angle=(POS_BUFFER);
-            if (is_deliver_at_target(5)) {
+            if (is_deliver_at_target(5)&&target_deliver_angle==POS_BUFFER) {//双重保险，确保不是因为目标位置被改了才误判到位
                 state_timer = current_time;
                 fire_state = FIRE_WAIT_UP_4;
                 loader_target_mode=LOAD_ENGAGED; // 升降机下降，装填第四发
