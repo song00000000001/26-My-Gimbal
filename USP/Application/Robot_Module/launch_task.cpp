@@ -73,7 +73,8 @@ void LaunchCtrl(void *arg)
         .dual_loader_mechanical_error_correction=0.0,//双滑块机械装配误差校准修正,目前靠0号,即发射方向左滑块减2.2mm(向下)解决。
         .deliver_sync_threshold=0.5, //滑块同步误差阈值
         .initial_calibration_flag=false, //初始化校准标志位，用于跳过遥控失联校准流程。
-        .emegency_deliver_ctrl_speed=3
+        .emegency_deliver_ctrl_speed=3,
+        .deliver_speed_limit=8500,//滑块速度环限幅，默认值与PID位置环输出限幅相同。
     };
 	
     #if CONSERVATIVE_TEST_PARAMS
@@ -84,12 +85,12 @@ void LaunchCtrl(void *arg)
     .igniter_calibration_speed=-600
     };
     // PID 参数初始化
-    Launcher.pid_deliver_sync.SetPIDParam(-500.0f, 0.0f, 0.0f, 0, 8000);
+    Launcher.pid_deliver_sync.SetPIDParam(-700.0f, 0.0f, 0.0f, 0, 8000);
     
 	//速度环输出限幅14000,curzuida最大7900,输出限幅改为16380,cur最大8200.
     //电机极限速度-9257,给8000限幅裕度充足,给9000就基本跑在极限附近.
     for(int i=0; i<2; i++) {
-        Launcher.pid_deliver_spd[i].SetPIDParam(10.0f, 1.0f, 0.0f, 2000, 14380);
+        Launcher.pid_deliver_spd[i].SetPIDParam(8.0f, 1.0f, 0.0f, 2000, 8380);
         Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0f, 0.0f, 1000, 1000);
     }
     
@@ -108,10 +109,10 @@ void LaunchCtrl(void *arg)
     .igniter_calibration_speed=-1200
     };
     // PID 参数初始化
-    Launcher.pid_deliver_sync.SetPIDParam(-500.0f, 0.0f, 0.0f, 0, 8000);
+    Launcher.pid_deliver_sync.SetPIDParam(-700.0f, 0.0f, 0.0f, 0, 8000);
     
     for(int i=0; i<2; i++) {
-        Launcher.pid_deliver_spd[i].SetPIDParam(20.0f, 2.0f, 0.0f, 8000, 16384);
+        Launcher.pid_deliver_spd[i].SetPIDParam(8.0f, 2.0f, 0.0f, 8000, 16384);
         Launcher.pid_deliver_pos[i].SetPIDParam(800.f, 0.0, 0.0, 1000, 8000);
     }
     

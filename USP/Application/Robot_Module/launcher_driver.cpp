@@ -77,7 +77,7 @@ void Launcher_Driver::adjust()
     // ================= Step 2: 计算位置环输出 & 预判速度目标 =================
     float raw_speed_target[2] = {0, 0}; // 暂存未削峰的目标速度
     bool is_saturated[2] = {false, false}; // 标记是否超限
-    const float SPEED_LIMIT = DELIVER_PID_ANGLE_OUTMAX; // 速度限幅阈值
+    const float SPEED_LIMIT = Debugger.deliver_speed_limit; // 速度限幅阈值
 
     for (int i = 0; i < 2; i++) {
         if(mode_deliver[i] == MODE_ANGLE){

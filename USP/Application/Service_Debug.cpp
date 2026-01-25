@@ -99,28 +99,20 @@ void Task_VofaMonitor(void *arg){
         else if(Debugger.enable_debug_mode==5)
             VofaMonitor::setDatas(0,Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[0].Out);
         else if(Debugger.enable_debug_mode==6){
-            VofaMonitor::setDatas(0,Launcher.pid_deliver_sync.Current,Launcher.pid_deliver_sync.Out,//同步pid的now和输出
-            Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[0].Out,//左电机速度环的目标，now，输出
-            Launcher.pid_deliver_spd[1].Target,Launcher.pid_deliver_spd[1].Current,Launcher.pid_deliver_spd[1].Out
-            
+            VofaMonitor::setDatas(0,
+                Launcher.pid_deliver_pos[0].Out,        // [通道0] 基础位置环输出
+                Launcher.pid_deliver_sync.Current,      // [通道1] 同步误差
+                Launcher.pid_deliver_spd[0].Target,     // [通道2] 左电机最终速度目标
+                Launcher.pid_deliver_spd[1].Target,     // [通道3] 右电机最终速度目标
+                Launcher.pid_deliver_spd[0].Current,    // [通道4] 左电机实际速度
+                Launcher.pid_deliver_spd[1].Current,    // [通道5] 右电机实际速度
+                Launcher.pid_deliver_spd[0].Out,        // [通道6] 左电机速度环输出
+                Launcher.pid_deliver_spd[1].Out,        // [通道7] 右电机速度环输出
+                Launcher.pid_deliver_pos[0].Current     // [通道8] 左电机位置环反馈
 			);
         }
         else if(Debugger.enable_debug_mode==7){
-            VofaMonitor::setDatas(0, 
-                // 1. 观察基础期望：原本想跑多少？
-                Launcher.pid_deliver_pos[0].Out,       // [通道0] 基础位置环输出 (理论上左右差不多)
-                
-                // 2. 观察最终指令：算法让它跑多少？(观察是否被削峰，是否有差值)
-                Launcher.pid_deliver_spd[0].Target,    // [通道1] 左电机最终速度目标
-                Launcher.pid_deliver_spd[1].Target,    // [通道2] 右电机最终速度目标
-                
-                // 3. 观察实际响应：实际跑了多少？
-                Launcher.DeliverMotor[0].getMotorSpeed(), // [通道3] 左实际速度
-                Launcher.DeliverMotor[1].getMotorSpeed(), // [通道4] 右实际速度
 
-                // 4. 观察同步误差：误差收敛情况
-                Launcher.pid_deliver_sync.Current         // [通道5] 两电机位置差 (Diff)
-            );
         }
 		VofaMonitor::send(4);
 	}

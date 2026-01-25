@@ -165,6 +165,7 @@ typedef struct {
 	float deliver_sync_threshold; //滑块同步误差阈值
     bool initial_calibration_flag; //初始化校准标志位，用于跳过遥控失联校准流程。
     float emegency_deliver_ctrl_speed;
+    float deliver_speed_limit; //滑块速度环限幅
 } Debug_Data_t;
 
 // 校准速度结构体
