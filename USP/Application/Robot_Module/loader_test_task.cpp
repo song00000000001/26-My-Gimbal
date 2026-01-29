@@ -104,7 +104,7 @@ void Task_load_test_ctrl(void *arg)
                     break;
 
                 case 14: // 延时 2s 后启动下降流程
-                    if (now - test_timer > 2000) {
+                    if (now - test_timer > 1000) {
                         test_step = 15;
                         test_timer = now;
                     }
