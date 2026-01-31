@@ -82,8 +82,8 @@ yaw_L:PA7
 #define SW_YAW_L_OFF (HAL_GPIO_ReadPin(SW_YAW_L_GPIO_Port, SW_YAW_L_Pin))==GPIO_PIN_RESET
 
 //蜂鸣器宏
-#define BEEP_ON HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_SET); //蜂鸣器引脚PA4
-#define BEEP_OFF HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_RESET); //蜂鸣器引脚PA4
+#define BEEP_ON HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_SET) //蜂鸣器引脚PA4
+#define BEEP_OFF HAL_GPIO_WritePin(GPIOA,GPIO_PIN_4,GPIO_PIN_RESET) //蜂鸣器引脚PA4
 
 // 舵机宏
 //PA8

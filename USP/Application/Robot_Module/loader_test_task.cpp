@@ -4,6 +4,7 @@
 #include "global_data.h"
 #include "robot_config.h"
 
+volatile int g_buzzer_beep_count = 0;
 
 void Task_load_test_ctrl(void *arg)
 {
@@ -13,6 +14,53 @@ void Task_load_test_ctrl(void *arg)
     for (;;)
     {
         uint32_t now = xTaskGetTickCount();
+
+        // --- Buzzer Feedback Logic ---
+        static bool is_beeping = false;
+        static int beep_toggles_total = 0;
+        static int beep_toggles_done = 0;
+        static uint32_t beep_next_toggle_tick = 0;
+        static uint32_t beep_interval_ticks = 0;
+
+        if (g_buzzer_beep_count > 0)
+        {
+            is_beeping = true;
+            beep_toggles_total = g_buzzer_beep_count * 2;
+            
+            // Interval to fit counts in 1000ms
+            uint32_t interval_ms = 1000 / beep_toggles_total;
+            if (interval_ms < 10) interval_ms = 10;
+            
+            beep_interval_ticks = pdMS_TO_TICKS(interval_ms);
+            if (beep_interval_ticks == 0) beep_interval_ticks = 1;
+
+            beep_next_toggle_tick = now + beep_interval_ticks;
+            beep_toggles_done = 1;
+            BEEP_ON;
+            
+            g_buzzer_beep_count = 0;
+        }
+        else if (is_beeping)
+        {
+            if (now >= beep_next_toggle_tick)
+            {
+                beep_toggles_done++;
+                if (beep_toggles_done > beep_toggles_total)
+                {
+                    BEEP_OFF;
+                    is_beeping = false;
+                }
+                else
+                {
+                    if (beep_toggles_done % 2 != 0) BEEP_ON;
+                    else BEEP_OFF;
+                    
+                    beep_next_toggle_tick = now + beep_interval_ticks;
+                }
+            }
+        }
+        // -----------------------------
+
         float ry_val = abs(DR16_Snap.RY_Norm);
 
         // --- 1. 触发逻辑判断 ---
