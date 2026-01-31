@@ -215,7 +215,10 @@ void LaunchCtrl(void *arg)
                     Robot.Flag.Status.emergency_override=false;
                 }
             }
-    
+            int temp =0;
+            Step_Control_With_Feedback(DR16_Snap.LY_Norm, &Joystick_LY_Trigger, &temp, 0, 3);//使用输入的方式更安全,防止越界,但是也可以利用返回值进行加减。
+            Debugger.debug_fire_type=temp;
+            Debugger.buzzer_beep_count=Debugger.debug_fire_type+1;//根据发射类型调整蜂鸣器鸣叫次数。
         }
         
         switch (Robot.Status.current_state)

@@ -2892,6 +2892,16 @@
               <FileType>8</FileType>
               <FilePath>..\USP\Application\Robot_Module\launcher_driver_fire_sequence.cpp</FilePath>
             </File>
+            <File>
+              <FileName>Joystick.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Application\Robot_Module\Joystick.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>Joystick.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\USP\Application\Robot_Module\Joystick.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

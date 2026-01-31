@@ -115,3 +115,6 @@ stack_remain_t Stack_Remain={
     0,0,0,0,0,0,0,0
 };
 #endif
+
+JoystickTrigger_t Joystick_LX_Trigger={false,false};
+JoystickTrigger_t Joystick_LY_Trigger={false,false};
