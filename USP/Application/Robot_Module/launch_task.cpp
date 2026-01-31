@@ -66,7 +66,7 @@ void LaunchCtrl(void *arg)
         .debug_mode_deliver={MODE_SPEED,MODE_SPEED},
         .debug_mode_igniter=MODE_SPEED ,
         .debug_loader_pos=POS_BOTTOM,
-        .debug_fire_type=3, //调整发射类型，0为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。  
+        .debug_fire_type=3, //调整发射类型，4为连发一二三四，1为单发第一发，2为单发第二发，3为单发第三发。  (其实0和45678...都是四连发)
         .is_loader_simulating=false,
         .simulated_loader_pos=-650.0f,
         .four_dart_four_params_enable=false,//四发四参功能启用标志位，默认禁用，调试中启用。
@@ -215,10 +215,10 @@ void LaunchCtrl(void *arg)
                     Robot.Flag.Status.emergency_override=false;
                 }
             }
-            int temp =0;
-            Step_Control_With_Feedback(DR16_Snap.LY_Norm, &Joystick_LY_Trigger, &temp, 0, 3);//使用输入的方式更安全,防止越界,但是也可以利用返回值进行加减。
-            Debugger.debug_fire_type=temp;
-            Debugger.buzzer_beep_count=Debugger.debug_fire_type+1;//根据发射类型调整蜂鸣器鸣叫次数。
+            int fire_type_temp =0;
+            Step_Control_With_Feedback(DR16_Snap.LY_Norm, &Joystick_LY_Trigger, &fire_type_temp, 1, 4);//使用输入的方式更安全,防止越界,但是也可以利用返回值进行加减。
+            Debugger.debug_fire_type=fire_type_temp;
+            Debugger.buzzer_beep_count=Debugger.debug_fire_type;//根据发射类型调整蜂鸣器鸣叫次数。
         }
         
         switch (Robot.Status.current_state)
