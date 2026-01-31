@@ -68,7 +68,7 @@ void Service_Devices_Init(void)
 	*/
 	xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size, NULL, PriorityAboveNormal, &Vision_Task_Handle);
 	xTaskCreate(Loader_Ctrl, "App.Loader_Ctrl", Normal_Stack_Size, NULL, PriorityAboveNormal, &Loader_Ctrl_Handle);
-    xTaskCreate(Task_load_test_ctrl, "App.load_test_ctrl", Small_Stack_Size, NULL, PriorityNormal, &load_test_ctrl_Handle);
+    xTaskCreate(Task_load_test_ctrl, "App.load_test_ctrl", Normal_Stack_Size, NULL, PriorityNormal, &load_test_ctrl_Handle);
 
 #if USE_SRML_DR16
 	xTaskCreate(tskDR16, "App.DR16", Small_Stack_Size, NULL, PrioritySuperHigh, &DR16_Handle);
