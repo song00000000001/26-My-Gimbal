@@ -66,7 +66,7 @@ void Service_Devices_Init(void)
 	增大任务优先级
 	将dr16失联等实时性要求高的逻辑放到另一个任务中，防止主控制任务意外卡死(使用互斥锁或者vtaskdelay等阻塞函数)
 	*/
-	xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size, NULL, PriorityAboveNormal, &Vision_Task_Handle);
+	xTaskCreate(Vision_Task, "App.Vision_Task", Normal_Stack_Size, NULL, PriorityAboveNormal, &Vision_Task_Handle);
 	xTaskCreate(Loader_Ctrl, "App.Loader_Ctrl", Normal_Stack_Size, NULL, PriorityAboveNormal, &Loader_Ctrl_Handle);
     xTaskCreate(Task_load_test_ctrl, "App.load_test_ctrl", Normal_Stack_Size, NULL, PriorityNormal, &load_test_ctrl_Handle);
 
@@ -143,11 +143,13 @@ void Vision_Task(void *arg)
 	UART_pack.address = (uint8_t *)&vision_send_pack;
 	UART_pack.len = sizeof(vision_send_pack);
 
-    
+    // 定义一个足够大的缓冲区，每个任务大约需要 40 字节，目前有 12 个任务
+    static char taskInfoBuffer[512];
+    static uint8_t counter[2] = {0};
 
 	for (;;)
 	{
-		vTaskDelayUntil(&xLastWakeTime_t, 10); // 100Hz 频率发送
+		vTaskDelayUntil(&xLastWakeTime_t, 100); // 10Hz 频率发送
 		vision_send_pack.mode = 3;
 
         // if(Debugger.enable_debug_mode==7)
@@ -175,7 +177,35 @@ void Vision_Task(void *arg)
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         Stack_Remain.Vision_Task_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif
-        
+
+        if(Debugger.enable_debug_mode==7)
+        {
+            //定期打印各任务栈剩余情况
+            counter[0]++;
+            counter[1]++;
+            if (counter[0]>50)//每100ms*xxx
+            {
+                counter[0]=0;
+                LOG_INFO("Stack Remain: LaunchCtrl=%d,Vision_Task=%d,Loader_Ctrl=%d,load_test_ctrl=%d,DR16=%d,Rx_Referee=%d,log=%d,debug_send=%d",
+                    Stack_Remain.LaunchCtrl_stack_remain,Stack_Remain.Vision_Task_stack_remain,Stack_Remain.Loader_Ctrl_stack_remain,
+                    Stack_Remain.Task_load_test_ctrl_stack_remain,Stack_Remain.DR16_stack_remain,Stack_Remain.Rx_Referee_stack_remain,
+                    Stack_Remain.log_stack_remain,Stack_Remain.debug_send_stack_remain);
+            }
+
+            if(counter[1]>10)//每10*100ms
+            {
+                counter[1]=0;
+                //考虑使用osThreadList或者uxTaskGetSystemState打印更详细的任务状态和栈使用情况
+                // 1. 获取任务统计信息
+                // 注意：vTaskList 会关闭中断较长时间，不要在对实时性要求极高的任务中高频调用
+                vTaskList(taskInfoBuffer);
+
+                // 2. 利用你现有的 Log 系统发送
+                // 假设你的 log 系统支持 printf 风格或者直接发字符串
+                // 这里我参考了你代码中提到的 log.tx_task
+                LOG_INFO("--- Task List Status ---\nName          State  Priority  Stack   Num\n%s------------------------\r\n", taskInfoBuffer);
+            }
+        }
 	}
 }
 #if USE_SRML_DR16
