@@ -521,14 +521,11 @@ void Task_protocal_status_monitor(void *arg){
         }
         
         vTaskDelay(pdMS_TO_TICKS(100)); 
+        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
+        //Stack_Remain.protocol_status_monitor_stack_remain = uxTaskGetStackHighWaterMark(NULL);
+        #endif
     }
 }
 #endif
 /************************ COPYRIGHT(C) SCUT-ROBOTLAB **************************/
 
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
-    // 报错、停机或记录日志
-    LOG_ERROR("Stack Overflow in task: %s", pcTaskName);
-    OpenLog.Send();
-    while(1); 
-}

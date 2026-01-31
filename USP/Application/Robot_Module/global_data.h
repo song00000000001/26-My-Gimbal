@@ -240,8 +240,9 @@ typedef struct
     uint16_t Rx_Referee_stack_remain;
 
     uint16_t log_stack_remain;
+    uint16_t debug_send_stack_remain;
 
-    uint16_t protocol_status_monitor_stack_remain;
+    //uint16_t protocol_status_monitor_stack_remain;
 
 }stack_remain_t;
 

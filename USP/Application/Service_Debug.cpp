@@ -115,6 +115,9 @@ void Task_VofaMonitor(void *arg){
 
         }
 		VofaMonitor::send(4);
+        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
+        Stack_Remain.debug_send_stack_remain = uxTaskGetStackHighWaterMark(NULL);
+        #endif
 	}
 }
 #endif	/* USE_SRML_VOFA_MONITOR */

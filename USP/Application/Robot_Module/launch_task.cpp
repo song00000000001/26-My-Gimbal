@@ -62,7 +62,7 @@ void LaunchCtrl(void *arg)
  
     // Debug 初始化,用于控制电机状态
     Debugger={
-        .enable_debug_mode=6,//用于debug中进入debug状态
+        .enable_debug_mode=1,//用于debug中进入debug状态
         .debug_mode_deliver={MODE_SPEED,MODE_SPEED},
         .debug_mode_igniter=MODE_SPEED ,
         .debug_loader_pos=POS_BOTTOM,
