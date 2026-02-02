@@ -127,7 +127,8 @@ void Launcher_Driver::Run_Firing_Sequence()
                 放在这里可以实现只触发一次的效果，避免发射状态延时期间重复打印日志。
                 */
 				fire_state = FIRE_WAIT_AIM_1;
-                LOG_WARN("Dart1 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart1 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart1 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             }
             break;    
 
@@ -152,12 +153,14 @@ void Launcher_Driver::Run_Firing_Sequence()
                 {
                     LOG_ERROR("Dart1 Aim Wait Timeout! Forcing Fire.");
                 }
-                LOG_WARN("Dart1 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart1 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart1 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             }
             #else
             state_timer = current_time;
             fire_state = FIRE_SHOOTING_1;
-            LOG_WARN("Dart1 Fired! Total Count: %d", Robot.Status.dart_count + 1);
+            LOG_INFO("Dart1 Fired! Total Count: %d", Robot.Status.dart_count);
+            LOG_INFO("Dart1 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             #endif
 
             break;
@@ -254,12 +257,14 @@ void Launcher_Driver::Run_Firing_Sequence()
                 {
                     LOG_ERROR("Dart2 Aim Wait Timeout! Forcing Fire.");
                 }
-                LOG_WARN("Dart2 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart2 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart2 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             }
             #else
             state_timer = current_time;
             fire_state = FIRE_SHOOTING_2;
-            LOG_WARN("Dart2 Fired! Total Count: %d", Robot.Status.dart_count + 1);
+            LOG_INFO("Dart2 Fired! Total Count: %d", Robot.Status.dart_count);
+            LOG_INFO("Dart2 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             #endif
 
             break;
@@ -370,12 +375,14 @@ void Launcher_Driver::Run_Firing_Sequence()
                 {
                     LOG_ERROR("Dart3 Aim Wait Timeout! Forcing Fire.");
                 }
-                LOG_WARN("Dart3 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart3 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart3 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             }
             #else
             state_timer = current_time;
             fire_state = FIRE_SHOOTING_3;
-            LOG_WARN("Dart3 Fired! Total Count: %d", Robot.Status.dart_count + 1);
+            LOG_INFO("Dart3 Fired! Total Count: %d", Robot.Status.dart_count);
+            LOG_INFO("Dart3 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             #endif
             break;
         
@@ -485,12 +492,14 @@ void Launcher_Driver::Run_Firing_Sequence()
                 {
                     LOG_ERROR("Dart4 Aim Wait Timeout! Forcing Fire.");
                 }
-                LOG_WARN("Dart4 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart4 Fired! Total Count: %d", Robot.Status.dart_count);
+                LOG_INFO("Dart4 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             }
             #else
             state_timer = current_time;
             fire_state = FIRE_SHOOTING_4;
-            LOG_WARN("Dart4 Fired! Total Count: %d", Robot.Status.dart_count + 1);
+            LOG_INFO("Dart4 Fired! Total Count: %d", Robot.Status.dart_count);
+            LOG_INFO("Dart4 Yaw Target: %.2f, Igniter Goal: %.2f", Yawer.yaw_target, target_igniter_angle);
             #endif
             break;
 

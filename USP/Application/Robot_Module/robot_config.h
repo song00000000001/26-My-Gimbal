@@ -32,7 +32,7 @@ extern "C" {
 														                                        
 #define POS_BUFFER -20.0f          //缓冲区位置
 #define POS_BOTTOM -647.0f         //拉栓位置
-																 
+			
 #define POS_IGNITER 90.0f         //默认力度,igniter位置
 
 //igniter最小/大位置
@@ -41,6 +41,13 @@ extern "C" {
 //deliver最小/大位置
 #define POS_DELIVER_MIN -647.0f
 #define POS_DELIVER_MAX -5.0f
+//yaw最小/大位置,警告: 如果不清楚该值的映射关系,请勿随意更改!谨慎修改!
+#define YAW_MIN_ANGLE -10.2f
+#define YAW_MAX_ANGLE 10.2f
+
+//手动控制速度
+#define YAW_MANUAL_SPEED 0.02f //手动控制时的yaw轴速度设定值
+#define IGNITER_MANUAL_SPEED 0.04f //手动控制时的igniter轴速度设定值
 
 //以下用到了c语言函数,需要加extern "C"修饰
 #ifdef __cplusplus

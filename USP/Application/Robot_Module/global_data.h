@@ -167,7 +167,7 @@ typedef struct {
     float emegency_deliver_ctrl_speed;
     float deliver_speed_limit; //滑块速度环限幅
     uint8_t buzzer_beep_count; //蜂鸣器鸣叫次数
-    
+    int debug_vision_enable; //视觉使能调试开关
 } Debug_Data_t;
 
 // 校准速度结构体

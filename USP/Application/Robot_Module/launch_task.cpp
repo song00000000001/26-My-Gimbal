@@ -75,6 +75,8 @@ void LaunchCtrl(void *arg)
         .initial_calibration_flag=false, //初始化校准标志位，用于跳过遥控失联校准流程。
         .emegency_deliver_ctrl_speed=3,
         .deliver_speed_limit=8500,//滑块速度环限幅，默认值与PID位置环输出限幅相同。
+        .buzzer_beep_count=0,
+        .debug_vision_enable=1 //视觉使能调试开关,1为关闭，2为开启
     };
 	
     #if CONSERVATIVE_TEST_PARAMS
@@ -216,6 +218,7 @@ void LaunchCtrl(void *arg)
                 }
             }
             Step_Control_With_Feedback(DR16_Snap.LY_Norm, &Joystick_LY_Trigger, &Debugger.debug_fire_type, 1, 4);//使用输入的方式更安全,防止越界,但是也可以利用返回值进行加减。
+            Step_Control_With_Feedback(DR16_Snap.LX_Norm, &Joystick_LX_Trigger, &Debugger.debug_vision_enable, 1, 2 );//视觉使能调试开关
         }
         
         switch (Robot.Status.current_state)
