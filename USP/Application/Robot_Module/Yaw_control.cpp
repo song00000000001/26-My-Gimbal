@@ -154,7 +154,9 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
         //由于摇杆复用,在紧急预案时需要ban掉手动控制igniter
         if(!Robot.Flag.Status.emergency_override){
             Launcher.target_igniter_angle-=RC_Y * IGNITER_MANUAL_SPEED;
+            Launcher.target_igniter_angle=std_lib::constrain(Launcher.target_igniter_angle, IGNITER_MIN_POS, IGNITER_MAX_POS);
             yaw_target -= RC_X * YAW_MANUAL_SPEED;
+            yaw_target = std_lib::constrain(yaw_target, YAW_MIN_ANGLE, YAW_MAX_ANGLE);
             update(yaw_target);
         }
         break;
@@ -177,7 +179,7 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
             }
 
             //根据目标类型选择数据组数据
-            yaw_target=DartsData[slot_index].YawCorrectionAngle[0];//这里的0是指前哨站，1是基地。由于调参板默认先显示前哨站数据，所以先用0。实际上只打基地。这个约定要沟通好。
+            yaw_target=-DartsData[slot_index].YawCorrectionAngle[0];//这里的0是指前哨站，1是基地。由于调参板默认先显示前哨站数据，所以先用0。实际上只打基地。这个约定要沟通好。
             /*
             todo
             song
@@ -250,13 +252,14 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
                             //视觉关闭,调参板连接，优先用调参板数据
                             uint8_t slot_index=1;//测试用，固定数据槽1
                             if(Debugger.four_dart_four_params_enable)slot_index=(Robot.Status.dart_count-1)%4+1;//第一发就是[(1-1)%4=0],读取第[0]号数据槽,也就是数据内容1
-                            PID_Yaw_Vision.Target =DartsData[slot_index].YawCorrectionAngle[0];//这里的0是指前哨站，1是基地。由于调参板默认先显示前哨站数据，所以先用0。实际上只打基地。这个约定要沟通好。
+                            PID_Yaw_Vision.Target =-DartsData[slot_index].YawCorrectionAngle[0];//这里的0是指前哨站，1是基地。由于调参板默认先显示前哨站数据，所以先用0。实际上只打基地。这个约定要沟通好。
+                            PID_Yaw_Vision.Target = std_lib::constrain(PID_Yaw_Vision.Target, -1.0f, 1.0f);//-1到+1是将像素直接压缩，和距离有关。
                         }
                         else{
                             //视觉微调速度
                             PID_Yaw_Vision.Target -= RC_X * YAW_MANUAL_SPEED;
+                            PID_Yaw_Vision.Target = std_lib::constrain(PID_Yaw_Vision.Target, -1.0f, 1.0f);//-1到+1是将像素直接压缩，和距离有关。 
                         }
-                        PID_Yaw_Vision.Target = 0;
                         PID_Yaw_Vision.Current = vision_error;
                         PID_Yaw_Vision.Adjust();
                         yaw_target += PID_Yaw_Vision.Out / 1000; //输出作为增量
@@ -269,11 +272,12 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
                     //视觉关闭,调参板连接，优先用调参板数据
                     uint8_t slot_index=1;//测试用，固定数据槽1
                     if(Debugger.four_dart_four_params_enable)slot_index=(Robot.Status.dart_count-1)%4+1;//第一发就是[(1-1)%4=0],读取第[0]号数据槽,也就是数据内容1
-                    yaw_target=DartsData[slot_index].YawCorrectionAngle[0];//这里的0是指前哨站，1是基地。由于调参板默认先显示前哨站数据，所以先用0。实际上只打基地。这个约定要沟通好。
+                    yaw_target=-DartsData[slot_index].YawCorrectionAngle[0];//这里的0是指前哨站，1是基地。由于调参板默认先显示前哨站数据，所以先用0。实际上只打基地。这个约定要沟通好。
                 }
                 else{
                     //视觉关闭,调参板未连接，使用遥控器微调
                     yaw_target -= RC_X * YAW_MANUAL_SPEED;
+                    yaw_target = std_lib::constrain(yaw_target, YAW_MIN_ANGLE, YAW_MAX_ANGLE);
                 }
             }
             update(yaw_target);
@@ -288,6 +292,7 @@ void Missle_YawController_Classdef::yaw_state_machine(yaw_control_state_e *yaw_s
                 }
                 else{
                     Launcher.target_igniter_angle-=RC_Y * IGNITER_MANUAL_SPEED;
+                    Launcher.target_igniter_angle=std_lib::constrain(Launcher.target_igniter_angle, IGNITER_MIN_POS, IGNITER_MAX_POS);
                 }
             }
         }

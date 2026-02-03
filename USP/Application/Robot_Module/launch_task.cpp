@@ -127,9 +127,9 @@ void LaunchCtrl(void *arg)
     Yawer.PID_Yaw_Speed.SetPIDParam(35, 0, 0, 0, 12000);
 	#endif
     
-    Yawer.PID_Yaw_Vision.SetPIDParam(0.3f, 0.0f, 0.0f, 0, 2.0f);//注意，这里的输出作为yaw_target的增量，但是参数太小容易丢精度，这里的参数都*1000，输出作为增量式/1000。
+    Yawer.PID_Yaw_Vision.SetPIDParam(-1.0f, 0.0f, 0.0f, 0, 2.0f);//注意，这里的输出作为yaw_target的增量，但是参数太小容易丢精度，这里的参数都*1000，输出作为增量式/1000。
     //Yawer.PID_Yaw_Vision.I_SeparThresh = 0.2f;
-    Yawer.PID_Yaw_Vision.DeadZone = 0.02f;
+    Yawer.PID_Yaw_Vision.DeadZone = 0.1f;//由于零点视觉会认为自己到了，即0.1附近后cur就=0了，总是造成震荡。
 
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
