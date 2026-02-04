@@ -434,34 +434,6 @@ void Task_LogTransmit(void *arg){
         OpenLog.Send();
 
         //校准后,限位开关意外触发记录
-        #if 1
-        //由于限位开关延迟问题，容易误触发，这里先注释掉
-        if(Launcher.is_calibrated()){
-            if(SW_DELIVER_L_OFF)LOG_ERROR("Left Deliver Limit Switch Triggered");
-            if(SW_DELIVER_R_OFF)LOG_ERROR("Right Deliver Limit Switch Triggered");
-            if(SW_IGNITER_OFF)LOG_ERROR("Igniter Limit Switch Triggered");
-        }     
-        if(Yawer.is_Yaw_Init()){
-            if(SW_YAW_L_OFF)LOG_ERROR("Left Yaw Limit Switch Triggered");
-            if(SW_YAW_R_OFF)LOG_ERROR("Right Yaw Limit Switch Triggered");
-        }
-        #endif
-
-        if(Debugger.enable_debug_mode==7)
-        {
-            counter[1]++;
-            if(counter[1]>20*2)//50ms*20*2=2s
-            {
-                counter[1]=0;
-                //考虑使用osThreadList或者uxTaskGetSystemState打印更详细的任务状态和栈使用情况
-                // 1. 获取任务统计信息
-                // 注意：vTaskList 会关闭中断较长时间，不要在对实时性要求极高的任务中高频调用
-                vTaskList(taskInfoBuffer);
-
-                // 2.现有的 Log 系统发送
-                LOG_INFO("\r\nTask List Status\r\nName          State  Priority  Stack   Num\r\n%s\r\n", taskInfoBuffer);
-            }
-        }
 
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         //记录最小栈剩余，如果当前栈剩余小于记录的最小值，则更新最小值，并且发送日志

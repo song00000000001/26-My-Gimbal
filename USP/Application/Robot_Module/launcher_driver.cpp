@@ -8,11 +8,6 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
       IgniterMotor(id_ign)
 {
     stop_all_motor();
-    //初始化舵机位置
-    servo_loader_up1;
-    servo_loader_up2;
-    servo_transfomer_lock;
-    servo_igniter_lock;
 
     // 电机参数初始化 (极性、减速比)
     DeliverMotor[0].Polarity = POLARITY_DELIVER_L;
@@ -40,21 +35,6 @@ Launcher_Driver::Launcher_Driver(uint8_t id_l, uint8_t id_r, uint8_t id_ign)
 // ================= 动作接口 =================
 void Launcher_Driver::adjust()
 {
-    /*
-    代码逻辑解释：通用溢出处理：
-    我没有使用复杂的 if(i==1) 或硬编码 2*Sync，而是采用了一个更通用的逻辑：计算溢出量（Overflow）。
-    比如目标是 8500，限幅 8000，溢出量就是 +500。比如目标是 -8200，限幅 -8000，溢出量就是 -200。
-    维持相对差：假设左边算出来是 8500（溢出+500），右边是 7500（溢出 0）。
-    我们取最大溢出量 +500。左边：$8500 - 500 = 8000$。右边：$7500 - 500 = 7000$。
-    结果：左边顶着限幅跑，右边自动降速，两者的差值依然是 1000，实现了“削峰”效果，而且逻辑非常直观，不需要担心正负号问题。
-
-    解决双 8000 问题：假设位置环都输出 8000。
-    同步补偿算出：左+500，右-500。Raw Target：左 8500，右 7500。
-    溢出量：左 +500，右 0。最大溢出：+500。修正后：左 8000，右 7000。
-    
-    结论：即使两边原本的基础输出都是 8000，这个算法依然能工作。
-    这种写法将计算与执行分离，避免了重复计算速度环的 Bug，也让削峰逻辑变得健壮。
-    */
     // ================= Step 1: 计算同步补偿量 =================
     float sync_comp[2] = {0, 0};
     
@@ -237,65 +217,11 @@ void Launcher_Driver::start_calibration()
 
 void Launcher_Driver::check_calibration_logic()
 {
-    //没有校准则进行校准
-    if (!is_deliver_homed[0]) {
-        if (SW_DELIVER_L_OFF) {
-            LOG_INFO("Deliver Motor L Homing Triggered (Switch Hit)");
-            pid_deliver_pos[0].clean_intergral();
-			pid_deliver_spd[0].clean_intergral();
-            // 1. 消除编码器累积误差 (归零)
-			DeliverMotor[0].baseAngle -= (DeliverMotor[0].getMotorTotalAngle()+Debugger.dual_loader_mechanical_error_correction);//双滑块机械装配误差修正
-            // 2. 切换到位置模式
-            mode_deliver[0] = MODE_ANGLE;
-            // 3. 设定当前位置为回缓冲区
-            target_deliver_angle=DELIVER_OFFSET_POS;
-            // 4. 标记为已归零            
-            is_deliver_homed[0] = true;
-        }
-    }
-
-    if (!is_deliver_homed[1]) {
-        if (SW_DELIVER_R_OFF) {
-            LOG_INFO("Deliver Motor R Homing Triggered (Switch Hit)");
-            pid_deliver_pos[1].clean_intergral();
-			pid_deliver_spd[1].clean_intergral();
-            DeliverMotor[1].baseAngle -= DeliverMotor[1].getMotorTotalAngle();
-            mode_deliver[1] = MODE_ANGLE;
-            target_deliver_angle=DELIVER_OFFSET_POS;  
-            is_deliver_homed[1] = true;
-        }
-    }
-
-    // --- 丝杆归零逻辑 ---
-    if (!is_igniter_homed) {
-        if (SW_IGNITER_OFF) {
-            LOG_INFO("Igniter Motor Homing Triggered (Switch Hit)");
-            pid_igniter_pos.clean_intergral();
-            pid_igniter_spd.clean_intergral();
-            IgniterMotor.baseAngle -= IgniterMotor.getMotorTotalAngle();
-            mode_igniter = MODE_ANGLE;
-            target_igniter_angle = IGNITER_OFFSET_POS;
-            is_igniter_homed = true;
-        }
-    }
+   
 }
 
 void Launcher_Driver::key_check(){  
-    if(SW_DELIVER_L_OFF){
-        check_progress |= MASK_DELIVER_L;
-    }
-    if(SW_DELIVER_R_OFF){
-        check_progress |= MASK_DELIVER_R;
-    }
-    if(SW_IGNITER_OFF){
-        check_progress |= MASK_IGNITER;
-    }
-    if(SW_YAW_L_OFF){
-        check_progress |= MASK_YAW_L;
-    }
-    if(SW_YAW_R_OFF){
-        check_progress |= MASK_YAW_R;
-    }  
+   
 }
 
 void Launcher_Driver::out_all_motor_speed(){
@@ -322,7 +248,6 @@ void Launcher_Driver::stop_igniter_motor(){
 void Launcher_Driver::stop_all_motor(){
     stop_igniter_motor();
     stop_deliver_motor();
-    servo_igniter_lock;
 }
 
 // ================= 状态查询 =================
@@ -377,26 +302,15 @@ void Launcher_Driver::start_deliver_calibration()
 }
 
 void Launcher_Driver::servo_pwm_test_lock_up(){
-    servo_transfomer_lock;
-    servo_loader_up1;
-    servo_loader_up2;
-    servo_igniter_lock;
+ 
 }
 
 void Launcher_Driver::servo_pwm_test_unlock_down(){
-    servo_transfomer_unlock;
-	servo_loader_down1;
-    servo_loader_down2;
-    servo_igniter_unlock;
+
 }
 
 void Launcher_Driver::loader_servo_1_ctrl(uint16_t ccr){
-    if(servo_ccr.loader1_ccr_down<servo_ccr.loader1_ccr_up)
-        ccr=std_lib::constrain(ccr, servo_ccr.loader1_ccr_down, servo_ccr.loader1_ccr_up);
-    else
-        ccr=std_lib::constrain(ccr, servo_ccr.loader1_ccr_up, servo_ccr.loader1_ccr_down);
     
-    __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1,ccr);  // 装调舵机左，下降
 }
 
 void Launcher_Driver::loader_servo_2_ctrl(uint16_t ccr){
@@ -409,29 +323,27 @@ void Launcher_Driver::loader_servo_2_ctrl(uint16_t ccr){
 }
 
 void Launcher_Driver::servo_igniter_lock_f(){
-    servo_igniter_lock;// 扳机舵机锁止
+   
 }
 
 void Launcher_Driver::servo_igniter_unlock_f(){
-    servo_igniter_unlock;// 扳机舵机解锁
+    
 }
 
 void Launcher_Driver::servo_transfomer_lock_f(){
-    servo_transfomer_lock;// 变压器舵机锁止
+   
 }   
 
 void Launcher_Driver::servo_transfomer_unlock_f(){
-    servo_transfomer_unlock;// 变压器舵机解锁
+  
 }
 
 void Launcher_Driver::servo_loader12_up_f(){
-    servo_loader_up1;// 装填舵机1上升
-    servo_loader_up2;// 装填舵机2上升
+ 
 }
 
 void Launcher_Driver::servo_loader12_down_f(){
-    servo_loader_down1;// 装填舵机1下降
-    servo_loader_down2;// 装填舵机2下降
+
 }
 
 void Launcher_Driver::emergency_override_control(float target_angle){
@@ -441,108 +353,5 @@ void Launcher_Driver::emergency_override_control(float target_angle){
 
 //自动终止发射状态机，需要无缝衔接发射流程
 void Launcher_Driver::Abort_Firing_Sequence(){
-    static uint32_t state_timer = 0;
-    uint32_t current_time = xTaskGetTickCount();
-
-    switch (fire_state)
-    {
-        //发射结束状态
-        case FIRE_IDLE:
-            Robot.Status.dart_count=0;
-            Robot.Flag.Status.stop_continus_fire=true;
-            //Robot.Status.current_state = SYS_AUTOFIRE_SUSPEND;
-            Robot.Flag.Status.safely_abort_fire=false;
-            break;
-        
-        //滑块下拉到扳机前的发射状态，此时中断自动发射只需要直接切换状态机到FIRE_IDLE即可
-        case FIRE_PULL_DOWN_1:
-        case FIRE_WAIT_BOTTOM_1:
-        case FIRE_PULL_DOWN_2:
-        case FIRE_WAIT_BOTTOM_2:
-        case FIRE_RELOAD_LIFT_3:
-        case FIRE_RELOAD_RELEASE_3:
-        case FIRE_PULL_DOWN_3:
-        case FIRE_WAIT_BOTTOM_3:
-        case FIRE_RELOAD_LIFT_4:
-        case FIRE_RELOAD_RELEASE_4:
-        case FIRE_PULL_DOWN_4:
-        case FIRE_WAIT_BOTTOM_4:
-            loader_target_mode=LOAD_STOWED;//确保升降机在收起位置
-            servo_transfomer_lock;// 锁止卡镖舵机
-            servo_igniter_unlock; // 解锁扳机舵机，因为这里不希望上膛成功
-            //但是扳机动作需要时间，这里加一个简单的非阻塞延时
-            state_timer=current_time;
-            LOG_ERROR("Firing Sequence Aborted during Pull Down Phase");
-            fire_state=FIRE_ABORT_WAIT;
-            break;
-        
-        case FIRE_ABORT_WAIT:
-            if ((current_time - state_timer) > 300) {
-                //滑块回缓冲区
-                target_deliver_angle=(POS_BUFFER);
-                if(Launcher.is_deliver_at_target(5))
-                {
-                    //滑块到位后，重置状态机
-                    fire_state = FIRE_IDLE;
-                    LOG_ERROR("Firing Sequence Aborted Completed");
-                }
-            }
-            break;
-
-        //滑块在校准状态中，完成校准状态，然后重置状态机
-        case FIRE_CALIBRATION_1:
-        case FIRE_CALIBRATION_2:
-        case FIRE_CALIBRATION_3:
-        case FIRE_CALIBRATION_4:
-            //滑块继续完成校准并自动回到offset位置
-            check_calibration_logic();
-            if(is_calibrated()&&is_deliver_sync_ok(Debugger.deliver_sync_threshold)){
-                //滑块到位后，重置状态机
-                fire_state = FIRE_IDLE;
-                LOG_INFO("Firing Sequence Aborted then Calibrate Completed");
-            }
-            break;
-        
-        //滑块已经下拉卡上扳机了，发射中断需要重新下拉，然后释放扳机，让滑块回缓冲区
-        case FIRE_RETURN_UP_1:
-        case FIRE_WAIT_UP_1:
-        case FIRE_WAIT_AIM_1:
-        case FIRE_RETURN_UP_2:
-        case FIRE_WAIT_UP_2:
-        case FIRE_WAIT_AIM_2:
-        case FIRE_RETURN_UP_3:
-        case FIRE_WAIT_UP_3:
-        case FIRE_WAIT_AIM_3:
-        case FIRE_RETURN_UP_4:
-        case FIRE_WAIT_UP_4:
-        case FIRE_WAIT_AIM_4:
-            //滑块拉到底
-            target_deliver_angle=(POS_BOTTOM);
-            if(Launcher.is_deliver_at_target(5))
-            {
-                state_timer= current_time;
-                servo_igniter_unlock; // 解锁扳机舵机，因为这里不希望上膛成功
-                fire_state = FIRE_ABORT_WAIT;
-                LOG_ERROR("Firing Sequence Aborted during locked Phase");
-            }
-            break;
-
-        //已经进发射状态了，那没招了，打完得了。
-        case FIRE_SHOOTING_1:
-        case FIRE_SHOOTING_2:
-        case FIRE_SHOOTING_3:
-        case FIRE_SHOOTING_4:
-            state_timer= current_time;
-            //直接等发射完成
-            servo_igniter_unlock; // 解锁扳机舵机，发射
-            Robot.Status.dart_count++; // 计数+1
-            fire_state=FIRE_ABORT_WAIT;
-            LOG_ERROR("Firing Sequence Aborted during Shooting Phase");
-            break;
-
-        default:
-            fire_state = FIRE_IDLE;
-            LOG_ERROR("Firing Sequence Aborted due to Unknown State");
-            break;
-    }
+   
 }

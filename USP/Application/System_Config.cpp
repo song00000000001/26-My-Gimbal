@@ -38,17 +38,6 @@ void System_Device_Init(void)
   //Timer_Init(&htim5, USE_HAL_DELAY);//此设置语句使得delay_ms_nos()函数调用的是HAL_Delay(),容易造成FreeRTOS进程紊乱
 #endif
 
-//song_modify_start
-  // pwm init
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-//song_modify_end
-
-
 #if USE_SRML_CAN
   // can init
   CAN_Init(&hcan1, User_CAN1_RxCpltCallback);
@@ -73,11 +62,7 @@ void System_Device_Init(void)
 
 #endif
 
-  Uart_Init(&huart1, NULL, UART1_RX_BUFFER_SIZE, UART1_RxCpltCallback);//视觉串口
-  Uart_Init(&huart3, NULL, UART3_RX_BUFFER_SIZE, Param_RxCpltCallback);//调参板串口
-  Uart_Init(&huart4, NULL, UART4_RX_BUFFER_SIZE, UART4_RxCpltCallback);
-  Uart_Init(&huart5, NULL, UART5_RX_BUFFER_SIZE, UART5_RxCpltCallback);//裁判系统串口
-  Uart_Init(&huart6, NULL, UART6_RX_BUFFER_SIZE, UART6_RxCpltCallback);
+  Uart_Init(&huart1, NULL, UART1_RX_BUFFER_SIZE, UART1_RxCpltCallback);//上位机串口
 #endif  //#if USE_SRML_UART
 
 #if USE_SRML_VIRTUAL_COM

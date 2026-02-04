@@ -58,16 +58,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define YawSwitchLeft_Pin GPIO_PIN_13
-#define YawSwitchLeft_GPIO_Port GPIOC
-#define YawSwitchRight_Pin GPIO_PIN_14
-#define YawSwitchRight_GPIO_Port GPIOC
-#define Iginiter_Switch_Pin GPIO_PIN_1
-#define Iginiter_Switch_GPIO_Port GPIOA
-#define DeliverSwitchRight_Pin GPIO_PIN_6
-#define DeliverSwitchRight_GPIO_Port GPIOA
-#define DeliverSwitchLeft_Pin GPIO_PIN_7
-#define DeliverSwitchLeft_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

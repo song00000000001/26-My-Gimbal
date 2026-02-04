@@ -257,20 +257,6 @@ void LaunchCtrl(void *arg)
 
             //更新全局标志位
             Robot.Flag.Check.limit_sw_ok = (Launcher.check_progress == MASK_ALL_PASSED);
-
-            //5个按键手动检查全部通过则进入校准状态,后续可以加入电机检查
-            if (Robot.Flag.Check.limit_sw_ok) {
-                //自检完后,如果没有任何一个限位开关被按下时,才等于1。
-                bool key_released_temp=!(SW_YAW_L_OFF||SW_YAW_R_OFF||SW_DELIVER_L_OFF||SW_DELIVER_R_OFF||SW_IGNITER_OFF);
-                if(key_released_temp&&Robot.Cmd.sys_enable){
-                    //上面的条件加入了系统使能判断,一是防止手动按键后突然就开始校准伤人，二是防止限位开关延时导致校准失准。
-                    LOG_INFO("Manual Test Key Passed, Starting Homing Sequence.");
-                    Launcher.servo_pwm_test_lock_up();
-                    Launcher.start_calibration();//注意,这里启动了校准过程,会配置电机为速度环,直到撞到限位开关
-                    Robot.Status.current_state=SYS_HOMING;
-                }
-            }
-
             // 日志记录手动检查进度
             static uint8_t last_check_progress = 0;
             if (last_check_progress != Launcher.check_progress) {    
@@ -493,26 +479,7 @@ void LaunchCtrl(void *arg)
             日志增加手动触发失能和暂停时，记录各电机的运动位置，用于判断当时是否出现电机角度脱离软件限位的情况（即撞了限位开关。）以及卡死时电机位置。
             还要记录限位开关状态，辅助确认是否撞击。
             */
-            if(FS_I6X_Snap.S1==SW_UP){
-                LOG_ERROR("System Disabled by User!");
-                LOG_ERROR("Yaw Motor Angle: %.2f,Deliver L Motor Angle: %.2f,Deliver R Motor Angle: %.2f,Igniter Motor Angle: %.2f", 
-                    Yawer.YawMotor.getMotorAngle(), 
-                    Launcher.DeliverMotor[0].getMotorAngle(), 
-                    Launcher.DeliverMotor[1].getMotorAngle(),
-                     Launcher.IgniterMotor.getMotorAngle());
-                LOG_ERROR("Limit Switch States: Yaw_L:%d,Yaw_R:%d,Deliver_L:%d,Deliver_R:%d,Igniter:%d", 
-                    SW_YAW_L_OFF,SW_YAW_R_OFF,SW_DELIVER_L_OFF,SW_DELIVER_R_OFF,SW_IGNITER_OFF);
-            }
-            else if(FS_I6X_Snap.S1==SW_MID){
-                LOG_WARN("Autofire Paused by User!");
-                LOG_WARN("Yaw Motor Angle: %.2f,Deliver L Motor Angle: %.2f,Deliver R Motor Angle: %.2f,Igniter Motor Angle: %.2f", 
-                    Yawer.YawMotor.getMotorAngle(), 
-                    Launcher.DeliverMotor[0].getMotorAngle(), 
-                    Launcher.DeliverMotor[1].getMotorAngle(),
-                     Launcher.IgniterMotor.getMotorAngle());
-                LOG_WARN("Limit Switch States: Yaw_L:%d,Yaw_R:%d,Deliver_L:%d,Deliver_R:%d,Igniter:%d", 
-                    SW_YAW_L_OFF,SW_YAW_R_OFF,SW_DELIVER_L_OFF,SW_DELIVER_R_OFF,SW_IGNITER_OFF);
-            }
+
 
         }
         if (last_S2 != FS_I6X_Snap.S2) {
