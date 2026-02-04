@@ -21,8 +21,8 @@ typedef struct {
 } loader_servo_params_t;
 
 loader_servo_params_t loader_servo_params={
-    27, //预加载位置偏移量
-    17, //平行装填位置偏移量
+    33, //预加载位置偏移量
+    22, //平行装填位置偏移量
     5   //顶端位置偏移量
 };
 
