@@ -39,6 +39,10 @@ struct DR16_Snapshot_t {
     LinkageStatus_Typedef Status;
     SW_Status_Typedef S1;
     SW_Status_Typedef S2;
+    SW_Status_Typedef S3;
+    SW_Status_Typedef S4;
+    float VRA_Norm;
+    float VRB_Norm;
     float RX_Norm;
     float RY_Norm;
     float LX_Norm;

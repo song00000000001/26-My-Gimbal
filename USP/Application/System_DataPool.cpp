@@ -43,7 +43,7 @@ __CCM mpu_rec_s mpu_receive; // mpu6050数据
 #endif
 
 #if USE_SRML_DR16
-__CCM DR16_Classdef DR16; // 遥控器DR16类
+__CCM FS_I6X_Classdef DR16; // 遥控器DR16类
 #endif
 
 #if USE_SRML_FS_I6X

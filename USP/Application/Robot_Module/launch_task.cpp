@@ -167,9 +167,12 @@ void LaunchCtrl(void *arg)
             DR16_Snap.LY_Norm = DR16.Get_LY_Norm();
             DR16_Snap.RX_Norm = DR16.Get_RX_Norm();
             DR16_Snap.RY_Norm = DR16.Get_RY_Norm();
-            DR16_Snap.S1 = DR16.GetS1();
-            DR16_Snap.S2 = DR16.GetS2();
-            
+            DR16_Snap.S1 = DR16.Get_SWA();
+            DR16_Snap.S2 = DR16.Get_SWB();
+            DR16_Snap.S3 = DR16.Get_SWC();
+            DR16_Snap.S4 = DR16.Get_SWD();
+            DR16_Snap.VRA_Norm = DR16.Get_VRA_Norm();
+            DR16_Snap.VRB_Norm = DR16.Get_VRB_Norm();
             // 2. 释放锁
             xSemaphoreGive(DR16_mutex);
         }

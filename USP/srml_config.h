@@ -85,7 +85,7 @@
 // Others
 #define USE_SRML_DR16                     1
 #define USE_SRML_FS_I6X                   0
-#define USE_SRML_REFEREE                  1
+#define USE_SRML_REFEREE                  0
 // Unusual Devices
 #define USE_SRML_FATFS                    0
 #define USE_SRML_W25Qx                    0

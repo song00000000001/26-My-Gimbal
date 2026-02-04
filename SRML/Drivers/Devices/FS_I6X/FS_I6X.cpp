@@ -1,6 +1,6 @@
 #include "srml_config.h"
 
-#if USE_SRML_FS_I6X
+#if 1
 
 #include "FS_I6X.h"
 using namespace std_lib;

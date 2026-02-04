@@ -91,7 +91,7 @@ extern mpu_rec_s mpu_receive; //mpu6050传感器
 #endif
 
 #if  USE_SRML_DR16
-extern DR16_Classdef DR16;		//遥控器DR16类
+extern FS_I6X_Classdef DR16;		//遥控器DR16类
 #endif
 
 #if USE_SRML_FS_I6X

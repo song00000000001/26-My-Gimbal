@@ -99,7 +99,7 @@
 #if USE_SRML_DR16
   #include "Drivers/Devices/DR16/dr16.h"
 #endif
-#if USE_SRML_FS_I6X
+#if 1
   #include "Drivers/Devices/FS_I6X/FS_I6X.h"
 #endif
 #if USE_SRML_REFEREE

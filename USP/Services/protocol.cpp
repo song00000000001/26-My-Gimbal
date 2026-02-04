@@ -152,8 +152,8 @@ void SendHeartBeat()
  {
    DownLinkPack.launcher_state = 1;
  }
-  DownLinkPack.ref_state = Referee.status;
-  DownLinkPack.remote_state = DR16.GetStatus() == DR16_ESTABLISHED;
+  //DownLinkPack.ref_state = Referee.status;
+  DownLinkPack.remote_state = DR16.GetStatus() == ESTABLISHED ? 1 : 0;
   DownLinkPack.target = HitTarget;
   USART_COB tmp;
   tmp.port_num = 3;

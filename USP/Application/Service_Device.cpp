@@ -113,22 +113,6 @@ void Vision_Task(void *arg)
 		vision_send_pack.mode = 3;
 
 		#if 1
-		if (DR16.GetStatus() == DR16_ESTABLISHED)
-		{
-            /*
-			vision_send_pack.calibration_state = (DR16.GetS2() == SW_DOWN); // 右拨杆拨到下，开始标定
-            vision_send_pack.tracker_bit = 1;
-            vision_send_pack.base_yaw = 0;
-            vision_send_pack.current_yaw = Yawer.getMotorAngle();\
-            vision_send_pack.mode = 4; //视觉模式
-            SRML_UART_Transmit_DMA(&UART_pack);
-            */
-		}
-		else
-		{
-			//vision_send_pack.calibration_state = 0;
-            Robot.Flag.Status.vision_connected = false;//虽然其他地方做了判断，这里再保险一下
-		}
 		if (xTaskGetTickCount() - vision_last_recv_time > 150)
 		{
 			//vision_recv_pack.target_mode = 0;
@@ -139,10 +123,7 @@ void Vision_Task(void *arg)
             //vision_send_pack.tracker_bit = 1; 
             Robot.Flag.Status.vision_connected = true;
         }
-        
 		#endif
-			 
-
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         Stack_Remain.Vision_Task_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif

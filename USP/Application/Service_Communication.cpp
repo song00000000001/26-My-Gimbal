@@ -347,7 +347,7 @@ uint32_t DR16_RxCpltCallback(uint8_t *Recv_Data, uint16_t ReceiveLen)
   USART_COB Usart_RxCOB;
   BaseType_t xHigherPriorityTaskWoken;
   // Send To UART Receive Queue
-  if (DR16_QueueHandle != NULL)
+  if (DR16_QueueHandle != NULL && ReceiveLen>=25)
   {
     Usart_RxCOB.len = ReceiveLen;
     Usart_RxCOB.address = Recv_Data;
