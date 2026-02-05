@@ -500,14 +500,14 @@
               <FilePath>..\USP\Drivers\remote_ctrl_driver.h</FilePath>
             </File>
             <File>
-              <FileName>bsp_ws2812.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USP\Drivers\bsp_ws2812.c</FilePath>
+              <FileName>ws2812_ctrl_driver.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Drivers\ws2812_ctrl_driver.cpp</FilePath>
             </File>
             <File>
-              <FileName>bsp_ws2812.h</FileName>
+              <FileName>ws2812_ctrl_driver.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\USP\Drivers\bsp_ws2812.h</FilePath>
+              <FilePath>..\USP\Drivers\ws2812_ctrl_driver.h</FilePath>
             </File>
           </Files>
         </Group>

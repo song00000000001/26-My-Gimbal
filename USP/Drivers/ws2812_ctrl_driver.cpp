@@ -1,5 +1,4 @@
-#include "bsp_ws2812.h"
-#include "string.h"
+#include "ws2812_ctrl_driver.h"
 
 //30 + Num * 3 * 8 + 30
 #define WS2312_LED_NUM 20   // R标灯的 WS2812 LED 数量
@@ -12,7 +11,6 @@
 #define WS2312_1bit 50
 
 static uint16_t tim_pwm_dma_buff[dma_data_len] = {0};//PWM DMA数据缓存
-static uint8_t Pixel_Buff[WS2312_LED_NUM * 3] = {0};//RGB数据缓存
 
 void Buff_translate(uint8_t* color_buff,uint16_t* dma_row_ptr) //颜色数组转换为码元数组
 {   

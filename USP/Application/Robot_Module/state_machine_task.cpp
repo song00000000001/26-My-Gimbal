@@ -3,7 +3,7 @@
 #include "motor_ctrl_driver.h"
 #include "remote_ctrl_driver.h"
 #include "robot_config.h"
-#include "bsp_ws2812.h"
+#include "ws2812_ctrl_driver.h"
 
 //辅助函数声明
 void GenerateBETargets();
