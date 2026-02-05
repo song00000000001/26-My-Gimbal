@@ -68,28 +68,22 @@ song
 */
 void Service_Devices_Init(void)
 {
+    /*todo
+    song
+    改为
+    1. 状态机主控任务
+    2. 电机控制任务
+    3. 装甲板控制任务
+    4. 上位机通信任务
+    5. 遥控器任务
+    */
 	xTaskCreate(LaunchCtrl, "App.LaunchCtrl", Large_Stack_Size, NULL, PriorityHigh, &LaunchCtrl_Handle);
-	/*todo
-	song
-	增大任务优先级
-	将FS_I6X失联等实时性要求高的逻辑放到另一个任务中，防止主控制任务意外卡死(使用互斥锁或者vtaskdelay等阻塞函数)
-	*/
 	xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityHigh, &Vision_Task_Handle);
 	xTaskCreate(Loader_Ctrl, "App.Loader_Ctrl", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityAboveNormal, &Loader_Ctrl_Handle);
     xTaskCreate(Task_load_test_ctrl, "App.load_test_ctrl", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityNormal, &load_test_ctrl_Handle);
 
 #if USE_SRML_FS_I6X
 	xTaskCreate(tskFS_I6X, "App.FS_I6X", Small_Stack_Size+Tiny_Stack_Size, NULL, PrioritySuperHigh, &FS_I6X_Handle);
-#endif
-
-
-#if USE_SRML_REFEREE
-	xTaskCreate(Rx_Referee, "Rx_Referee", Normal_Stack_Size, NULL, PriorityNormal, &Rx_Referee_Handle);
-#endif
-#if 1
-    xTaskCreate(Task_LogTransmit,"log.tx_task",Normal_Stack_Size,NULL,PriorityLow,&log_Handle);
-#elif 0
-    xTaskCreate(Task_protocal_status_monitor,"protocal.status",Normal_Stack_Size,NULL,PriorityLow,&protocol_status_monitor_Handle);
 #endif
 }
 
@@ -100,32 +94,21 @@ void Service_Devices_Init(void)
  */
 void Vision_Task(void *arg)
 {
-	USART_COB UART_pack;
 	TickType_t xLastWakeTime_t;
 	xLastWakeTime_t = xTaskGetTickCount();
-	UART_pack.port_num = 1;
-	UART_pack.address = (uint8_t *)&vision_send_pack;
-	UART_pack.len = sizeof(vision_send_pack);
 
 	for (;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime_t, 100); // 10Hz 频率发送
-		vision_send_pack.mode = 3;
-
 		#if 1
 		if (xTaskGetTickCount() - vision_last_recv_time > 150)
 		{
-			//vision_recv_pack.target_mode = 0;
-            Robot.Flag.Status.vision_connected = false;
 		}
         else{
-            //vision_recv_pack.target_mode = 1;//视觉连接上
-            //vision_send_pack.tracker_bit = 1; 
-            Robot.Flag.Status.vision_connected = true;
         }
 		#endif
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
-        Stack_Remain.Vision_Task_stack_remain = uxTaskGetStackHighWaterMark(NULL);
+        //Stack_Remain.Vision_Task_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif
 	}
 }
@@ -168,37 +151,3 @@ void tskFS_I6X(void *arg)
 	}
 }
 #endif
-
-#if USE_SRML_REFEREE
-/**
- * @brief  接受裁判系统数据
- * @param  None.
- * @return None.
- */
-void Rx_Referee(void *arg)
-{
-	/* Preoad for task */
-	USART_COB *referee_pack;
-	TickType_t xLastWakeTime_t = xTaskGetTickCount();
-
-	/* Infinite loop */
-	for (;;)
-	{
-		if (xTaskNotifyWait(0x00000000, 0xFFFFFFFF, (uint32_t *)&referee_pack, portMAX_DELAY) == pdTRUE)
-		{
-			Referee.unPackDataFromRF((uint8_t *)referee_pack->address, referee_pack->len);
-		}
-
-        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
-        Stack_Remain.Rx_Referee_stack_remain = uxTaskGetStackHighWaterMark(NULL);
-        #endif
-	}
-}
-#endif
-
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
-    // 报错、停机或记录日志
-    LOG_ERROR("Stack Overflow in task: %s", pcTaskName);
-    OpenLog.Send();
-    while(1); 
-}

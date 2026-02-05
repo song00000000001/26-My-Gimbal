@@ -53,7 +53,6 @@ void Task_CAN2Receive(void *arg);
 #if USE_SRML_UART
 void Task_UsartTransmit(void *arg);
 void Task_UsartReceive(void *arg);
-void Task_ParamChanger(void *arg);
 #endif
 /**
  * @brief  Initialization of communication service
@@ -81,7 +80,6 @@ void Service_Communication_Init(void)
   xTaskCreate(Task_UsartReceive, "Com.Usart RxPort", Small_Stack_Size, NULL, PriorityRealtime, &UartReceivePort_Handle);
   xTaskCreate(Task_UsartTransmit, "Com.Usart TxPort", Small_Stack_Size, NULL, PriorityRealtime, &UartTransmitPort_Handle);
 #endif
-  xTaskCreate(Task_ParamChanger, "change", Normal_Stack_Size, NULL, PriorityHigh, NULL);
 }
 
 /*----------------------------------------------- CAN Manager ---------------------------------------------*/
@@ -112,16 +110,6 @@ void Task_CAN1Transmit(void *arg)
       UNUSED(&free_can_mailbox);
       CANx_SendData(1, &CAN_TxMsg);
     }
-    /*todo
-    song
-    增加can1发送队列满的处理逻辑
-    目前是直接阻塞等待,后期可以考虑丢弃旧数据等
-    增加can1没有定时发送的心跳包逻辑，
-    防止主任务意外卡死，导致不发送控制命令，就会失去失控保护逻辑
-    后续是考虑把失控保护放在另一个独立任务里，定时发送心跳包，
-    也可以在这里利用检测包频率实现部分保护功能
-    但是不知道怎么写输出0，所以搁置在这。
-    */
     
   }
 }
@@ -164,18 +152,8 @@ void Task_CAN1Receive(void *arg)
     /* update motor data from CAN1_RxPort */
     if (xQueueReceive(CAN1_RxPort, &CAN_RxCOB, portMAX_DELAY) == pdPASS)
     {
-      //R0,L1
-        if (Launcher.DeliverMotor[0].update(CAN_RxCOB.ID, CAN_RxCOB.Data))
+        if (motor_ctrl.mymotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
         {
-            Protocol_Status[0].rx_count++;
-        }
-        else if (Launcher.DeliverMotor[1].update(CAN_RxCOB.ID, CAN_RxCOB.Data))
-        {
-            Protocol_Status[1].rx_count++;
-        }
-        else if (Launcher.IgniterMotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
-        {
-            Protocol_Status[2].rx_count++;
         }
     }
   }
@@ -194,12 +172,8 @@ void Task_CAN2Receive(void *arg)
     /* update motor data from CAN1_RxPort */
     if (xQueueReceive(CAN2_RxPort, &CAN_RxCOB, portMAX_DELAY) == pdPASS)
     {
-        /*if (Launcher.DeliverMotor[L].update(CAN_RxCOB.ID, CAN_RxCOB.Data)){}
-        else if (Launcher.DeliverMotor[R].update(CAN_RxCOB.ID, CAN_RxCOB.Data)){}
-        else if (Launcher.IgniterMotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data)){}
-        else */
-        if (Yawer.YawMotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data)){
-            Protocol_Status[3].rx_count++;
+        if (motor_ctrl.mymotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
+        {
         }
     }
   }
@@ -284,12 +258,6 @@ void Task_UsartReceive(void *arg)
       case 1:
         vision_last_recv_time = xTaskGetTickCount();
         memcpy(&vision_recv_pack, Usart_RxCOB.address, sizeof(vision_recv_pack));
-        /*todo
-        song
-        这里需要增加视觉连接状态的维护逻辑
-        可以通过定时器任务检查最后接收时间来判断是否连接
-        Robot.Flag.Status.vision_connected = true/false;
-        */
         break;
       case 2:
         break;
@@ -356,44 +324,8 @@ uint32_t FS_I6X_RxCpltCallback(uint8_t *Recv_Data, uint16_t ReceiveLen)
   return 0;
 }
 #endif
-uint32_t Param_RxCpltCallback(uint8_t *Recv_Data, uint16_t ReceiveLen)
-{
-  USART_COB Usart_RxCOB;
-  BaseType_t xHigherPriorityTaskWoken;
-  // Send To UART Receive Queue
-  if (Param_RxPort != NULL)
-  {
-    Usart_RxCOB.len = ReceiveLen;
-    Usart_RxCOB.address = Recv_Data;
-    xQueueSendFromISR(Param_RxPort, &Usart_RxCOB, &xHigherPriorityTaskWoken);
-  }
-  return 0;
-}
-/**
- * @brief 改参数据报处理
- *
- * @param arg
- */
-void Task_ParamChanger(void *arg)
-{
-    //奇怪的延时。
-  vTaskDelay(1000);
-  Param_RxPort = xQueueCreate(4, sizeof(USART_COB));
-  uint8_t ParamBUffer[16] = {0};
-  USART_COB tmp;
-  while (1)
-  {
-    xQueueReceive(Param_RxPort, &tmp, portMAX_DELAY);
-    packDecoder(tmp.address,tmp.len);
-    /*todo
-    song
-    这里需要确认调参板的通信频率，然后做一个时间窗口检查判断是否连上或者失联
-    然后更新全局变量
-    Robot.Flag.Status.tool_panel_connected = true/false;
-    现在暂时是收到一次数据就认为连接上了，修改在packDecoder里做
-    */
-  }
-}
+
+
 #if USE_SRML_REFEREE
 uint32_t Referee_recv_Callback(uint8_t *Recv_Data, uint16_t ReceiveLen)
 {
@@ -416,165 +348,8 @@ void User_VirtualComRecCpltCallback(uint8_t* Recv_Data, uint16_t ReceiveLen)
 }
 #endif
 
-void Task_LogTransmit(void *arg){
 
-    TickType_t xLastWakeTime_t;
-	xLastWakeTime_t = xTaskGetTickCount();
 
-    // 定义一个足够大的缓冲区，每个任务大约需要 40 字节，目前有 12 个任务
-    static char taskInfoBuffer[512];
-    static uint8_t counter[2] = {0};
-
-    for (;;)
-    {
-        vTaskDelayUntil(&xLastWakeTime_t, 50); // 20Hz 频率发送
-
-        //如果有待发送的数据包，则发送并返回0，否则返回1。这样写会造成发送过快。
-        //while (OpenLog.Send() == 0);
-        OpenLog.Send();
-
-        //校准后,限位开关意外触发记录
-
-        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
-        //记录最小栈剩余，如果当前栈剩余小于记录的最小值，则更新最小值，并且发送日志
-        static stack_remain_t last_stack_remain={
-            0xFFFF,0xFFFF,0xFFFF,0xFFFF,
-            0xFFFF,0xFFFF,0xFFFF,0xFFFF
-        };
-        counter[0]++;
-        if(counter[0]>20*10)//50ms*20*10=10s
-        {
-            counter[0]=0;
-            bool is_stack_remain_changed = false;
-            if (Stack_Remain.LaunchCtrl_stack_remain < last_stack_remain.LaunchCtrl_stack_remain){
-                last_stack_remain.LaunchCtrl_stack_remain = Stack_Remain.LaunchCtrl_stack_remain;
-                is_stack_remain_changed = true;
-            }
-            if (Stack_Remain.Vision_Task_stack_remain < last_stack_remain.Vision_Task_stack_remain){
-                last_stack_remain.Vision_Task_stack_remain = Stack_Remain.Vision_Task_stack_remain;
-                is_stack_remain_changed = true;
-            }
-            if (Stack_Remain.Loader_Ctrl_stack_remain < last_stack_remain.Loader_Ctrl_stack_remain){
-                last_stack_remain.Loader_Ctrl_stack_remain = Stack_Remain.Loader_Ctrl_stack_remain;
-                is_stack_remain_changed = true;
-            }
-            if (Stack_Remain.Task_load_test_ctrl_stack_remain < last_stack_remain.Task_load_test_ctrl_stack_remain){
-                last_stack_remain.Task_load_test_ctrl_stack_remain = Stack_Remain.Task_load_test_ctrl_stack_remain;
-                is_stack_remain_changed = true;
-            }
-            if (Stack_Remain.FS_I6X_stack_remain < last_stack_remain.FS_I6X_stack_remain){
-                last_stack_remain.FS_I6X_stack_remain = Stack_Remain.FS_I6X_stack_remain;
-                is_stack_remain_changed = true;
-            }
-            if (Stack_Remain.Rx_Referee_stack_remain < last_stack_remain.Rx_Referee_stack_remain){
-                last_stack_remain.Rx_Referee_stack_remain = Stack_Remain.Rx_Referee_stack_remain;
-                is_stack_remain_changed = true;
-            }
-            if (Stack_Remain.log_stack_remain < last_stack_remain.log_stack_remain){
-                last_stack_remain.log_stack_remain = Stack_Remain.log_stack_remain;
-                is_stack_remain_changed = true;
-            }
-            if (Stack_Remain.debug_send_stack_remain < last_stack_remain.debug_send_stack_remain){
-                last_stack_remain.debug_send_stack_remain = Stack_Remain.debug_send_stack_remain;
-                is_stack_remain_changed = true;
-            } 
-            if(is_stack_remain_changed){
-                LOG_INFO("Stack Remain:\r\nLaunchCtrl=%d,\r\nVision_Task=%d,\r\nLoader_Ctrl=%d,\r\nload_test_ctrl=%d,\r\nFS_I6X=%d,\r\nRx_Referee=%d,\r\nlog=%d,\r\ndebug_send=%d",
-                    Stack_Remain.LaunchCtrl_stack_remain,Stack_Remain.Vision_Task_stack_remain,Stack_Remain.Loader_Ctrl_stack_remain,
-                    Stack_Remain.Task_load_test_ctrl_stack_remain,Stack_Remain.FS_I6X_stack_remain,Stack_Remain.Rx_Referee_stack_remain,
-                    Stack_Remain.log_stack_remain,Stack_Remain.debug_send_stack_remain);
-                is_stack_remain_changed = false;
-            }
-           
-        }
-        #endif
-
-        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
-        Stack_Remain.log_stack_remain = uxTaskGetStackHighWaterMark(NULL);
-        #endif
-    }
-}
-
-void Task_protocal_status_monitor(void *arg){
-    for(;;){
-        //复用任务，检测can总线状态
-        uint32_t can_error_code = HAL_CAN_GetError(&hcan1);
-        
-        if (can_error_code != HAL_CAN_ERROR_NONE) {
-            Protocol_Status[0].connected = false;
-            Protocol_Status[1].connected = false;
-            Protocol_Status[2].connected = false;
-            LOG_ERROR("CAN1 Error Code: 0x%08lX", can_error_code);
-            HAL_CAN_ResetError(&hcan1);
-        }
-        else {
-            // 检查是否进入Bus-Off状态
-            if(HAL_CAN_GetState(&hcan1) == HAL_CAN_STATE_ERROR && (can_error_code & HAL_CAN_ERROR_BOF)) {
-                // 总线关闭，这是严重问题，需要执行恢复流程
-                Protocol_Status[0].connected = false;
-                Protocol_Status[1].connected = false;
-                Protocol_Status[2].connected = false;
-                LOG_ERROR("CAN1 Bus-Off detected. Attempting recovery...");
-                // 尝试恢复CAN总线
-                HAL_CAN_ResetError(&hcan1);
-            }
-            else {
-                //计算接收率
-                for(int i=0;i<3;i++){
-                    Protocol_Status[i].rx_rate = Protocol_Status[i].rx_count / Protocol_Status[i].rx_max_count;
-                    Protocol_Status[i].rx_count = 0; //重置计数器
-                    if(Protocol_Status[i].rx_rate<Protocol_Status[i].rx_rate_threshold){
-                        Protocol_Status[i].connected = false;
-                        LOG_ERROR("CAN1 MOTOR_%d connection lost.Rx rate: %.2f",i,Protocol_Status[i].rx_rate);
-                    }
-                    else {
-                        if(!Protocol_Status[i].connected){
-                            LOG_INFO("CAN1 MOTOR_%d connected.Rx rate: %.2f",i,Protocol_Status[i].rx_rate);
-                            Protocol_Status[i].connected = true;
-                        }
-                    }
-                }
-            }
-        }
-        
-        can_error_code = HAL_CAN_GetError(&hcan2);
-        if (can_error_code != HAL_CAN_ERROR_NONE) {
-            Protocol_Status[3].connected = false;
-            LOG_ERROR("CAN2 Error Code: 0x%08lX", can_error_code);
-            HAL_CAN_ResetError(&hcan2);
-        }
-        else {
-            // 检查是否进入Bus-Off状态
-            if(HAL_CAN_GetState(&hcan2) == HAL_CAN_STATE_ERROR && (can_error_code & HAL_CAN_ERROR_BOF)) {
-                // 总线关闭，这是严重问题，需要执行恢复流程
-                Protocol_Status[3].connected = false;
-                LOG_ERROR("CAN2 Bus-Off detected. Attempting recovery...");
-                // 尝试恢复CAN总线
-                HAL_CAN_ResetError(&hcan2);
-            }
-            else {
-                //计算接收率
-                Protocol_Status[3].rx_rate = Protocol_Status[3].rx_count / Protocol_Status[3].rx_max_count;
-                Protocol_Status[3].rx_count = 0; //重置计数器
-                if(Protocol_Status[3].rx_rate<Protocol_Status[3].rx_rate_threshold){
-                    Protocol_Status[3].connected = false;
-                    LOG_ERROR("CAN2 MOTOR_YAW connection lost.Rx rate: %.2f",Protocol_Status[3].rx_rate);
-                }
-                else {
-                    if(!Protocol_Status[3].connected){
-                        Protocol_Status[3].connected = true;
-                        LOG_INFO("CAN2 MOTOR_YAW connected.Rx rate: %.2f",Protocol_Status[3].rx_rate);
-                    }
-                }
-            }
-        }
-        
-        vTaskDelay(pdMS_TO_TICKS(100)); 
-        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
-        //Stack_Remain.protocol_status_monitor_stack_remain = uxTaskGetStackHighWaterMark(NULL);
-        #endif
-    }
-}
 #endif
 /************************ COPYRIGHT(C) SCUT-ROBOTLAB **************************/
 

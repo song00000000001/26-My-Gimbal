@@ -91,30 +91,7 @@ void Task_VofaMonitor(void *arg){
 		/* 选择串口id */
         if(Debugger.enable_debug_mode==0) 
             continue;
-        else if(Debugger.enable_debug_mode==4)
-            VofaMonitor::setDatas(0,
-            Launcher.DeliverMotor[0].getMotorTotalAngle(),Launcher.DeliverMotor[1].getMotorTotalAngle(),
-            Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[1].Target,
-            Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[1].Current);
-        else if(Debugger.enable_debug_mode==5)
-            VofaMonitor::setDatas(0,Launcher.pid_deliver_spd[0].Target,Launcher.pid_deliver_spd[0].Current,Launcher.pid_deliver_spd[0].Out);
-        else if(Debugger.enable_debug_mode==6){
-            VofaMonitor::setDatas(0,
-                Launcher.pid_deliver_pos[0].Out,        // [通道0] 基础位置环输出
-                Launcher.pid_deliver_sync.Current,      // [通道1] 同步误差
-                Launcher.pid_deliver_spd[0].Target,     // [通道2] 左电机最终速度目标
-                Launcher.pid_deliver_spd[1].Target,     // [通道3] 右电机最终速度目标
-                Launcher.pid_deliver_spd[0].Current,    // [通道4] 左电机实际速度
-                Launcher.pid_deliver_spd[1].Current,    // [通道5] 右电机实际速度
-                Launcher.pid_deliver_spd[0].Out,        // [通道6] 左电机速度环输出
-                Launcher.pid_deliver_spd[1].Out,        // [通道7] 右电机速度环输出
-                Launcher.pid_deliver_pos[0].Current     // [通道8] 左电机位置环反馈
-			);
-        }
-        else if(Debugger.enable_debug_mode==7){
-
-        }
-		VofaMonitor::send(4);
+		VofaMonitor::send(3);
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         Stack_Remain.debug_send_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif

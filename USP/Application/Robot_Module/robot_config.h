@@ -83,7 +83,7 @@ extern "C" {
 
 #define MASK_ALL_CALIBRATED (MASK_DELIVER_L_CALIBRATED | MASK_DELIVER_R_CALIBRATED | MASK_IGNITER_CALIBRATED | MASK_YAW_L_CALIBRATED | MASK_YAW_R_CALIBRATED)
 
-#define enum_X_Macros_disable 0
+#define enum_X_Macros_disable 1
 
 #ifdef __cplusplus
 }

@@ -1,19 +1,7 @@
-/* Robot_Module/loader_task.cpp */
-
-#include "internal.h"
+#include "remote_ctrl_driver.h"
 #include "global_data.h"
 #include "robot_config.h"
 
-void Task_load_test_ctrl(void *arg)
-{
-    static uint8_t test_step = 0;
-    static uint32_t test_timer = 0;
-
-    for (;;)
-    {
-        
-    }
-}
 
 /**
  * @brief 摇杆步进控制函数（带蜂鸣器反馈）
@@ -50,19 +38,36 @@ int Step_Control_With_Feedback(float input, JoystickTrigger_t *state, int *targe
         // 边界检查
         if (next_val >= min_val && next_val <= max_val) {
             *target = next_val;
-
-            // 触发蜂鸣器反馈
-            // 规则：响声次数 = 当前数值 (如果数值为0，响1声短促音提示有效)
-            if (*target == 0) {
-                Debugger.buzzer_beep_count = 1; 
-            } else {
-                Debugger.buzzer_beep_count = (uint8_t)(*target);
-            }
-            
-            // 打印日志方便调试
-            LOG_INFO("CTRL Variable updated: %d (Beep: %d)", *target, Debugger.buzzer_beep_count);
-        }
+          }
     }
 
     return delta;
 }
+
+//遥控器快照数据拷贝函数
+void Remote_Ctrl_Snapshot_Copy(FS_I6X_Snapshot_t *dest, FS_I6X_Classdef *src) {
+    // 尝试拿锁，参数为 0 表示：拿不到立刻返回，不等待，不阻塞
+    //if (xSemaphoreTake(FS_I6X_mutex, 0) == pdTRUE)
+    //{
+    // 1. 拿到了锁：更新快照
+    dest->Status = src->GetStatus();
+    dest->LX_Norm = src->Get_LX_Norm();
+    dest->LY_Norm = src->Get_LY_Norm();
+    dest->RX_Norm = src->Get_RX_Norm();
+    dest->RY_Norm = src->Get_RY_Norm();
+    dest->S1 = src->Get_SWA();
+    dest->S2 = src->Get_SWB();
+    dest->S3 = src->Get_SWC();
+    dest->S4 = src->Get_SWD();
+    dest->VRA_Norm = src->Get_VRA_Norm();
+    dest->VRB_Norm = src->Get_VRB_Norm();
+    // 2. 释放锁
+    //    xSemaphoreGive(FS_I6X_mutex);
+    //}
+}
+
+//遥控器数据快照
+FS_I6X_Snapshot_t FS_I6X_Snap; 
+
+JoystickTrigger_t Joystick_LX_Trigger={false,false};
+JoystickTrigger_t Joystick_LY_Trigger={false,false};

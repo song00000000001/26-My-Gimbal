@@ -32,6 +32,8 @@
 /* USER CODE BEGIN Includes */
 #include "SEGGER_SYSVIEW.h"
 #include "config.h"
+#include "robot_config.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -105,6 +107,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   //如果SRML定时器的中断受到FreeRTOS管辖，System_Device_Init()要在FreeRTOS内核�??始运行后才能使用
   //如果在RTOS内核�??始之前运行，会与drv_time的USE_MODULE_DELAY冲突，因为如果TIM中断归RTOS管辖，因此RTOS内核�??启之前TIM中断不会�??�??
