@@ -89,8 +89,13 @@ void Task_VofaMonitor(void *arg){
 		//VofaMonitor::setDatas(3, data3, data4, data5);
 		//VofaMonitor::setDatas(6, data6, data7, data8, data9);
 		/* 选择串口id */
-        if(Debugger.enable_debug_mode==0) 
-            continue;
+         if(Debugger.enable_debug_mode==0) 
+             continue;
+        /*VofaMonitor::setDatas(0,motor_ctrl.get_motor_angle(), motor_ctrl.get_motor_speed(),
+         motor_ctrl.mymotor.motor.getRecData().angle,motor_ctrl.mymotor.motor.getRecData().position,
+         motor_ctrl.mymotor.motor.getRecData().T_mos,motor_ctrl.mymotor.motor.getRecData().T_rotor,
+         motor_ctrl.mymotor.motor.getRecData().torque,motor_ctrl.mymotor.motor.getRecData().velocity
+        );          */
 		VofaMonitor::send(3);
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         Stack_Remain.debug_send_stack_remain = uxTaskGetStackHighWaterMark(NULL);

@@ -3,7 +3,7 @@
 #ifdef __cplusplus
 
 #include "SRML.h"
-#include "robot_types.h"
+
 
 /**
  * @brief 遥杆步进触发器类

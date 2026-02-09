@@ -1,6 +1,5 @@
 #pragma once
 
-#include "robot_types.h"
 #include "internal.h"
 #include "motor_ctrl_driver.h"
 #include "remote_ctrl_driver.h"

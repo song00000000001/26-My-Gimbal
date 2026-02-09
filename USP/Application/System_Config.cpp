@@ -43,8 +43,11 @@ void System_Device_Init(void)
   CAN_Init(&hcan1, User_CAN1_RxCpltCallback);
   CAN_Init(&hcan2, User_CAN2_RxCpltCallback);
 
-  CAN_Filter_Mask_Config(1, CanFilter_0 | CanFifo_0 | Can_STDID, 0x201, 0x700);
-  CAN_Filter_Mask_Config(2, CanFilter_14 | CanFifo_0 | Can_STDID, 0x201, 0x700);
+  // CAN1: 达妙电机反馈 0x302
+  CAN_Filter_Mask_Config(1, CanFilter_0 | CanFifo_0 | Can_STDID, 0x302, 0x7FF);
+  // CAN2: 分控反馈 0x221~0x225 (掩码匹配 0x220 范围)
+  CAN_Filter_Mask_Config(2, CanFilter_14 | CanFifo_0 | Can_STDID, 0x220, 0x7F8);
+  
 #endif
   // uart init
 #if USE_SRML_UART

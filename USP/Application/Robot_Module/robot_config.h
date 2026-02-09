@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+#define mymotor_id 2
 
 // 帧头定义
 #define FAN_PACKET_HEADER 0xA5

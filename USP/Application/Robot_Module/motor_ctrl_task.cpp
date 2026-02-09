@@ -17,10 +17,10 @@ void task_motor_ctrl(void *arg)
 
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(1);
+    const TickType_t xFrequency = pdMS_TO_TICKS(2);
 
     motor_ctrl.set_motor_mode(MODE_SPEED);
-    motor_ctrl.mymotor_pid_spd.SetPIDParam(20,400,0,100,10000);
+    motor_ctrl.mymotor_pid_spd.SetPIDParam(0.001,0,0,0,10);
 
     for (;;)
     {
@@ -77,16 +77,26 @@ void task_motor_ctrl(void *arg)
         }  
         // 速度调整
         //target设置
-        motor_ctrl.set_motor_target_speed(g_SystemState.TargetSpeed);
+        //motor_ctrl.set_motor_target_speed(g_SystemState.TargetSpeed);
         //current获取
         g_SystemState.RealSpeed = motor_ctrl.get_motor_speed();
         //pid计算
         motor_ctrl.adjust();
-        //输出设置
-        motor_ctrl.motor_output(true);
+        if(g_SystemState.SysMode == idle)
+        {
+            motor_ctrl.set_motor_mode(MODE_ERROR); // 失能
+            motor_ctrl.motor_output(false);           //不输出
+        }
+        else{
+            motor_ctrl.set_motor_mode(MODE_SPEED); // 速度环
+            motor_ctrl.motor_output(true);            //输出设置
+        }
 
         // can发送速度指令
         MotorMsgPack(Tx_Buff, motor_ctrl.mymotor);
+        // 强制将 ID 改为 0x3FE,后续考虑优化成配置项
+        Tx_Buff.Id200.ID = 0x3FE; 
+        // 发送给电机
         xQueueSend(CAN1_TxPort, &Tx_Buff.Id200, 0);
         xQueueSend(CAN2_TxPort, &Tx_Buff.Id200, 0);
 

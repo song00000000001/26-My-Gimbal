@@ -77,10 +77,10 @@ void Service_Devices_Init(void)
     4. 上位机通信任务
     5. 遥控器任务
     */
-	xTaskCreate(task_state_machine, "App.task_state_machine", Large_Stack_Size, NULL, PriorityHigh, &task_state_machine_Handle);
-	xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityHigh, &Vision_Task_Handle);
+	//xTaskCreate(task_state_machine, "App.task_state_machine", Large_Stack_Size, NULL, PriorityHigh, &task_state_machine_Handle);
+	//xTaskCreate(Vision_Task, "App.Vision_Task", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityHigh, &Vision_Task_Handle);
 	xTaskCreate(task_motor_ctrl, "App.task_motor_ctrl", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityAboveNormal, &task_motor_ctrl_Handle);
-    xTaskCreate(Task_load_test_ctrl, "App.load_test_ctrl", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityNormal, &load_test_ctrl_Handle);
+   // xTaskCreate(Task_load_test_ctrl, "App.load_test_ctrl", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityNormal, &load_test_ctrl_Handle);
 
 #if USE_SRML_FS_I6X
 	xTaskCreate(tskFS_I6X, "App.FS_I6X", Small_Stack_Size+Tiny_Stack_Size, NULL, PrioritySuperHigh, &FS_I6X_Handle);

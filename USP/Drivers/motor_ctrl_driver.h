@@ -23,7 +23,8 @@ public:
     myPID mymotor_pid_spd,mymotor_pid_pos;    
 
     //抽象电机对象
-    abstractMotor<Motor_C620> mymotor;
+    //abstractMotor<Motor_C620> mymotor;
+    abstractMotor<Motor_DM_classdef> mymotor;
     Control_Mode_e mymotor_mode;    
     float target_motor_angle;    
     float threshold_motor_at_target=1.0f; // 角度环目标到达阈值

@@ -74,7 +74,7 @@
 // Motor
 #define USE_SRML_MOTOR_DJI                1   // RM电机
 #define USE_SRML_MF9025_V2                0   // 瓴控MF9025  
-#define USE_SRML_MOTOR_DM                 0   // 达妙电机
+#define USE_SRML_MOTOR_DM                 1   // 达妙电机
 #define USE_SRML_HT04                     0   // 海泰电机
 #define USE_SRML_CYBER_GEAR               1   // 小米微电机
 // IMU

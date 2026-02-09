@@ -8,8 +8,10 @@ motor_ctrl_driver::motor_ctrl_driver(uint8_t id):
 {
     // 电机参数初始化 (极性、减速比)
     mymotor.Polarity = 1;
-    float deliver_ratio = (2 * PI * 18.62f) / (360 * 51);
-    mymotor.angle_unit_convert = deliver_ratio;
+    //float deliver_ratio = (2 * PI * 18.62f) / (360 * 51);
+    //mymotor.angle_unit_convert = deliver_ratio;
+    mymotor.angle_unit_convert = 1;
+    mymotor.speed_unit_convert = 1;
 
     mymotor_mode = MODE_SPEED; 
 }

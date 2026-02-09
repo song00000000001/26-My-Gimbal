@@ -11,7 +11,7 @@ Debug_Data_t Debugger;//调试数据结构体实例化
 stack_remain_t Stack_Remain={255};
 #endif
 
-motor_ctrl_driver motor_ctrl(1);//电机控制驱动实例
+motor_ctrl_driver motor_ctrl(mymotor_id);//电机控制驱动实例
 
 
 //全局变量定义
