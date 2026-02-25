@@ -7,16 +7,16 @@ motor_ctrl_driver::motor_ctrl_driver(uint8_t id):
     mymotor(id)
 {
     // 电机参数初始化 (极性、减速比)
-    mymotor.Polarity = 1;
+    //mymotor.Polarity = 1;
     //float deliver_ratio = (2 * PI * 18.62f) / (360 * 51);
     //mymotor.angle_unit_convert = deliver_ratio;
-    mymotor.angle_unit_convert = 1; // 角度单位转换
-    mymotor.speed_unit_convert = 1;
+    // mymotor.angle_unit_convert = 1; // 角度单位转换
+    // mymotor.speed_unit_convert = 1;
 
-    mymotor_mode = MODE_SPEED; 
+    //mymotor_mode = MODE_SPEED; 
 }
 
-
+#if 0
 // ================= 动作接口 =================
 void motor_ctrl_driver::adjust()
 {
@@ -92,12 +92,20 @@ void motor_ctrl_driver::set_motor_angle_limit(float lower_limit,float upper_limi
 void motor_ctrl_driver::set_motor_mode(Control_Mode_e mode){
     mymotor_mode = mode;
 }
+#endif
+
 // 设置电机目标速度
-void motor_ctrl_driver::set_motor_target_speed(float speed){
-    if(mymotor_mode!=MODE_SPEED){
-        return;
-    }
-    mymotor_pid_spd.Target = speed;
+void motor_ctrl_driver::motor_pack_dm10010(CAN_COB &txPack,float speed){
+    txPack = {Can_STDID, 0, 8};
+    txPack.ID = 0x200+mymotor.ID;
+    memcpy(txPack.Data, &speed, 8);//浮点型,低位在前
+}
+
+void motor_ctrl_driver::enable_motor(bool enable){
+    if(enable)
+        mymotor.startMotor();
+    else
+        mymotor.stopMotor();
 }
 
 bool motor_ctrl_driver::update(uint32_t _unuse_id, uint8_t data[8])

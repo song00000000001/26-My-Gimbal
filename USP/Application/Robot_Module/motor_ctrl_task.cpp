@@ -3,24 +3,16 @@
 #include "robot_config.h"
 
 
-/*todo
-    song
-    考虑做软启动和软停止。
-    考虑双电机切换运行，一个主，一个备份。
-    如果主电机温度过高或者转速异常，则切换到备份电机运行，等主电机温度下降后再切换回来。
-    目前先不做，等有需求再说。
-*/
-
 void task_motor_ctrl(void *arg)
 {
-    Motor_CAN_COB Tx_Buff = {};
+    CAN_COB Tx_Buff = {};
 
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(2);
 
-    motor_ctrl.set_motor_mode(MODE_SPEED);
-    motor_ctrl.mymotor_pid_spd.SetPIDParam(0.0,0,0,0,10);
+    // motor_ctrl.set_motor_mode(MODE_SPEED);
+    // motor_ctrl.mymotor_pid_spd.SetPIDParam(0.0,0,0,0,10);
     g_SystemState.SysMode=small_energy; //默认小能量机关模式
     for (;;)
     {
@@ -33,12 +25,12 @@ void task_motor_ctrl(void *arg)
         switch(g_SystemState.SysMode)
         {
             case wait_start: // 等待开始
-                g_SystemState.TargetSpeed = 10 * 71 * 4 * 1.0f; // 恒定速度: 10 rpm * 减速比
+                g_SystemState.TargetSpeed = 10*motor_reduction_ratio ; // 恒定速度: 10 rpm * 减速比
                 break;
             case small_energy: // 小能量机关
                 // 恒定速度: 10 rpm * 减速比... (原公式保留)
                 // 假设 receivedata3.speed 原本是归一化系数或转速, 这里直接用 debug 参数
-                g_SystemState.TargetSpeed = 10 * 71 * 4 * g_SystemState.SmallEnergy_Speed;
+                g_SystemState.TargetSpeed = 10 *motor_reduction_ratio* g_SystemState.SmallEnergy_Speed;
                 break;
                 
             case big_energy: // 大能量机关
@@ -54,7 +46,7 @@ void task_motor_ctrl(void *arg)
                     else if(param_w < 1.884f) param_w = 1.884f;
 
                     // 计算大符速度
-                    g_SystemState.TargetSpeed = (param_a * sin(param_w * time_clock/1000.0f) + 2.090f - param_a) * 71 * 4 * 60 / 6.28f;
+                    g_SystemState.TargetSpeed = (param_a * sin(param_w * time_clock/1000.0f) + 2.090f - param_a) * motor_reduction_ratio * 4 * 60 / 6.28f;
                     
                 }
                 break;
@@ -79,26 +71,42 @@ void task_motor_ctrl(void *arg)
         //target设置
         //motor_ctrl.set_motor_target_speed(g_SystemState.TargetSpeed);
         //current获取
-        g_SystemState.RealSpeed = motor_ctrl.get_motor_speed();
-        //pid计算
-        motor_ctrl.adjust();
-        if(g_SystemState.SysMode == idle)
-        {
-            motor_ctrl.set_motor_mode(MODE_ERROR); // 失能
-            motor_ctrl.motor_output(false);           //不输出
-        }
-        else{
-            motor_ctrl.set_motor_mode(MODE_SPEED); // 速度环
-            motor_ctrl.motor_output(true);            //输出设置
-        }
+        // g_SystemState.RealSpeed = motor_ctrl.get_motor_speed();
+        // //pid计算
+        // motor_ctrl.adjust();
+        // if(g_SystemState.SysMode == idle)
+        // {
+        //     motor_ctrl.set_motor_mode(MODE_ERROR); // 失能
+        //     motor_ctrl.motor_output(false);           //不输出
+        // }
+        // else{
+        //     motor_ctrl.set_motor_mode(MODE_SPEED); // 速度环
+        //     motor_ctrl.motor_output(true);            //输出设置
+        // }
 
         // can发送速度指令
-        MotorMsgPack(Tx_Buff, motor_ctrl.mymotor);
-        // 强制将 ID 改为 0x3FE,后续考虑优化成配置项
-        Tx_Buff.Id200.ID = 0x3FE; 
+        // MotorMsgPack(Tx_Buff, motor_ctrl.mymotor);
+        // // 强制将 ID 改为 0x3FE,后续考虑优化成配置项
+        // Tx_Buff.Id200.ID = 0x3FE; 
+        if(g_SystemState.SysMode == idle || g_SystemState.SysMode == success){
+            g_SystemState.TargetSpeed = 0;
+            motor_ctrl.mymotor.stopMotor(); // 失能电机
+        }
+        else{
+            if(motor_ctrl.dm_motor_recdata.state==0){ // 电机未使能，强制使能
+                motor_ctrl.mymotor.startMotor(); // 使能电机
+            }
+            else if(motor_ctrl.dm_motor_recdata.state!=1){ // 电机状态异常，强制使能
+                motor_ctrl.mymotor.ClearError(); // 清除错误
+                motor_ctrl.mymotor.startMotor(); // 使能电机
+            }
+        }
+        g_SystemState.TargetSpeed = std::clamp(g_SystemState.TargetSpeed, -motor_speed_max, motor_speed_max); // 限幅
+        motor_ctrl.motor_pack_dm10010(Tx_Buff, g_SystemState.TargetSpeed);
+
         // 发送给电机
-        xQueueSend(CAN1_TxPort, &Tx_Buff.Id200, 0);
-        xQueueSend(CAN2_TxPort, &Tx_Buff.Id200, 0);
+        xQueueSend(CAN1_TxPort, &Tx_Buff, 0);
+        xQueueSend(CAN2_TxPort, &Tx_Buff, 0);
 
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         StackWaterMark_Get(motor_ctrl);

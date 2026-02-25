@@ -8,6 +8,8 @@ extern "C" {
 #endif
 
 #define mymotor_id 2
+#define motor_speed_max 150.0f // 电机最大速度，单位 rpm
+#define motor_reduction_ratio 1.0f // 电机减速比
 
 // 帧头定义
 #define FAN_PACKET_HEADER 0xA5

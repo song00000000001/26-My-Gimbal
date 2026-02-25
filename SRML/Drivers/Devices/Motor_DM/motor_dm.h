@@ -40,7 +40,7 @@ private:
     } Rec_Data;
 
     /* can发送数据体 */
-    CAN_COB TxPack = {Can_EXTID, 0, 8, {}};
+    CAN_COB TxPack = {Can_STDID, 0, 8, {}};
     QueueHandle_t Tx_Handle;
 
 public:
