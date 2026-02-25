@@ -19,6 +19,7 @@ void updateSEArmorLight();
 bool isSETarget(uint8_t id);
 void R_light(light_color_enum color);
 void FanFeedbackProcess(CAN_COB &CAN_RxMsg);
+void my_printf(const char* format, ...);
 
 //状态机任务
 void task_state_machine(void *arg)
@@ -52,24 +53,6 @@ void task_state_machine(void *arg)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
         main_task_now = xTaskGetTickCount();
-
-        // Remote_Ctrl_Snapshot_Copy(&FS_I6X_Snap, &FS_I6X);
-        
-        // // 处理遥控器连接状态及模式切换
-        // if (FS_I6X_Snap.Status != ESTABLISHED) {
-
-        // }
-        // else{
-        //     if(FS_I6X_Snap.S1==SW_UP){
-                
-        //     }
-        //     if(FS_I6X_Snap.S1==SW_DOWN){
-                
-        //     }
-        //     if(FS_I6X_Snap.S1==SW_MID){
-                
-        //     }
-        // }
         
         if(g_SystemState.target_mode == 0) // 停止/待机
             g_SystemState.SysMode=idle;
@@ -92,7 +75,7 @@ void task_state_machine(void *arg)
             switch (g_SystemState.target_mode)
             {
             case 0: // 停止/待机
-                g_SystemState.SysMode=idle;
+                //g_SystemState.SysMode=idle;
                 break;
             case 1: // 激活
             case 2: // 小能量机关
@@ -514,4 +497,23 @@ void FanFeedbackProcess(CAN_COB &CAN_RxMsg)
             g_SystemState.IsHit = 0;
         }
     }
+}
+
+#include <stdarg.h>
+#include <stdio.h>
+
+void my_printf(const char* format, ...)
+{
+    USART_COB TxMsg = {};
+    va_list args;
+    va_start(args, format);
+    int len = vsnprintf((char*)TxMsg.address, UART1_RX_BUFFER_SIZE, format, args);
+    if (len > 0 && len < UART1_RX_BUFFER_SIZE)
+    {        
+        TxMsg.port_num = 1; // 调试串口是 USART1
+        TxMsg.len = len;
+        xQueueSend(USART_TxPort, &TxMsg, 0);
+    }
+    va_end(args);
+    
 }
