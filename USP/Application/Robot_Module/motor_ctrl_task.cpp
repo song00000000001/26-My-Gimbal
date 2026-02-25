@@ -2,7 +2,6 @@
 #include "global_data.h"
 #include "robot_config.h"
 
-
 void task_motor_ctrl(void *arg)
 {
     CAN_COB Tx_Buff = {};
@@ -101,7 +100,7 @@ void task_motor_ctrl(void *arg)
                 motor_ctrl.mymotor.startMotor(); // 使能电机
             }
         }
-        g_SystemState.TargetSpeed = std::clamp(g_SystemState.TargetSpeed, -motor_speed_max, motor_speed_max); // 限幅
+        g_SystemState.TargetSpeed = std_lib::constrain(g_SystemState.TargetSpeed, -motor_speed_max, motor_speed_max); // 限幅
         motor_ctrl.motor_pack_dm10010(Tx_Buff, g_SystemState.TargetSpeed);
 
         // 发送给电机

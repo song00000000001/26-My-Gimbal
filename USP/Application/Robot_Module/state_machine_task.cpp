@@ -25,7 +25,7 @@ void task_state_machine(void *arg)
 {
     // 任务频率控制
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(1);
+    const TickType_t xFrequency = pdMS_TO_TICKS(2);
     uint32_t main_task_now = xTaskGetTickCount();
 
     Motor_CAN_COB Tx_Buff = {};
@@ -53,23 +53,23 @@ void task_state_machine(void *arg)
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
         main_task_now = xTaskGetTickCount();
 
-        Remote_Ctrl_Snapshot_Copy(&FS_I6X_Snap, &FS_I6X);
+        // Remote_Ctrl_Snapshot_Copy(&FS_I6X_Snap, &FS_I6X);
         
-        // 处理遥控器连接状态及模式切换
-        if (FS_I6X_Snap.Status != ESTABLISHED) {
+        // // 处理遥控器连接状态及模式切换
+        // if (FS_I6X_Snap.Status != ESTABLISHED) {
 
-        }
-        else{
-            if(FS_I6X_Snap.S1==SW_UP){
+        // }
+        // else{
+        //     if(FS_I6X_Snap.S1==SW_UP){
                 
-            }
-            if(FS_I6X_Snap.S1==SW_DOWN){
+        //     }
+        //     if(FS_I6X_Snap.S1==SW_DOWN){
                 
-            }
-            if(FS_I6X_Snap.S1==SW_MID){
+        //     }
+        //     if(FS_I6X_Snap.S1==SW_MID){
                 
-            }
-        }
+        //     }
+        // }
         
         if(g_SystemState.target_mode == 0) // 停止/待机
             g_SystemState.SysMode=idle;

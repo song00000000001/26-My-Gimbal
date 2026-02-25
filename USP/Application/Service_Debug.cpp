@@ -81,31 +81,21 @@ void Task_VofaMonitor(void *arg){
 	xLastWakeTime_t = xTaskGetTickCount();
     int32_t motor_speed=0;
     uint32_t last_motor_angle=0;
-    uint32_t current_motor_angle=0;
 	/* Infinite loop */
 	while(1)
 	{
-		/* Wait for the next cycle */
 		vTaskDelayUntil(&xLastWakeTime_t, 5);
+        if(Debugger.enable_debug_mode==0) 
+            continue;
 
-		
-		/* 在此处传入需要观察的变量，第一个参数为通道的起始编号 */
-		//VofaMonitor::setDatas(0, mpu_receive.pitch, mpu_receive.yaw, mpu_receive.roll);
-		//VofaMonitor::setDatas(3, data3, data4, data5);
-		//VofaMonitor::setDatas(6, data6, data7, data8, data9);
-		/* 选择串口id */
-        //  if(Debugger.enable_debug_mode==0) 
-        //      continue;
-        current_motor_angle=motor_ctrl.get_motor_angle();
-        motor_speed=current_motor_angle-last_motor_angle;
         VofaMonitor::setDatas(0,
-            current_motor_angle, 
-            motor_ctrl.get_motor_speed(),
-            motor_speed, 
-            motor_ctrl.dm_motor_recdata.state,
-            motor_ctrl.encoder
+            g_SystemState.TargetSpeed, //目标速度
+            motor_ctrl.dm_motor_recdata.velocity,//速度
+            motor_ctrl.dm_motor_recdata.torque,//力矩
+            motor_ctrl.dm_motor_recdata.angle, //绝对编码器
+            motor_ctrl.dm_motor_recdata.state//状态
         );       
-        last_motor_angle=current_motor_angle;   
+   
 		VofaMonitor::send(3);
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         Stack_Remain.debug_send_stack_remain = uxTaskGetStackHighWaterMark(NULL);

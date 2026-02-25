@@ -1,20 +1,20 @@
-/* Robot_Module/loader_task.cpp */
+/* Robot_Module/armer_ctrl_task.cpp */
 
 #include "internal.h"
 #include "global_data.h"
 #include "robot_config.h"
 
-void Task_load_test_ctrl(void *arg)
+void armer_ctrl_task(void *arg)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(1);
+    const TickType_t xFrequency = pdMS_TO_TICKS(2);
 
     for (;;)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
        
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
-        //Stack_Remain.Loader_Ctrl_stack_remain = uxTaskGetStackHighWaterMark(NULL);
+        //Stack_Remain.Armer_Ctrl_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif
     }
 }

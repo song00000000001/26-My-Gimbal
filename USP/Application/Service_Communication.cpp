@@ -12,7 +12,11 @@
   |CAN2_Port          CAN2               CAN                Custom            1
   |EBUG_Port         USART1             Custom              Custom            2
   |USART2_Port       USART2              DBUS               FS_I6X          3
-  *
+CAN 1: tx/rx 电机通信，BAUD 1Mbps
+CAN 2: tx/rx分控通信，BAUD 1Mbps
+USART1: tx/rx视觉通信，BAUD 115200
+USART3: tx调试通信，BAUD 115200
+
 **/
 /* Includes ------------------------------------------------------------------*/
 #include "internal.h"
@@ -23,27 +27,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-/*uart list
-U1: vision
-U2: FS_I6X
-U3: tool panal
-U4: debug
-U5: LOG
-u5本来是给裁判系统用的，不过裁判系统只用收不发，所以没关系
-*/
-
-/*
-串口通信协议说明
-uart5:与上位机通信 波特率115200
-*/
-
-//can通信协议说明
-
-/*
-can1:与电机通信 波特率1Mbps
-电机反馈ID:0x
-电机控制ID:0x
-*/
 
 /*
 can2:与分控通信 波特率1Mbps
@@ -219,6 +202,7 @@ void Task_CAN2Receive(void *arg)
     /* update motor data from CAN1_RxPort */
     if (xQueueReceive(CAN2_RxPort, &CAN_RxCOB, portMAX_DELAY) == pdPASS)
     {
+        FanFeedbackProcess(CAN_RxCOB);
         // if (motor_ctrl.mymotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
         // {
         // }

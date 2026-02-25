@@ -152,6 +152,8 @@ typedef struct {
 } FanPacket_t;
 #pragma pack()
 
+void FanFeedbackProcess(CAN_COB &CAN_RxMsg);
+
 #ifdef __cplusplus
 }
 #endif
