@@ -452,6 +452,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>USP/Application/logic</GroupName>
+          <Files>
+            <File>
+              <FileName>small_enegy_logic.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Application\Robot_Module\small_enegy_logic.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>big_enegy_logic.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Application\Robot_Module\big_enegy_logic.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>USP/Application/tasks</GroupName>
           <Files>
             <File>
@@ -503,6 +518,21 @@
               <FileName>ws2812_ctrl_driver.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\USP\Drivers\ws2812_ctrl_driver.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>USP/Comm</GroupName>
+          <Files>
+            <File>
+              <FileName>can_comm_protocal.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Services\can_comm_protocal.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>can_comm_protocal.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\USP\Services\can_comm_protocal.h</FilePath>
             </File>
           </Files>
         </Group>

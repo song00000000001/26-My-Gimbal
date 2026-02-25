@@ -29,13 +29,13 @@ void task_motor_ctrl(void *arg)
             case small_energy: // 小能量机关
                 // 恒定速度: 10 rpm * 减速比... (原公式保留)
                 // 假设 receivedata3.speed 原本是归一化系数或转速, 这里直接用 debug 参数
-                g_SystemState.TargetSpeed = 10 *motor_reduction_ratio* g_SystemState.SmallEnergy_Speed;
+                g_SystemState.TargetSpeed = 10 *motor_reduction_ratio* g_TargetCtrl.SmallEnergy_Speed;
                 break;
                 
             case big_energy: // 大能量机关
                 {
-                    float param_a = g_SystemState.BigEnergy_A;
-                    float param_w = g_SystemState.BigEnergy_W;
+                    float param_a = g_TargetCtrl.BigEnergy_A;
+                    float param_w = g_TargetCtrl.BigEnergy_W;
                     
                     // 参数限幅 (保持原有逻辑)
                     if(param_a > 1.045f) param_a = 1.045f;
@@ -57,13 +57,6 @@ void task_motor_ctrl(void *arg)
             case idle: // 停止/待机                
             default:
                 g_SystemState.TargetSpeed = 0;
-                g_SystemState.BE_Group = 0;
-                g_SystemState.BE_State = BE_GENERATE_TARGET;
-                g_SystemState.BE_Targets[0] = 0;
-                g_SystemState.BE_Targets[1] = 0;
-                g_SystemState.IsHit = 0;
-                g_SystemState.CurrentHitID = 0;
-                g_SystemState.TargetColor = color_off;
                 break;
         }  
         // 速度调整

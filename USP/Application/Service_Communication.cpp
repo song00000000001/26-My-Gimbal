@@ -24,7 +24,7 @@ USART3: tx调试通信，BAUD 115200
 #include "protocol.h"
 #include "global_data.h"
 #include "robot_config.h"
-
+#include "can_comm_protocal.h"
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
@@ -291,12 +291,12 @@ void Task_UsartReceive(void *arg)
         if(upper_ctrl_packet.ctrl_header == 0xA5)
         {
             // 解析上位机控制包
-            g_SystemState.target_mode = static_cast<EnergyTargetMode_t>(upper_ctrl_packet.ctrl_content);
+            g_TargetCtrl.target_mode = static_cast<EnergyTargetMode_t>(upper_ctrl_packet.ctrl_content);
         }
         if(upper_ctrl_packet.ctrl_header == 0x5A)
         {
             // 解析上位机控制包
-            g_SystemState.TargetColor = static_cast<light_color_enum>(upper_ctrl_packet.ctrl_content);
+            g_TargetCtrl.TargetColor = static_cast<light_color_enum>(upper_ctrl_packet.ctrl_content);
         }
         break;
       case 2:

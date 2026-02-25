@@ -100,26 +100,28 @@ enum FanCmdType {
     FAN_CMD_HIT = 0x03,   // 击打闪烁+中心十字线亮起
 };
 
-// 全局状态结构体 - 用于Debug控制和系统状态管理
 typedef struct {
-    // --- 控制参数 (Debug可修改) ---
     EnergyTargetMode_t target_mode;    // 0:停止/待机, 1:激活, 2. 小能量机关, 3:大能量机关 ,4: 连续小能量机关,5: 连续大能量机关
-    EnergySystemMode_t  SysMode;       // 0:停止/待机, 1:小能量机关, 2:大能量机关
     light_color_enum  TargetColor;   // 0:Red, 1:Blue
     float    SmallEnergy_Speed; // 小符固定速度
     float    BigEnergy_A;   // 大符正弦 A
     float    BigEnergy_W;   // 大符正弦 Omega
+}target_ctrl_t;
+extern target_ctrl_t g_TargetCtrl;
+
+// 全局状态结构体 - 用于Debug控制和系统状态管理
+typedef struct {
+    // --- 控制参数 (Debug可修改) ---
+   
+    EnergySystemMode_t  SysMode;       // 0:停止/待机, 1:小能量机关, 2:大能量机关
     
     // --- 运行状态 (只读) ---
     uint8_t  CurrentHitID;  // 当前被击中的ID (反馈)
-    uint8_t  IsHit;         // 是否被击中标记
     float    TargetSpeed;   // 当前计算目标速度
-    float    RealSpeed;     // 当前电机反馈速度
-    uint16_t CurrentHitRound;      // 当前击中环数
     
     // --- 小能量机关状态变量  ---
     uint8_t  SE_TargetID_GROUP[5];   // 当前目标序列组
-    uint8_t SE_TargetID; // 当前目标ID (1-5)
+    uint8_t  SE_TargetID; // 当前目标ID (1-5)
     uint8_t  SE_Group;      // 当前轮数 (0，1-5)
     SmallEnergyState_t  SE_State;      // 状态机: 0:生成, 1:等待击打, 2:结束
     uint32_t SE_StateTimer; // 状态计时器
@@ -144,7 +146,11 @@ typedef struct {
 } FanPacket_t;
 #pragma pack()
 
-void FanFeedbackProcess(CAN_COB &CAN_RxMsg);
+void LightArmors() ;
+void ResetArmors() ;
+void lightSuccessFlash(int8_t num) ;
+void small_energy_logic();
+void big_energy_logic();
 
 #pragma pack(1)
 typedef struct {
