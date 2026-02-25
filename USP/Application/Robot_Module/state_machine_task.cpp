@@ -62,7 +62,7 @@ void task_state_machine(void *arg)
             state_machine_reset();
             R_light(g_TargetCtrl.TargetColor);
             g_SystemState.TargetSpeed = 0.1f; // 初始目标速度
-            
+
             switch (g_TargetCtrl.target_mode)
             {
             case tar_stop: // 停止/待机
@@ -142,4 +142,17 @@ void state_machine_reset(){
     g_SystemState.SE_State = SE_GENERATE_TARGET; // 重置小能量状态机
     ResetArmors(); // 熄灭所有装甲板
     R_light(color_off);
+}
+/*todo
+song
+为了方便debug手动模拟击中目标的情况，可以增加一个函数来判断当前的 hitID 是否是有效目标ID，替代之前的判别式
+*/
+bool is_hit_target(uint8_t big_or_small,uint8_t hitID){
+    // 判断 hitID 是否在当前目标列表中
+    if (g_SystemState.BE_State == BE_WAIT_HIT_1) {
+        return (hitID == g_SystemState.BE_Targets[0] || hitID == g_SystemState.BE_Targets[1]);
+    } else if (g_SystemState.SE_State == SE_WAIT_HIT) {
+        return (hitID == g_SystemState.SE_TargetID);
+    }
+    return false;
 }
