@@ -32,6 +32,16 @@ void updateSEArmorLight() {
     }
 }
 
+void SE_reset() {
+    g_SystemState.SE_Group = 0; // 重置轮数
+    g_SystemState.SE_State = SE_GENERATE_TARGET; // 小能量状态机
+    g_SystemState.CurrentHitID = 0;
+    g_SystemState.CurrentHitScores = 0;
+    g_SystemState.SE_Scores = 0;
+    ResetArmors(); // 熄灭所有装甲板
+    my_printf(upper_uart_id, "SE reset\n");
+}
+
 void small_energy_logic() {
 
     uint32_t now = xTaskGetTickCount();
@@ -49,10 +59,7 @@ void small_energy_logic() {
     case SE_WAIT_HIT: // 等待击打 (2.5s)
         // 超时失败
         if (now - g_SystemState.SE_StateTimer > 2500) {
-            ResetArmors(); // 熄灭所有装甲板
-            vTaskDelay(500);
-            g_SystemState.SE_Group = 0; // 重置轮数
-            g_SystemState.SE_State = SE_GENERATE_TARGET;
+            SE_reset(); // 重置小能量机关状态
         }
         
         g_SystemState.SE_TargetID=g_SystemState.SE_TargetID_GROUP[g_SystemState.SE_Group];
@@ -63,7 +70,7 @@ void small_energy_logic() {
             g_SystemState.SE_Scores += g_SystemState.CurrentHitScores;
             g_SystemState.CurrentHitScores = 0;
 
-            hit_feedback_to_uart(hitID); // 通过串口发送击打反馈，供上位机显示或调试使用
+            hit_feedback_to_uart(hitID, g_SystemState.CurrentHitScores);
             if (hitID == g_SystemState.SE_TargetID) {
                 // 击中目标，进入下一轮
                 g_SystemState.SE_Group++; // 轮数加一
@@ -86,9 +93,7 @@ void small_energy_logic() {
             } 
             else {
                 // 打错，重置
-                ResetArmors();
-                vTaskDelay(100);
-                g_SystemState.SE_State = SE_GENERATE_TARGET;
+                SE_reset();
                 break;
             }
    

@@ -41,6 +41,7 @@ void BE_reset() {
     g_SystemState.BE_ActivedArms = 0;
     g_SystemState.BE_Scores = 0;
     ResetArmors(); // 熄灭所有装甲板
+    my_printf(upper_uart_id, "BE reset\n");
 }
 
 void big_energy_logic() {
@@ -83,7 +84,7 @@ void big_energy_logic() {
             g_SystemState.BE_Scores+= g_SystemState.CurrentHitScores;
             g_SystemState.CurrentHitScores = 0;
             g_SystemState.BE_ActivedArms++; // 激活灯臂数加一
-            hit_feedback_to_uart(hitID);
+            hit_feedback_to_uart(hitID, g_SystemState.CurrentHitScores); 
             if (g_SystemState.BE_Targets[0] == hitID || g_SystemState.BE_Targets[1] == hitID) {
                 // 击中其中一个，进入连击窗口
                 SendFanPacket(hitID, FAN_CMD_HIT, g_TargetCtrl.TargetColor, g_SystemState.BE_Group + 1);
@@ -114,7 +115,7 @@ void big_energy_logic() {
             g_SystemState.BE_Scores+= g_SystemState.CurrentHitScores;
             g_SystemState.CurrentHitScores = 0;
             g_SystemState.BE_ActivedArms++; // 激活灯臂数加一
-            hit_feedback_to_uart(hitID);
+            hit_feedback_to_uart(hitID, g_SystemState.CurrentHitScores); 
             if (g_SystemState.BE_Targets[0] == hitID || g_SystemState.BE_Targets[1] == hitID) {
                 // 击中剩下那个 -> 双杀成功
                 SendFanPacket(hitID, FAN_CMD_HIT, g_TargetCtrl.TargetColor, g_SystemState.BE_Group + 1);

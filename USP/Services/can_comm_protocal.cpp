@@ -41,26 +41,44 @@ void FanFeedbackProcess(CAN_COB &CAN_RxMsg)
         g_SystemState.CurrentHitScores = CAN_RxMsg.Data[0];
     }
 }
+/*
+void my_printf(const char *format, ...)
+{
+    char buf[BLE_TX_BUF_LEN];
+    va_list args;
+    va_start(args, format);
 
+    int len = vsnprintf(buf, BLE_TX_BUF_LEN, format, args);
+    if (len > 0 && len < BLE_TX_BUF_LEN)
+    {
+      ble_print((uint8_t *)buf,len);
+    }
+
+    va_end(args);
+}
+*/
+USART_COB TxMsg = {};
+char TxBuf[UART1_RX_BUFFER_SIZE];
 
 void my_printf(uint8_t port_num, const char* format, ...)
 {
-    USART_COB TxMsg = {};
+    
     va_list args;
     va_start(args, format);
-    int len = vsnprintf((char*)TxMsg.address, UART1_RX_BUFFER_SIZE, format, args);
+    int len = vsnprintf(TxBuf, UART1_RX_BUFFER_SIZE, format, args);
     if (len > 0 && len < UART1_RX_BUFFER_SIZE)
     {        
         TxMsg.port_num = port_num; // 调试串口是 USART1
         TxMsg.len = len;
+        TxMsg.address = (uint8_t *)TxBuf;
         xQueueSend(USART_TxPort, &TxMsg, 0);
     }
     va_end(args);
     
 }
 
-void hit_feedback_to_uart(uint8_t hitID){
-    my_printf(upper_uart_id, "Hit ID: %d\r\n", hitID);
+void hit_feedback_to_uart(uint8_t hitID,uint8_t scores){
+    my_printf(upper_uart_id, "Hit ID: %d, Scores: %d\r\n", hitID, scores);
 }
 
 /*
