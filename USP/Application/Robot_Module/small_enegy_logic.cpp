@@ -40,6 +40,7 @@ void small_energy_logic() {
     switch (g_SystemState.SE_State)
     {
     case SE_GENERATE_TARGET: // 生成目标
+        g_SystemState.SE_Group = 0; // 重置轮数
         generateSETarget();
         g_SystemState.SE_StateTimer = now;
         g_SystemState.SE_State = SE_WAIT_HIT; // 切换到等待击打
@@ -59,14 +60,18 @@ void small_energy_logic() {
         if (g_SystemState.CurrentHitID != 0) {
             uint8_t hitID = g_SystemState.CurrentHitID;
             g_SystemState.CurrentHitID = 0;
-            
+            g_SystemState.SE_Scores += g_SystemState.CurrentHitScores;
+            g_SystemState.CurrentHitScores = 0;
+
+            hit_feedback_to_uart(hitID); // 通过串口发送击打反馈，供上位机显示或调试使用
             if (hitID == g_SystemState.SE_TargetID) {
                 // 击中目标，进入下一轮
                 g_SystemState.SE_Group++; // 轮数加一
-                if(g_SystemState.SE_Group >= 4) {
+                if(g_SystemState.SE_Group > 4) {
+                    small_enegy_settlement(g_SystemState.SE_Scores); // 结算，传入得分
+                    g_SystemState.SE_Scores = 0;
                     // 全部通关
                     if(g_TargetCtrl.target_mode == tar_small_energy_continue){
-                        g_SystemState.SE_Group = 0; // 重置轮数
                         g_SystemState.SE_State = SE_GENERATE_TARGET;
                     }
                     else{
@@ -83,10 +88,10 @@ void small_energy_logic() {
                 // 打错，重置
                 ResetArmors();
                 vTaskDelay(100);
-                g_SystemState.SE_Group = 0; // 重置轮数
+                g_SystemState.SE_State = SE_GENERATE_TARGET;
                 break;
             }
-                
+   
             updateSEArmorLight();
             g_SystemState.SE_StateTimer = now;
         }
@@ -94,24 +99,6 @@ void small_energy_logic() {
 
     default:
         g_SystemState.SE_State = SE_GENERATE_TARGET;
-        break;
-    }
-
-    switch (g_TargetCtrl.target_mode)
-    {
-    case 0: // 停止/待机
-        g_SystemState.SysMode=idle;
-        break;
-    case 1: // 激活
-    case 3: // 大能量机关
-    case 5: // 连续大能量机关
-        g_SystemState.SysMode=wait_start;
-        break;
-    case 2: // 小能量机关
-    case 4: // 连续小能量机关
-        g_SystemState.SysMode = small_energy; // 切换到小能量机关
-        break;
-    default:
         break;
     }
 }

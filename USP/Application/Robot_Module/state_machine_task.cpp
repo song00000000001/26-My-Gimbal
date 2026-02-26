@@ -18,7 +18,7 @@ void task_state_machine(void *arg)
     Motor_CAN_COB Tx_Buff = {};
 
     Debugger={
-        .enable_debug_mode=0,
+        .enable_debug_mode=debug_idle,
     };
      // --- 初始化部分 ---
     // 启动 ADC DMA (只需要启动一次)
@@ -33,8 +33,13 @@ void task_state_machine(void *arg)
     // 结合 ADC 悬空值和当前时间戳，保证每次上电的随机序列都不同
     srand(adcSeed + xTaskGetTickCount()); 
 
+    g_SystemState.SysMode=small_energy; //默认小能量机关模式
     g_SystemState.BE_Group = 0;
     g_SystemState.BE_State = BE_GENERATE_TARGET;
+    g_SystemState.CurrentHitID = 0;
+    g_SystemState.SE_Group = 0; // 小能量轮数
+    g_SystemState.SE_State = SE_GENERATE_TARGET; // 小能量状态机
+
     for (;;)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
@@ -44,7 +49,7 @@ void task_state_machine(void *arg)
             g_SystemState.SysMode=idle;
         else if(g_TargetCtrl.target_mode == tar_start) // 激活
             g_SystemState.SysMode=wait_start;
-
+        
         // 模式判断
         switch (g_SystemState.SysMode)
         {
@@ -53,7 +58,7 @@ void task_state_machine(void *arg)
             state_machine_reset();
             if(g_TargetCtrl.target_mode == tar_stop)
                 g_SystemState.SysMode=idle;
-            else if(g_TargetCtrl.target_mode == tar_start)
+            else
                 g_SystemState.SysMode=wait_start;   
         }
         break;
@@ -114,7 +119,6 @@ void task_state_machine(void *arg)
     }
 }
 
-
 void R_light(light_color_enum color){
     switch(color){
         case color_red:
@@ -142,17 +146,4 @@ void state_machine_reset(){
     g_SystemState.SE_State = SE_GENERATE_TARGET; // 重置小能量状态机
     ResetArmors(); // 熄灭所有装甲板
     R_light(color_off);
-}
-/*todo
-song
-为了方便debug手动模拟击中目标的情况，可以增加一个函数来判断当前的 hitID 是否是有效目标ID，替代之前的判别式
-*/
-bool is_hit_target(uint8_t big_or_small,uint8_t hitID){
-    // 判断 hitID 是否在当前目标列表中
-    if (g_SystemState.BE_State == BE_WAIT_HIT_1) {
-        return (hitID == g_SystemState.BE_Targets[0] || hitID == g_SystemState.BE_Targets[1]);
-    } else if (g_SystemState.SE_State == SE_WAIT_HIT) {
-        return (hitID == g_SystemState.SE_TargetID);
-    }
-    return false;
 }

@@ -37,29 +37,37 @@ can2:与分控通信 波特率1Mbps
 分控控制ID:0x210+分控ID
 
 分控反馈包：
-    CAN_TxMsg.IdType = Can_STDID;
-    CAN_TxMsg.ID = 0x220+sub_ctrl_id; // 分控 ID 作为低字节
-    CAN_TxMsg.DLC = 2;
-    CAN_TxMsg.Data[0] = (g_led_ctrl_mask >> 8) & 0xFF; // 高字节
-    CAN_TxMsg.Data[1] = g_led_ctrl_mask & 0xFF;        // 低字节
+    comm_buffers.CAN_TxMsg.IdType = Can_STDID;
+    comm_buffers.CAN_TxMsg.ID = CAN_SEND_ID_BASE+sub_ctrl_id; // 分控 ID 作为低字节
+    comm_buffers.CAN_TxMsg.DLC = 2;
+    comm_buffers.CAN_TxMsg.Data[0] = __builtin_ctz(robot_status.hit_mask); // 发送被击打的环的索引,1~10
+    comm_buffers.CAN_TxMsg.Data[1] = 0; // 预留字节
 
 分控控制包：
     分控接收解析代码：
     ```C
-    // 1. 校验数据包
-    if (CAN_RxMsg.ID ==  0x210+sub_ctrl_id && CAN_RxMsg.DLC == 3) {
+    todo
+    song
+    考虑重构成一个更通用的协议解析函数,根据第一个字节区分不同类型的包,然后解析后续数据.
+    考虑重构颜色枚举,颜色只负责表示颜色,不区分击打与否,然后在协议里增加一个字段表示击打状态.这样更清晰也更易于扩展.
+    目前协议设计得比较简陋,后续可以根据需要增加更多字段,比如击打环数,连击状态等,以支持更丰富的功能.
+    
+    typedef enum 
+    {
+        color_off = 0,
+        color_red,
+        color_blue,
+        color_hit_red,
+        color_hit_blue
+    }light_color_enum;
+
+    if (comm_buffers.CAN_RxMsg.ID == (CAN_RECEIVE_ID_BASE+sub_ctrl_id) && comm_buffers.CAN_RxMsg.DLC == 3) {
         // 2. 更新全局状态
-        global_color = (light_color_enum)CAN_RxMsg.Data[0];
-        g_active_groups = CAN_RxMsg.Data[1];
-        g_energy_state = CAN_RxMsg.Data[2];
+        robot_status.color = (light_color_enum)comm_buffers.CAN_RxMsg.Data[0];
+        robot_status.active_groups = comm_buffers.CAN_RxMsg.Data[1];// 0-5,表示当前激活的装甲板组数
+        robot_status.energy_state = (EnergySystemMode_t)comm_buffers.CAN_RxMsg.Data[2];//0:待机,1:小能量机关,2:大能量机关,3:成功
     }
     ```
-    CAN_TxMsg.IdType = Can_STDID;
-    CAN_TxMsg.ID = 0x210+sub_ctrl_id; // 分控 ID 作为低字节
-    CAN_TxMsg.DLC = 2;
-    CAN_TxMsg.Data[0] = sub_ctrl_color[sub_ctrl_id]; // 高字节
-    CAN_TxMsg.Data[1] = g_SystemState.BE_Group;        // 低字节
-    CAN_TxMsg.Data[2] = g_SystemState.SysMode;        // 低字节
 */
 
 #if USE_SRML_CAN

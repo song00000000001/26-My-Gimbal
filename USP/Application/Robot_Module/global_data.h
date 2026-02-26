@@ -8,10 +8,15 @@
 extern "C" {
 #endif
 
+typedef enum{
+    debug_idle = 0,
+    debug_mtvofa_monitor,
+}Debug_Mode_e;
+
 //调试数据结构体
 typedef struct {
     // 标志位
-    uint8_t enable_debug_mode; // 在watch窗口改为true以进入调试模式(配合遥控器)
+    Debug_Mode_e enable_debug_mode; // 在watch窗口改为true以进入调试模式(配合遥控器)
 } Debug_Data_t;
 extern Debug_Data_t Debugger;  
 
@@ -117,6 +122,7 @@ typedef struct {
     
     // --- 运行状态 (只读) ---
     uint8_t  CurrentHitID;  // 当前被击中的ID (反馈)
+    uint8_t  CurrentHitScores; // 当前得分 (根据击打情况计算，供上位机显示)
     float    TargetSpeed;   // 当前计算目标速度
     
     // --- 小能量机关状态变量  ---
@@ -125,12 +131,15 @@ typedef struct {
     uint8_t  SE_Group;      // 当前轮数 (0，1-5)
     SmallEnergyState_t  SE_State;      // 状态机: 0:生成, 1:等待击打, 2:结束
     uint32_t SE_StateTimer; // 状态计时器
+    uint8_t  SE_Scores;
 
     // --- 大能量机关状态变量  ---
     uint8_t  BE_Group;      // 当前轮数 (0，1-5)
     uint8_t  BE_Targets[2]; // 当前两个目标ID (1-5)
     BigEnergyState_t  BE_State;      // 状态机: 0:生成, 1:等待首击, 2:等待连击, 3:结束
     uint32_t BE_StateTimer; // 状态计时器
+    uint8_t  BE_Scores;
+    uint8_t  BE_ActivedArms; // 当前激活的装甲板数量 (1-10)
 } EnergySystemState_t;
 
 extern EnergySystemState_t g_SystemState;

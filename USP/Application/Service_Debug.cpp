@@ -85,16 +85,20 @@ void Task_VofaMonitor(void *arg){
 	while(1)
 	{
 		vTaskDelayUntil(&xLastWakeTime_t, 5);
-        if(Debugger.enable_debug_mode==0) 
-            continue;
 
-        VofaMonitor::setDatas(0,
-            g_SystemState.TargetSpeed, //目标速度
-            motor_ctrl.dm_motor_recdata.velocity,//速度
-            motor_ctrl.dm_motor_recdata.torque,//力矩
-            motor_ctrl.dm_motor_recdata.angle, //绝对编码器
-            motor_ctrl.dm_motor_recdata.state//状态
-        );       
+        if(Debugger.enable_debug_mode==debug_idle)
+            continue;//不进入监控模式，直接跳过
+
+        if(Debugger.enable_debug_mode==debug_mtvofa_monitor)
+        {
+            VofaMonitor::setDatas(0,
+                g_SystemState.TargetSpeed, //目标速度
+                motor_ctrl.dm_motor_recdata.velocity,//速度
+                motor_ctrl.dm_motor_recdata.torque,//力矩
+                motor_ctrl.dm_motor_recdata.angle, //绝对编码器
+                motor_ctrl.dm_motor_recdata.state//状态
+            );       
+        }
    
 		VofaMonitor::send(3);
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark

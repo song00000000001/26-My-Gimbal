@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+#define upper_uart_id 1 // 上位机通信串口 USART1
 #define mymotor_id 2
 #define motor_speed_max 150.0f // 电机最大速度，单位 rpm
 #define motor_reduction_ratio 1.0f // 电机减速比
