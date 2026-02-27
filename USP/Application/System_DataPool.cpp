@@ -13,6 +13,7 @@
 /* Queues */
 QueueHandle_t USART_TxPort; //	串口发送队列
 QueueHandle_t USART_RxPort; // 串口接收队列
+// StreamBufferHandle_t USART_TxBuffer; // 串口发送缓冲区
 QueueHandle_t Param_RxPort;  //调参板接收队列  
 QueueHandle_t CAN1_TxPort;  //	can1 发送队列
 QueueHandle_t CAN1_RxPort;  //	can1 接收队列

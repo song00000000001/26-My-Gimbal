@@ -85,6 +85,7 @@ void hit_feedback_to_uart(uint8_t hitID,uint8_t scores){
 小能量机关增益持续期间内，所有英雄、步兵、空 中机器人在获得经验时，额外获得原经验100%的经验，一方在一次小能量机关增益期间内通过此方 式最多共获得 1200 点额外经验。
 */
 void small_enegy_settlement(uint8_t average_round){
+    vTaskDelay(50);
     my_printf(upper_uart_id, "SE settlement,total Round: %d\r\n", average_round);
     vTaskDelay(10);
 }
@@ -113,6 +114,7 @@ void small_enegy_settlement(uint8_t average_round){
 |  10   |    60     |
 */
 void big_enegy_settlement(uint8_t average_round, uint8_t actived_arms){
+    vTaskDelay(50);
     my_printf(upper_uart_id, "BE Settlement,Average Round: %d, Actived Arms: %d\r\n", average_round, actived_arms);
     vTaskDelay(50);
 	if(average_round >= 0 && average_round <= 3){
