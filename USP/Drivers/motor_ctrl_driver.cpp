@@ -34,7 +34,7 @@ void motor_ctrl_driver::adjust()
         mymotor_pid_spd.Adjust();
     }
     else if(mymotor_mode==MODE_SPEED){
-        mymotor_pid_spd.Current = mymotor.getMotorSpeed();
+        mymotor_pid_spd.Current = motor_ctrl.get_motor_speed();
         mymotor_pid_spd.Adjust();
     }
     else{//意外情况,一般不会进入。这里的接口外部不应该调用，而是通过motor_output的enable参数控制。
@@ -71,11 +71,13 @@ bool motor_ctrl_driver::is_motor_at_target() {
 }
 
 float motor_ctrl_driver::get_motor_angle(){
-    return dm_motor_recdata.angle;
+    float angle = (float)(dm_motor_recdata.angle/65535.0f*360.0f/52.0f); // 换算成角度
+    return angle;
 }
 
 float motor_ctrl_driver::get_motor_speed(){
-    return dm_motor_recdata.velocity;
+    float speed = (float)(dm_motor_recdata.d_angle/65535.0f*360.0f/52.0f*500.0f); // 减速后，angle转一圈增量为65535*52,数据更新周期是2ms，换算成角度每秒
+    return speed;
 }
 
 // 设置电机目标角度
@@ -103,14 +105,14 @@ bool motor_ctrl_driver::update(uint32_t _unuse_id, uint8_t data[8])
 {
     //if ((ID) != (data[0] & 0x0F))
         //return false;
-
+    
     dm_motor_recdata.state = (data[0]) >> 4;
     encoder = (uint16_t)(data[1] << 8) | data[2];
 	dm_motor_recdata.velocity =(data[3] << 4) | (data[4] >> 4); // (-45.0,45.0)
     dm_motor_recdata.torque = ((data[4] & 0xF) << 8) | data[5];   // (-10.0,10.0)
     dm_motor_recdata.T_mos = (float)(data[6]);
     dm_motor_recdata.T_motor = (float)(data[7]);
-#if 0
+#if 1
     if (encoder_is_init)
     {
         if (encoder - last_encoder > encoder_max / 2)
@@ -133,6 +135,8 @@ bool motor_ctrl_driver::update(uint32_t _unuse_id, uint8_t data[8])
     last_encoder = encoder;
     dm_motor_recdata.angle  = round_cnt * encoder_max + encoder;
 #endif
+    dm_motor_recdata.d_angle = dm_motor_recdata.angle - last_angle;
+    last_angle = dm_motor_recdata.angle;
     return true;
 }
 

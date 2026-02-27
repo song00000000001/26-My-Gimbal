@@ -79,9 +79,6 @@ void Task_VofaMonitor(void *arg){
 	/* Pre-Load for task */
 	TickType_t xLastWakeTime_t;
 	xLastWakeTime_t = xTaskGetTickCount();
-    int32_t motor_speed=0;
-    uint32_t last_motor_angle=0;
-    uint32_t current_motor_angle=0;
 	/* Infinite loop */
 	while(1)
 	{
@@ -96,16 +93,13 @@ void Task_VofaMonitor(void *arg){
 		/* 选择串口id */
         //  if(Debugger.enable_debug_mode==0) 
         //      continue;
-        current_motor_angle=motor_ctrl.get_motor_angle();
-        motor_speed=current_motor_angle-last_motor_angle;
         VofaMonitor::setDatas(0,
-            current_motor_angle, 
-            motor_ctrl.get_motor_speed(),
-            motor_speed, 
-            motor_ctrl.dm_motor_recdata.state,
-            motor_ctrl.encoder
-        );       
-        last_motor_angle=current_motor_angle;   
+            (float)motor_ctrl.get_motor_angle(),
+            (float)motor_ctrl.get_motor_speed(),
+            (float)motor_ctrl.mymotor_pid_spd.Target,
+            (float)motor_ctrl.mymotor_pid_spd.Current,
+            (float)motor_ctrl.mymotor_pid_spd.Out
+        );         
 		VofaMonitor::send(3);
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
         Stack_Remain.debug_send_stack_remain = uxTaskGetStackHighWaterMark(NULL);

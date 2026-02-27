@@ -80,7 +80,6 @@ void task_motor_ctrl(void *arg)
         //motor_ctrl.set_motor_target_speed(g_SystemState.TargetSpeed);
         //current获取
         g_SystemState.RealSpeed = motor_ctrl.get_motor_speed();
-        motor_ctrl.mymotor_pid_spd.Current = g_SystemState.RealSpeed;
         //pid计算
         motor_ctrl.adjust();
         if(g_SystemState.SysMode == idle)
