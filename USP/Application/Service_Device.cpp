@@ -110,11 +110,9 @@ void task_imu(void *arg)
 void R_light(light_color_enum color){
     switch(color){
         case color_red:
-        case color_hit_red:
             ws2312_show(255, 0, 0); // 红色
             break;
         case color_blue:
-        case color_hit_blue:
             ws2312_show(0, 0, 255); // 蓝色
             break;
         case color_off:

@@ -115,7 +115,7 @@ void Task_VofaMonitor(void *arg){
          
 		if(Debugger.enable_debug_mode != debug_idle)
 		{
-			VofaMonitor::send(1);
+            VofaMonitor::send(6);
 		}
 			
         #ifdef INCLUDE_uxTaskGetStackHighWaterMark
