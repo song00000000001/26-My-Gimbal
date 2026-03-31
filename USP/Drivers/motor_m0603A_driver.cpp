@@ -11,7 +11,8 @@ BenMoMotor::BenMoMotor(uint8_t motor_id) : _id(motor_id) {}
  * 该函数需要在使用驱动前调用一次，注册后驱动内部会使用该函数发送指令包，用户无需关心通信细节，只需提供一个符合签名的发送函数即可。
  */
 void BenMoMotor::registerSendFunction(bool (*sendFunc)(uint8_t port_id,const uint8_t* data, uint8_t len)) {
-    // 这里可以将 sendFunc 存储在静态成员变量中，供后续指令发送时调用
+    if(sendFunc == nullptr) return; // 安全检查，避免注册空指针
+    // 这里将 sendFunc 存储在静态成员变量中，供后续指令发送时调用
     BenMoMotor::_sendFunction = sendFunc;
 }
 
@@ -19,6 +20,7 @@ void BenMoMotor::registerSendFunction(bool (*sendFunc)(uint8_t port_id,const uin
  * @brief CRC-8/MAXIM 校验实现 (多项式 x8 + x5 + x4 + 1)
  */
 uint8_t BenMoMotor::calculateCRC8(const uint8_t* data, uint8_t len) {
+    if(data == nullptr || len == 0) return 0; // 安全检查
     uint8_t crc = 0x00;
     for (uint8_t i = 0; i < len; i++) {
         crc ^= data[i];
@@ -35,6 +37,13 @@ uint8_t BenMoMotor::calculateCRC8(const uint8_t* data, uint8_t len) {
 
 /**
  * @brief 通用包构建器 (10字节固定长度)：直接操作传入的数组指针
+ * @param buf 用于构建指令包的缓冲区，必须至少10字节长度
+ * @param reg 寄存器地址 (指令ID)
+ * @param val 16位数据值，分为高8位和低8位存储在 data_h 和 data_l
+ * @param d6 扩展数据6 (如加速时间等)，默认为0
+ * @param d7 扩展数据7 (如刹车位等)，默认为0
+ * @details 该函数负责填充指令包的各个字段，并计算CRC校验位，最后通过注册的发送函数发送指令包。
+ * @details 前三个参数是必需的，后两个参数是可选的，默认0。
  */
 void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8_t d6, uint8_t d7) {
     if(buf == nullptr || BenMoMotor::_sendFunction == nullptr) return; // 安全检查
@@ -64,8 +73,9 @@ void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8
  * @brief 切换运行模式 (对应手册 P10)
  * 模式值: 0x00 开环, 0x01 电流环, 0x02 速度环, 0x03 位置环
  */
-void BenMoMotor::genModeCmd(uint8_t mode_val) {
-    buildBasicPacket(_out_packet, 0xA0, (uint16_t)mode_val << 8);
+void BenMoMotor::genModeCmd(MotorMode mode_val) {
+    // 使用 static_cast 将强类型枚举转为底层数字
+    buildBasicPacket(_out_packet, 0xA0, static_cast<uint16_t>(mode_val) << 8);
 }
 
 /**
@@ -80,10 +90,14 @@ void BenMoMotor::genEnableCmd(bool enable) {
 
 /**
  * @brief 速度控制 (对应手册 P8)
- * target_rpm: 目标转速(RPM)。实际写入值 = target_rpm * 10
- * accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
+ * @param target_rpm: 目标转速(RPM)。范围 -500.0 ~ 500.0 RPM，负值表示反转。
+ * @details 实际写入值 = target_rpm * 10
+ * @param accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
+ * @param brake: 是否刹车 (仅速度环有效)
  */
 void BenMoMotor::genSpeedCtrl(float target_rpm, uint8_t accel_time, bool brake) {
+    if(target_rpm < -500.0f) target_rpm = -500.0f;
+    if(target_rpm > 500.0f) target_rpm = 500.0f;
     // 转换规则：写入值 = 实际转速 * 10
     int16_t val = (int16_t)(target_rpm * 10.0f);
     buildBasicPacket(_out_packet, 0x64, (uint16_t)val, accel_time, (brake ? 0xFF : 0x00));
@@ -91,18 +105,26 @@ void BenMoMotor::genSpeedCtrl(float target_rpm, uint8_t accel_time, bool brake) 
 
 /**
  * @brief 电流/力矩控制 (对应手册 P8)
- * current_raw: -32767 ~ 32767 (对应 -4A 到 4A)
+ * @param current_raw: 目标电流值，单位为A，范围 -4A ~ 4A。
+ * @details 实际写入值 = (current_raw / 4.0) * 32767
  */
-void BenMoMotor::genCurrentCtrl(int16_t current_raw) {
-    buildBasicPacket(_out_packet, 0x64, (uint16_t)current_raw);
+void BenMoMotor::genCurrentCtrl(float current_raw) {
+    if(current_raw < -4.0f) current_raw = -4.0f;
+    if(current_raw > 4.0f) current_raw = 4.0f;
+    uint16_t val = (uint16_t)(current_raw / 4.0f * 32767.0f);
+    buildBasicPacket(_out_packet, 0x64, val, 0, 0);
 }
 
 /**
  * @brief 位置控制 (对应手册 P8)
- * position_value: 0~32767 对应 0~360°
+ * @param position_value 目标位置，单位为度，范围 0~360°。
+ * @details 实际写入值 = (position_value / 360) * 32767
  */
-void BenMoMotor::genPositionCtrl(uint16_t position_value) {
-    buildBasicPacket(_out_packet, 0x64, position_value);
+void BenMoMotor::genPositionCtrl(float position_value, uint8_t accel_time) {
+    if(position_value < 0.0f) position_value = 0.0f;
+    if(position_value > 360.0f) position_value = 360.0f;
+    uint16_t val = (uint16_t)((position_value / 360.0f) * 32767.0f);
+    buildBasicPacket(_out_packet, 0x64, val, accel_time, 0);
 }
 
 /**
@@ -110,7 +132,7 @@ void BenMoMotor::genPositionCtrl(uint16_t position_value) {
  * 该指令请求电机返回里程、位置和当前模式等高级状态信息，反馈ID为 0x75/0x76。
  */
 void BenMoMotor::genQueryExtraCmd() {
-    buildBasicPacket(_out_packet, 0x74, 0x0000);
+    buildBasicPacket(_out_packet, 0x74, 0);
 }
 
 /**

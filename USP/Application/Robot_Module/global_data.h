@@ -8,9 +8,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+// 1. 定义电机索引
+enum MotorIndex {
+    PITCH = 0,
+    YAW   = 1,
+    MOTOR_COUNT = 2
+};
 
-extern BenMoMotor BenMo_Motor_1; // 电机ID 1
-extern BenMoMotor BenMo_Motor_2; // 电机ID 2
+extern BenMoMotor gimbal_motors[MOTOR_COUNT]; // 电机实例数组
 
 typedef enum{
     debug_idle = 0,

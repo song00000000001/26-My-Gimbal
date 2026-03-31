@@ -15,5 +15,5 @@ EnergySystemState_t g_SystemState ;
 EnergySystemState_t g_TargetCtrl;
 
 // 电机实例
-BenMoMotor BenMo_Motor_1(1); // 电机ID 1
-BenMoMotor BenMo_Motor_2(2); // 电机ID 2
+BenMoMotor gimbal_motors[MOTOR_COUNT] = { BenMoMotor(1), BenMoMotor(2) };
+
