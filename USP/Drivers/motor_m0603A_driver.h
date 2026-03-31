@@ -5,6 +5,32 @@
 #include <string.h> // 使用 memset
 
 #define MOTOR_PACKET_SIZE 10 // 电机通信包固定为10字节
+
+#pragma pack(push, 1)
+/**
+ * @brief 电机通信协议包结构体 (10字节固定长度)
+ */
+struct BenMoMotorPacket {
+    uint8_t id;         // 电机 ID
+    uint8_t reg;        // 指令/反馈标识符
+    uint8_t data_h;     // 数据高位
+    uint8_t data_l;     // 数据低位
+    uint8_t reserved1;  // 保留
+    uint8_t reserved2;  // 保留
+    uint8_t d6;         // 扩展数据1 (加速时间等)
+    uint8_t d7;         // 扩展数据2 (刹车位等)
+    uint8_t reserved3;  // 保留
+    uint8_t crc;        // CRC-8/MAXIM 校验位
+};
+#pragma pack(pop)
+/**
+ * c++语言知识点补充：
+ * #pragma pack(push, 1) 和 #pragma pack(pop) 是用于控制结构体内存对齐的预处理指令。
+ * 它们告诉编译器按照1字节对齐方式来存储结构体成员，避免了默认的内存对齐带来的填充字节，从而使得结构体在内存中紧凑排列。
+ * 这在处理网络协议或硬件通信时非常有用，可以确保数据包的格式与预期一致。
+ * 此外，#pragma pack(1) #pragma pack()的使用方式是会修改全局配置，而上面的写法则是在修改全局配置前先做个备份，用完再还原。
+ */
+
 /**
  * @brief 电机运行模式枚举 (对应手册 P10/P11)
  */

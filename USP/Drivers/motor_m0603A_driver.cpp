@@ -37,17 +37,25 @@ uint8_t BenMoMotor::calculateCRC8(const uint8_t* data, uint8_t len) {
  * @brief 通用包构建器 (10字节固定长度)：直接操作传入的数组指针
  */
 void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8_t d6, uint8_t d7) {
-    if(buf == nullptr|| BenMoMotor::_sendFunction == nullptr) return; // 安全检查，防止空指针访问
-    memset(buf, 0, 10);      // 先清空数组
-    buf[0] = _id;            // ID
-    buf[1] = reg;            // 指令标识符
-    buf[2] = (val >> 8);     // 数据高位
-    buf[3] = (val & 0xFF);   // 数据低位
-    buf[4] = 0;             // 保留
-    buf[5] = 0;             // 保留
-    buf[6] = d6;             // 加速时间
-    buf[7] = d7;             // 刹车位
-    buf[9] = calculateCRC8(buf, 9); // 计算前9位的CRC填入第10位
+    if(buf == nullptr || BenMoMotor::_sendFunction == nullptr) return; // 安全检查
+
+    BenMoMotorPacket* pkt = reinterpret_cast<BenMoMotorPacket*>(buf);
+    /**
+     * c++语法知识点补充：
+     * reinterpret_cast 用于在不同类型之间进行强制转换，这里将字节数组解释为 BenMoMotorPacket 结构体，方便按字段赋值。
+      *其实不写 reinterpret_cast 直接用 buf->id 也是可以的，因为 buf 是 uint8_t* 类型，编译器会根据访问的字段自动计算偏移。
+      *但使用 reinterpret_cast 可以更清晰地表达意图，明确这是在处理一个特定格式的数据包。
+      */
+    memset(pkt, 0, sizeof(BenMoMotorPacket));
+
+    pkt->id   = _id;
+    pkt->reg  = reg;
+    pkt->data_h = (uint8_t)(val >> 8);
+    pkt->data_l = (uint8_t)(val & 0xFF);
+    pkt->d6   = d6;
+    pkt->d7   = d7;
+    pkt->crc  = calculateCRC8(buf, 9);
+
     // 通过注册的发送函数发送指令包
     BenMoMotor::_sendFunction(_port_num, buf, MOTOR_PACKET_SIZE);
 }
@@ -117,16 +125,24 @@ void BenMoMotor::genQueryExtraCmd() {
     * Byte 8: 故障码 (uint8_t, BIT0~BIT3: 过流、过速、过温、过压故障; BIT4~BIT6: 过温、断联、过欠压故障)
  */
 bool BenMoMotor::parseDriveFeedback(const uint8_t* buf) {
-    //考虑加入临界区包护，防止解析过程中被新的数据覆盖
-    memcpy(_in_packet, buf, MOTOR_PACKET_SIZE); // 先将输入数据复制到内部缓冲区，方便调试和后续处理
+    if (buf == nullptr) return false;
+    
+    const BenMoMotorPacket* pkt = reinterpret_cast<const BenMoMotorPacket*>(buf);
+    /*
+    reinterpret_cast 将底层字节流强行解释为特定结构。这在处理网络协议或硬件驱动时非常高效。
+    */
 
-    if (_in_packet[0] != _id || _in_packet[1] != 0x65) return false;
-    if (calculateCRC8(_in_packet, 9) != _in_packet[9]) return false;
+    if (pkt->id != _id || pkt->reg != 0x65) return false;
+    if (calculateCRC8(buf, 9) != pkt->crc) return false;
 
-    __drive_status.speed = (int16_t)((_in_packet[2] << 8) | _in_packet[3]);   // 需要除以10得到真实RPM
-    __drive_status.current = (int16_t)((_in_packet[4] << 8) | _in_packet[5]);
-    __drive_status.temp = _in_packet[7];
-    __drive_status.fault_code = _in_packet[8];
+    // 复制一份以便后续处理
+    memcpy(_in_packet, buf, MOTOR_PACKET_SIZE);
+
+    __drive_status.speed   = (int16_t)((pkt->data_h << 8) | pkt->data_l); 
+    __drive_status.current = (int16_t)((pkt->reserved1 << 8) | pkt->reserved2); // 手册中 0x65 反馈的 Byte 4-5
+    __drive_status.temp    = pkt->d7;
+    __drive_status.fault_code = pkt->reserved3;
+    
     return true;
 }
 
@@ -140,21 +156,24 @@ bool BenMoMotor::parseDriveFeedback(const uint8_t* buf) {
     * Byte 8: 模式反馈时为当前模式值，其他情况保留
  */
 bool BenMoMotor::parseExtraFeedback(const uint8_t* buf) {
-    //考虑加入临界区包护，防止解析过程中被新的数据覆盖
-    memcpy(_in_packet, buf, MOTOR_PACKET_SIZE); // 先将输入数据复制到内部缓冲区，方便调试和后续处理
+    if (buf == nullptr) return false;
+
+    const BenMoMotorPacket* pkt = reinterpret_cast<const BenMoMotorPacket*>(buf);
 
     // 0x75 为请求回复，0x76 为模式反馈
-    if (_in_packet[0] != _id || (_in_packet[1] != 0x75 && _in_packet[1] != 0x76)) return false;
-    if (calculateCRC8(_in_packet, 9) != _in_packet[9]) return false;
+    if (pkt->id != _id || (pkt->reg != 0x75 && pkt->reg != 0x76)) return false;
+    if (calculateCRC8(buf, 9) != pkt->crc) return false;
 
-    if (_in_packet[1] == 0x75) {
-        // 里程 4 字节
-        __extra_status.mileage = (int32_t)((_in_packet[2] << 24) | (_in_packet[3] << 16) | (_in_packet[4] << 8) | _in_packet[5]);
-        // 位置 2 字节
-        __extra_status.position = (uint16_t)((_in_packet[6] << 8) | _in_packet[7]);
+    memcpy(_in_packet, buf, MOTOR_PACKET_SIZE);
+
+    if (pkt->reg == 0x75) {
+        // 里程 4 字节 (Byte 2-5)
+        __extra_status.mileage = (int32_t)((pkt->data_h << 24) | (pkt->data_l << 16) | (pkt->reserved1 << 8) | pkt->reserved2);
+        // 位置 2 字节 (Byte 6-7)
+        __extra_status.position = (uint16_t)((pkt->d6 << 8) | pkt->d7);
     } else {
-        // 0x76 模式反馈包
-        __extra_status.mode = _in_packet[2];
+        // 0x76 模式反馈包 (Byte 2)
+        __extra_status.mode = pkt->data_h;
     }
     return true;
 }
