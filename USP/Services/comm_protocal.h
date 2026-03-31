@@ -13,5 +13,5 @@ extern "C" {
 }
 #endif
 
-bool send_motor_packet(uint8_t port_num, uint8_t* data, uint16_t len);
-void my_printf(uint8_t port_num, const char* format, ...);
+bool send_motor_packet(uint8_t port_id,const uint8_t* data, uint8_t len);
+void my_printf(uint8_t port_id, const char* format, ...);

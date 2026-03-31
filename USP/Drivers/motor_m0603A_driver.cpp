@@ -1,6 +1,19 @@
 #include "motor_m0603A_driver.h"
 
+// 静态成员变量定义和初始化
+bool (*BenMoMotor::_sendFunction)(uint8_t, const uint8_t*, uint8_t) = nullptr;
+
 BenMoMotor::BenMoMotor(uint8_t motor_id) : _id(motor_id) {}
+
+/**
+ * @brief 注册串口发送函数
+ * @param sendFunc 用户提供的发送函数指针，函数签名为 bool sendFunc(uint8_t port_id, const uint8_t* data, uint8_t len)，用于发送生成的指令包
+ * 该函数需要在使用驱动前调用一次，注册后驱动内部会使用该函数发送指令包，用户无需关心通信细节，只需提供一个符合签名的发送函数即可。
+ */
+void BenMoMotor::registerSendFunction(bool (*sendFunc)(uint8_t port_id,const uint8_t* data, uint8_t len)) {
+    // 这里可以将 sendFunc 存储在静态成员变量中，供后续指令发送时调用
+    BenMoMotor::_sendFunction = sendFunc;
+}
 
 /**
  * @brief CRC-8/MAXIM 校验实现 (多项式 x8 + x5 + x4 + 1)
@@ -24,6 +37,7 @@ uint8_t BenMoMotor::calculateCRC8(const uint8_t* data, uint8_t len) {
  * @brief 通用包构建器 (10字节固定长度)：直接操作传入的数组指针
  */
 void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8_t d6, uint8_t d7) {
+    if(buf == nullptr|| BenMoMotor::_sendFunction == nullptr) return; // 安全检查，防止空指针访问
     memset(buf, 0, 10);      // 先清空数组
     buf[0] = _id;            // ID
     buf[1] = reg;            // 指令标识符
@@ -34,14 +48,16 @@ void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8
     buf[6] = d6;             // 加速时间
     buf[7] = d7;             // 刹车位
     buf[9] = calculateCRC8(buf, 9); // 计算前9位的CRC填入第10位
+    // 通过注册的发送函数发送指令包
+    BenMoMotor::_sendFunction(_port_num, buf, MOTOR_PACKET_SIZE);
 }
 
 /**
  * @brief 切换运行模式 (对应手册 P10)
  * 模式值: 0x00 开环, 0x01 电流环, 0x02 速度环, 0x03 位置环
  */
-void BenMoMotor::genModeCmd(uint8_t* out_packet, uint8_t mode_val) {
-    buildBasicPacket(out_packet, 0xA0, (uint16_t)mode_val << 8);
+void BenMoMotor::genModeCmd(uint8_t mode_val) {
+    buildBasicPacket(_out_packet, 0xA0, (uint16_t)mode_val << 8);
 }
 
 /**
@@ -50,43 +66,43 @@ void BenMoMotor::genModeCmd(uint8_t* out_packet, uint8_t mode_val) {
  * - 切换模式: DATA[2] = 0x00~0x03
  * - 使能/失能: DATA[2] = 0x08 (使能) 或 0x09 (失能)
  */
-void BenMoMotor::genEnableCmd(uint8_t* out_packet, bool enable) {
-    buildBasicPacket(out_packet, 0xA0, (enable ? 0x08 : 0x09) << 8);
+void BenMoMotor::genEnableCmd(bool enable) {
+    buildBasicPacket(_out_packet, 0xA0, (enable ? 0x08 : 0x09) << 8);
 }
 
 /**
  * @brief 速度控制 (对应手册 P8)
- * target_rpm: 目标转速(RPM)。例如输入30表示3rpm。
+ * target_rpm: 目标转速(RPM)。实际写入值 = target_rpm * 10
  * accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
  */
-void BenMoMotor::genSpeedCtrl(uint8_t* out_packet, float target_rpm, uint8_t accel_time = 0, bool brake = false) {
+void BenMoMotor::genSpeedCtrl(float target_rpm, uint8_t accel_time, bool brake) {
     // 转换规则：写入值 = 实际转速 * 10
     int16_t val = (int16_t)(target_rpm * 10.0f);
-    buildBasicPacket(out_packet, 0x64, (uint16_t)val, accel_time, (brake ? 0xFF : 0x00));
+    buildBasicPacket(_out_packet, 0x64, (uint16_t)val, accel_time, (brake ? 0xFF : 0x00));
 }
 
 /**
  * @brief 电流/力矩控制 (对应手册 P8)
  * current_raw: -32767 ~ 32767 (对应 -4A 到 4A)
  */
-void BenMoMotor::genCurrentCtrl(uint8_t* out_packet, int16_t current_raw) {
-    buildBasicPacket(out_packet, 0x64, (uint16_t)current_raw);
+void BenMoMotor::genCurrentCtrl(int16_t current_raw) {
+    buildBasicPacket(_out_packet, 0x64, (uint16_t)current_raw);
 }
 
 /**
  * @brief 位置控制 (对应手册 P8)
  * position_value: 0~32767 对应 0~360°
  */
-void BenMoMotor::genPositionCtrl(uint8_t* out_packet, uint16_t position_value) {
-    buildBasicPacket(out_packet, 0x64, position_value);
+void BenMoMotor::genPositionCtrl(uint16_t position_value) {
+    buildBasicPacket(_out_packet, 0x64, position_value);
 }
 
 /**
  * @brief 查询额外反馈 (对应手册 P9)
  * 该指令请求电机返回里程、位置和当前模式等高级状态信息，反馈ID为 0x75/0x76。
  */
-void BenMoMotor::genQueryExtraCmd(uint8_t* out_packet) {
-    buildBasicPacket(out_packet, 0x74, 0x0000);
+void BenMoMotor::genQueryExtraCmd() {
+    buildBasicPacket(_out_packet, 0x74, 0x0000);
 }
 
 /**
@@ -100,14 +116,17 @@ void BenMoMotor::genQueryExtraCmd(uint8_t* out_packet) {
     * Byte 7: 绕组温度 (uint8_t, 单位 ℃)
     * Byte 8: 故障码 (uint8_t, BIT0~BIT3: 过流、过速、过温、过压故障; BIT4~BIT6: 过温、断联、过欠压故障)
  */
-bool BenMoMotor::parseDriveFeedback(const uint8_t* buf, MotorDriveStatus& out) {
-    if (buf[0] != _id || buf[1] != 0x65) return false;
-    if (calculateCRC8(buf, 9) != buf[9]) return false;
+bool BenMoMotor::parseDriveFeedback(const uint8_t* buf) {
+    //考虑加入临界区包护，防止解析过程中被新的数据覆盖
+    memcpy(_in_packet, buf, MOTOR_PACKET_SIZE); // 先将输入数据复制到内部缓冲区，方便调试和后续处理
 
-    out.speed = (int16_t)((buf[2] << 8) | buf[3]);   // 需要除以10得到真实RPM
-    out.current = (int16_t)((buf[4] << 8) | buf[5]);
-    out.temp = buf[7];
-    out.fault_code = buf[8];
+    if (_in_packet[0] != _id || _in_packet[1] != 0x65) return false;
+    if (calculateCRC8(_in_packet, 9) != _in_packet[9]) return false;
+
+    __drive_status.speed = (int16_t)((_in_packet[2] << 8) | _in_packet[3]);   // 需要除以10得到真实RPM
+    __drive_status.current = (int16_t)((_in_packet[4] << 8) | _in_packet[5]);
+    __drive_status.temp = _in_packet[7];
+    __drive_status.fault_code = _in_packet[8];
     return true;
 }
 
@@ -120,19 +139,22 @@ bool BenMoMotor::parseDriveFeedback(const uint8_t* buf, MotorDriveStatus& out) {
     * Byte 6-7: 位置 (uint16_t, 0~32767 对应 0~360°)
     * Byte 8: 模式反馈时为当前模式值，其他情况保留
  */
-bool BenMoMotor::parseExtraFeedback(const uint8_t* buf, MotorExtraStatus& out) {
-    // 0x75 为请求回复，0x76 为模式反馈
-    if (buf[0] != _id || (buf[1] != 0x75 && buf[1] != 0x76)) return false;
-    if (calculateCRC8(buf, 9) != buf[9]) return false;
+bool BenMoMotor::parseExtraFeedback(const uint8_t* buf) {
+    //考虑加入临界区包护，防止解析过程中被新的数据覆盖
+    memcpy(_in_packet, buf, MOTOR_PACKET_SIZE); // 先将输入数据复制到内部缓冲区，方便调试和后续处理
 
-    if (buf[1] == 0x75) {
+    // 0x75 为请求回复，0x76 为模式反馈
+    if (_in_packet[0] != _id || (_in_packet[1] != 0x75 && _in_packet[1] != 0x76)) return false;
+    if (calculateCRC8(_in_packet, 9) != _in_packet[9]) return false;
+
+    if (_in_packet[1] == 0x75) {
         // 里程 4 字节
-        out.mileage = (int32_t)((buf[2] << 24) | (buf[3] << 16) | (buf[4] << 8) | buf[5]);
+        __extra_status.mileage = (int32_t)((_in_packet[2] << 24) | (_in_packet[3] << 16) | (_in_packet[4] << 8) | _in_packet[5]);
         // 位置 2 字节
-        out.position = (uint16_t)((buf[6] << 8) | buf[7]);
+        __extra_status.position = (uint16_t)((_in_packet[6] << 8) | _in_packet[7]);
     } else {
         // 0x76 模式反馈包
-        out.mode = buf[2];
+        __extra_status.mode = _in_packet[2];
     }
     return true;
 }

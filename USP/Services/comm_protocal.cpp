@@ -26,7 +26,7 @@
 //     }
 // }
 
-void my_printf(uint8_t port_num, const char* format, ...)
+void my_printf(uint8_t port_id, const char* format, ...)
 {  
     
     USART_COB TxMsg;
@@ -38,7 +38,7 @@ void my_printf(uint8_t port_num, const char* format, ...)
     va_end(args);
     if (len > 0 && len < UART1_TX_BUFFER_SIZE)
     {        
-        TxMsg.port_num = port_num; // 调试串口是 USART1
+        TxMsg.port_num = port_id; // 调试串口是 USART1
         TxMsg.len = len;
 		BaseType_t result = xQueueSend(USART_TxPort, &TxMsg, 0); // 0 表示不等待
         if (result != pdPASS) {
@@ -49,10 +49,10 @@ void my_printf(uint8_t port_num, const char* format, ...)
 }
 
 
-bool send_motor_packet(uint8_t port_num, uint8_t* data, uint16_t len)
+bool send_motor_packet(uint8_t port_id,const uint8_t* data, uint8_t len)
 {
     static USART_COB TxMsg;
-    TxMsg.port_num = port_num; // 调试串口是 USART1
+    TxMsg.port_num = port_id; // 调试串口是 USART1
     TxMsg.len = len;
     memcpy(TxMsg.data, data, len);
     BaseType_t result = xQueueSend(USART_TxPort, &TxMsg, 0); // 0 表示不等待
