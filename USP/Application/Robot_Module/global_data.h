@@ -1,12 +1,16 @@
 #pragma once
 
 #include "internal.h"
+#include "motor_m0603A_driver.h"
 //#include "motor_ctrl_driver.h"
 //#include "remote_ctrl_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern BenMoMotor BenMo_Motor_1; // 电机ID 1
+extern BenMoMotor BenMo_Motor_2; // 电机ID 2
 
 typedef enum{
     debug_idle = 0,

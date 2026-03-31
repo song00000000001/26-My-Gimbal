@@ -24,7 +24,7 @@ USART3: tx调试通信，BAUD 115200
 #include "protocol.h"
 #include "global_data.h"
 #include "robot_config.h"
-#include "can_comm_protocal.h"
+#include "comm_protocal.h"
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 

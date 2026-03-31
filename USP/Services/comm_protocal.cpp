@@ -1,4 +1,4 @@
-#include "can_comm_protocal.h"
+#include "comm_protocal.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -46,4 +46,17 @@ void my_printf(uint8_t port_num, const char* format, ...)
         }
     }
     va_end(args);
+}
+
+bool send_motor_packet(uint8_t port_num, uint8_t* data, uint16_t len)
+{
+    USART_COB TxMsg;
+    TxMsg.port_num = port_num; // 调试串口是 USART1
+    TxMsg.len = len;
+    memcpy(TxMsg.data, data, len);
+    BaseType_t result = xQueueSend(USART_TxPort, &TxMsg, 0); // 0 表示不等待
+    if (result != pdPASS) {
+        result= 0; // 发送失败处理
+    }
+    return (bool)result;
 }

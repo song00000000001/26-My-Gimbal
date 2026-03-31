@@ -518,14 +518,14 @@
           <GroupName>USP/Comm</GroupName>
           <Files>
             <File>
-              <FileName>can_comm_protocal.cpp</FileName>
+              <FileName>comm_protocal.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\USP\Services\can_comm_protocal.cpp</FilePath>
+              <FilePath>..\USP\Services\comm_protocal.cpp</FilePath>
             </File>
             <File>
-              <FileName>can_comm_protocal.h</FileName>
+              <FileName>comm_protocal.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\USP\Services\can_comm_protocal.h</FilePath>
+              <FilePath>..\USP\Services\comm_protocal.h</FilePath>
             </File>
           </Files>
         </Group>
