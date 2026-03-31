@@ -190,9 +190,9 @@ void Task_CAN1Receive(void *arg)
     /* update motor data from CAN1_RxPort */
     if (xQueueReceive(CAN1_RxPort, &CAN_RxCOB, portMAX_DELAY) == pdPASS)
     {
-        if (motor_ctrl.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
-        {
-        }
+        // if (motor_ctrl.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
+        // {
+        // }
     }
   }
 }
@@ -210,7 +210,7 @@ void Task_CAN2Receive(void *arg)
     /* update motor data from CAN1_RxPort */
     if (xQueueReceive(CAN2_RxPort, &CAN_RxCOB, portMAX_DELAY) == pdPASS)
     {
-        FanFeedbackProcess(CAN_RxCOB);
+        //FanFeedbackProcess(CAN_RxCOB);
         // if (motor_ctrl.mymotor.update(CAN_RxCOB.ID, CAN_RxCOB.Data))
         // {
         // }
@@ -318,21 +318,11 @@ void Task_UsartReceive(void *arg)
       switch (Usart_RxCOB.port_num)
       {
       case 1:
-        memcpy(&upper_ctrl_packet, Usart_RxCOB.address, sizeof(UpperCtrlPacket_t));
-        if(upper_ctrl_packet.ctrl_header == 0xA5)
-        {
+        //memcpy(&upper_ctrl_packet, Usart_RxCOB.address, sizeof(UpperCtrlPacket_t));
+        //if(upper_ctrl_packet.ctrl_header == 0xA5)
+        //{
             // 解析上位机控制包
-            g_TargetCtrl.target_mode = static_cast<EnergyTargetMode_t>(upper_ctrl_packet.ctrl_content);
-        }
-        if(upper_ctrl_packet.ctrl_header == 0x5A)
-        {
-            // 解析上位机控制包
-            g_TargetCtrl.TargetColor = static_cast<light_color_enum>(upper_ctrl_packet.ctrl_content);
-        }
-        if(upper_ctrl_packet.ctrl_header == 0xFF)
-        {
-            Debugger.Debug_simulate_hit=true; // 模拟击打事件
-        }
+        //}
          break;
         break;
       case 2:

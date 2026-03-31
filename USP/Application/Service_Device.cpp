@@ -32,7 +32,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "internal.h"
 #include "global_data.h"
-#include "ws2812_ctrl_driver.h"
 /* Private define ------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -50,13 +49,6 @@ TaskHandle_t armer_ctrl_Handle;
 TaskHandle_t tskIMU_Handle;
 #endif
 
-/*todo
-song
-据分析，主任务优先级需要加大，防止控制周期抖动，但是主任务负担太重了，我比较担心会卡死。所以优先级还是保持吧。
-后续优化的话，可以把一些实时性要求高的逻辑和电机控制放到另外的任务中，比如FS_I6X失联检测等。
-然后通过无外设情况下的栈分析，任务FS_I6X和两个can发送的剩余栈分别只有71，56，71字节，有点少，后续可以适当增大这些任务的栈空间。
-
-*/
 void Service_Devices_Init(void)
 {
 	xTaskCreate(task_state_machine, "App.task_state_machine", Large_Stack_Size, NULL, PriorityHigh, &task_state_machine_Handle);
@@ -87,12 +79,12 @@ void task_imu(void *arg)
         taskENABLE_INTERRUPTS();
         xTaskResumeAll();
 
-        ws2812_counter++;
-        if(ws2812_counter >= 25) { // 每100ms更新一次灯光
-            //R_light(g_TargetCtrl.TargetColor);
-            R_light_Follow(mpu_receive.yaw, g_TargetCtrl.TargetColor);
-            ws2812_counter = 0;
-        }
+        // ws2812_counter++;
+        // if(ws2812_counter >= 25) { // 每100ms更新一次灯光
+        //     //R_light(g_TargetCtrl.TargetColor);
+        //     R_light_Follow(mpu_receive.yaw, g_TargetCtrl.TargetColor);
+        //     ws2812_counter = 0;
+        // }
     }
 }
 

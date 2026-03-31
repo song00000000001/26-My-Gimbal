@@ -101,12 +101,12 @@ void Task_VofaMonitor(void *arg){
             );
             break;
         case debug_mtvofa_monitor:
-            VofaMonitor::setDatas(0,
-                (float)motor_ctrl.mymotor_pid_spd.Target,
-                (float)motor_ctrl.mymotor_pid_spd.Current,
-                (float)motor_ctrl.mymotor_pid_spd.Out,
-                (float)motor_ctrl.get_motor_angle()
-            );      
+            // VofaMonitor::setDatas(0,
+            //     (float)motor_ctrl.mymotor_pid_spd.Target,
+            //     (float)motor_ctrl.mymotor_pid_spd.Current,
+            //     (float)motor_ctrl.mymotor_pid_spd.Out,
+            //     (float)motor_ctrl.get_motor_angle()
+            // );      
             break;   
         case debug_idle:
         default:
@@ -118,7 +118,7 @@ void Task_VofaMonitor(void *arg){
             VofaMonitor::send(6);
 		}
 			
-        #ifdef STACK_REMAIN_MONITER_ENABLE
+        #if STACK_REMAIN_MONITER_ENABLE
         Stack_Remain.debug_send_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif
 	}

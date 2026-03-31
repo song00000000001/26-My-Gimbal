@@ -21,8 +21,6 @@ tim2挂在apb1上，时钟频率为84MHz，预分频器设置为0，计数器周
 #define arm_channel_1 TIM_CHANNEL_3
 
 //void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);	//DMA回调函数
-void R_light(light_color_enum color); // 灯臂全部填充指定颜色
-void R_light_Follow(float angle_deg, light_color_enum color); // 灯臂  
 void ws2312_show(uint8_t r, uint8_t g, uint8_t b); // 灯臂全部填充指定颜色
  
 #ifdef __cplusplus

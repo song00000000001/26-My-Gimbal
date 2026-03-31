@@ -453,18 +453,6 @@
         </Group>
         <Group>
           <GroupName>USP/Application/logic</GroupName>
-          <Files>
-            <File>
-              <FileName>small_enegy_logic.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\USP\Application\Robot_Module\small_enegy_logic.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>big_enegy_logic.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\USP\Application\Robot_Module\big_enegy_logic.cpp</FilePath>
-            </File>
-          </Files>
         </Group>
         <Group>
           <GroupName>USP/Application/tasks</GroupName>
@@ -478,11 +466,6 @@
               <FileName>motor_ctrl_task.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\USP\Application\Robot_Module\motor_ctrl_task.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>armer_ctrl_task.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\USP\Application\Robot_Module\armer_ctrl_task.cpp</FilePath>
             </File>
           </Files>
         </Group>
