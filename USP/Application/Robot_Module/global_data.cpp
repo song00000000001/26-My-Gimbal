@@ -4,7 +4,7 @@
 
 Debug_Data_t Debugger;//调试数据结构体实例化
 
-#ifdef INCLUDE_uxTaskGetStackHighWaterMark
+#ifdef STACK_REMAIN_MONITER_ENABLE
 stack_remain_t Stack_Remain={255};
 #endif
 

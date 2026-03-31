@@ -22,7 +22,7 @@ typedef struct {
 } Debug_Data_t;
 extern Debug_Data_t Debugger;  
 
-#ifdef INCLUDE_uxTaskGetStackHighWaterMark
+#ifdef STACK_REMAIN_MONITER_ENABLE
 //定义栈剩余空间记录结构体
 typedef struct 
 {

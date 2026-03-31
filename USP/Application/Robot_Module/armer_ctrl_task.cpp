@@ -14,7 +14,7 @@ void armer_ctrl_task(void *arg)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
        
-        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
+        #ifdef STACK_REMAIN_MONITER_ENABLE
         //Stack_Remain.Armer_Ctrl_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif
     }

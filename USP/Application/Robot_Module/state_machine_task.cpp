@@ -121,7 +121,7 @@ void task_state_machine(void *arg)
         }
                 
         //记录任务剩余栈空间
-        #ifdef INCLUDE_uxTaskGetStackHighWaterMark
+        #ifdef STACK_REMAIN_MONITER_ENABLE
         //Stack_Remain.task_state_machine_stack_remain = uxTaskGetStackHighWaterMark(NULL);
         #endif
     }

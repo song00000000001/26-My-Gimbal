@@ -13,6 +13,8 @@ extern "C" {
 #define motor_speed_max 150.0f // 电机最大速度，单位 rpm
 #define motor_reduction_ratio 1.0f // 电机减速比
 
+#define STACK_REMAIN_MONITER_ENABLE 0 // 是否启用任务栈剩余监测功能
+
 // 帧头定义
 #define FAN_PACKET_HEADER 0xA5
 #define CAN_SEND_ID_BASE 0x210  // CAN 发送包头标识

@@ -519,6 +519,16 @@
               <FileType>5</FileType>
               <FilePath>..\USP\Drivers\ws2812_ctrl_driver.h</FilePath>
             </File>
+            <File>
+              <FileName>motor_m0603A_driver.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Drivers\motor_m0603A_driver.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>motor_m0603A_driver.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\USP\Drivers\motor_m0603A_driver.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
