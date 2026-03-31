@@ -15,9 +15,15 @@
 CAN 1: tx/rx 电机通信，BAUD 1Mbps
 CAN 2: tx/rx分控通信，BAUD 1Mbps
 USART1: tx/rx视觉通信，BAUD 115200
+USART2: RX遥控器通信，BAUD 10000，用 DBUS 协议解析遥控器数据
 USART3: tx调试通信，BAUD 115200
+USART4: 电机驱动通信，BAUD 38400
 
-**/
+  ***********************************************************************************
+  * @attention
+  *
+  * 
+*/
 /* Includes ------------------------------------------------------------------*/
 #include "internal.h"
 #include "openlog.h"
@@ -28,47 +34,6 @@ USART3: tx调试通信，BAUD 115200
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
-/*
-can2:与分控通信 波特率1Mbps
-
-分控有5个。分控ID从1-5。
-
-分控反馈ID:0x220+分控ID
-分控控制ID:0x210+分控ID
-
-分控反馈包：
-    comm_buffers.CAN_TxMsg.IdType = Can_STDID;
-    comm_buffers.CAN_TxMsg.ID = CAN_SEND_ID_BASE+sub_ctrl_id; // 分控 ID 作为低字节
-    comm_buffers.CAN_TxMsg.DLC = 2;
-    comm_buffers.CAN_TxMsg.Data[0] = __builtin_ctz(robot_status.hit_mask); // 发送被击打的环的索引,1~10
-    comm_buffers.CAN_TxMsg.Data[1] = 0; // 预留字节
-
-分控控制包：
-    分控接收解析代码：
-    ```C
-    todo
-    song
-    考虑重构成一个更通用的协议解析函数,根据第一个字节区分不同类型的包,然后解析后续数据.
-    考虑重构颜色枚举,颜色只负责表示颜色,不区分击打与否,然后在协议里增加一个字段表示击打状态.这样更清晰也更易于扩展.
-    目前协议设计得比较简陋,后续可以根据需要增加更多字段,比如击打环数,连击状态等,以支持更丰富的功能.
-    
-    typedef enum 
-    {
-        color_off = 0,
-        color_red,
-        color_blue,
-        color_hit_red,
-        color_hit_blue
-    }light_color_enum;
-
-    if (comm_buffers.CAN_RxMsg.ID == (CAN_RECEIVE_ID_BASE+sub_ctrl_id) && comm_buffers.CAN_RxMsg.DLC == 3) {
-        // 2. 更新全局状态
-        robot_status.color = (light_color_enum)comm_buffers.CAN_RxMsg.Data[0];
-        robot_status.active_groups = comm_buffers.CAN_RxMsg.Data[1];// 0-5,表示当前激活的装甲板组数
-        robot_status.energy_state = (EnergySystemMode_t)comm_buffers.CAN_RxMsg.Data[2];//0:待机,1:小能量机关,2:大能量机关,3:成功
-    }
-    ```
-*/
 
 #if USE_SRML_CAN
 TaskHandle_t CAN1SendPort_Handle;
@@ -265,16 +230,18 @@ void Task_UsartTransmit(void *arg)
     for (;;)
     {
         /* Usart Receive Port*/
-        if (xQueueReceive(USART_TxPort, &Usart_TxCOB, 10) == pdPASS)
+        if (xQueueReceive(USART_TxPort, &Usart_TxCOB, portMAX_DELAY) == pdPASS)
         {
             /* User Code Begin Here -------------------------------*/
             // 2. 选择对应的串口句柄
             UART_HandleTypeDef *target_huart = NULL;
             switch(Usart_TxCOB.port_num) {
-            case 1: 
-                target_huart = &huart1; 
-                break;
-                // case 2: target_huart = &huart2; break;
+            case 1: target_huart = &huart1;  break;
+            case 2: target_huart = &huart2; break;
+            //case 3: target_huart = &huart3; break;
+            case 4: target_huart = &huart4; break;
+            case 5: target_huart = &huart5; break;
+            case 6: target_huart = &huart6; break;
             default: 
                 target_huart = NULL;
                 break;

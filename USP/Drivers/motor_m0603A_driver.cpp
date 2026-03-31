@@ -73,7 +73,7 @@ void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8
  * @brief 切换运行模式 (对应手册 P10)
  * 模式值: 0x00 开环, 0x01 电流环, 0x02 速度环, 0x03 位置环
  */
-void BenMoMotor::genModeCmd(MotorMode mode_val) {
+void BenMoMotor::sendModeCmd(MotorMode mode_val) {
     // 使用 static_cast 将强类型枚举转为底层数字
     buildBasicPacket(_out_packet, 0xA0, static_cast<uint16_t>(mode_val) << 8);
 }
@@ -84,7 +84,7 @@ void BenMoMotor::genModeCmd(MotorMode mode_val) {
  * - 切换模式: DATA[2] = 0x00~0x03
  * - 使能/失能: DATA[2] = 0x08 (使能) 或 0x09 (失能)
  */
-void BenMoMotor::genEnableCmd(bool enable) {
+void BenMoMotor::sendEnableCmd(bool enable) {
     buildBasicPacket(_out_packet, 0xA0, (enable ? 0x08 : 0x09) << 8);
 }
 
@@ -95,7 +95,7 @@ void BenMoMotor::genEnableCmd(bool enable) {
  * @param accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
  * @param brake: 是否刹车 (仅速度环有效)
  */
-void BenMoMotor::genSpeedCtrl(float target_rpm, uint8_t accel_time, bool brake) {
+void BenMoMotor::sendSpeedCtrl(float target_rpm, uint8_t accel_time, bool brake) {
     if(target_rpm < -500.0f) target_rpm = -500.0f;
     if(target_rpm > 500.0f) target_rpm = 500.0f;
     // 转换规则：写入值 = 实际转速 * 10
@@ -108,7 +108,7 @@ void BenMoMotor::genSpeedCtrl(float target_rpm, uint8_t accel_time, bool brake) 
  * @param current_raw: 目标电流值，单位为A，范围 -4A ~ 4A。
  * @details 实际写入值 = (current_raw / 4.0) * 32767
  */
-void BenMoMotor::genCurrentCtrl(float current_raw) {
+void BenMoMotor::sendCurrentCtrl(float current_raw) {
     if(current_raw < -4.0f) current_raw = -4.0f;
     if(current_raw > 4.0f) current_raw = 4.0f;
     uint16_t val = (uint16_t)(current_raw / 4.0f * 32767.0f);
@@ -120,7 +120,7 @@ void BenMoMotor::genCurrentCtrl(float current_raw) {
  * @param position_value 目标位置，单位为度，范围 0~360°。
  * @details 实际写入值 = (position_value / 360) * 32767
  */
-void BenMoMotor::genPositionCtrl(float position_value, uint8_t accel_time) {
+void BenMoMotor::sendPositionCtrl(float position_value, uint8_t accel_time) {
     if(position_value < 0.0f) position_value = 0.0f;
     if(position_value > 360.0f) position_value = 360.0f;
     uint16_t val = (uint16_t)((position_value / 360.0f) * 32767.0f);
@@ -131,7 +131,7 @@ void BenMoMotor::genPositionCtrl(float position_value, uint8_t accel_time) {
  * @brief 查询额外反馈 (对应手册 P9)
  * 该指令请求电机返回里程、位置和当前模式等高级状态信息，反馈ID为 0x75/0x76。
  */
-void BenMoMotor::genQueryExtraCmd() {
+void BenMoMotor::sendQueryExtraCmd() {
     buildBasicPacket(_out_packet, 0x74, 0);
 }
 

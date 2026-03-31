@@ -145,26 +145,26 @@ public:
     // ==================== [发送指令生成] ====================
 
     // 生成切换模式指令 (0xA0)
-    void genModeCmd(MotorMode mode_val);
+    void sendModeCmd(MotorMode mode_val);
 
     // 生成使能/失能指令 (0xA0 0x08/0x09)
-    void genEnableCmd(bool enable);
+    void sendEnableCmd(bool enable);
 
     // 生成速度控制指令 (0x64)
     // target_rpm: 目标转速(0.1RPM)。实际写入值 = target_rpm * 10
     // accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
     // brake: 是否刹车 (仅速度环有效)
-    void genSpeedCtrl(float target_rpm, uint8_t accel_time = 0, bool brake = false);
+    void sendSpeedCtrl(float target_rpm, uint8_t accel_time = 0, bool brake = false);
 
     // 生成电流/力矩控制指令 (0x64)
     // current_raw: -32767 ~ 32767 (对应 -4A 到 4A)
-    void genCurrentCtrl(float current_raw);
+    void sendCurrentCtrl(float current_raw);
 
     // 生成位置控制指令 (0x64)
-    void genPositionCtrl(float position_value, uint8_t accel_time = 0);
+    void sendPositionCtrl(float position_value, uint8_t accel_time = 0);
 
     // 生成请求其他反馈指令 (0x74) - 获取里程和精确位置
-    void genQueryExtraCmd();
+    void sendQueryExtraCmd();
 
     // ==================== [数据解析逻辑] ====================
 
