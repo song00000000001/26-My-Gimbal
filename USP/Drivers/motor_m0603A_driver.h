@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include <vector>
+#include <string.h> // 使用 memset
 
+#define MOTOR_PACKET_SIZE 10 // 电机通信包固定为10字节
 /**
  * @brief 电机运行模式枚举 (对应手册 P10/P11)
  */
@@ -51,26 +52,26 @@ public:
     // ==================== [发送指令生成] ====================
 
     // 生成切换模式指令 (0xA0)
-    std::vector<uint8_t> genModeCmd(MotorMode mode);
+    void genModeCmd(uint8_t* out_packet, uint8_t mode_val);
 
     // 生成使能/失能指令 (0xA0 0x08/0x09)
-    std::vector<uint8_t> genEnableCmd(bool enable);
+    void genEnableCmd(uint8_t* out_packet, bool enable);
 
     // 生成速度控制指令 (0x64)
     // target_rpm: 目标转速(0.1RPM)，例如输入30表示3rpm。
     // accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
     // brake: 是否刹车 (仅速度环有效)
-    std::vector<uint8_t> genSpeedCtrl(uint16_t target_rpm, uint8_t accel_time = 0, bool brake = false);
+    void genSpeedCtrl(uint8_t* out_packet, float target_rpm, uint8_t accel_time = 0, bool brake = false);
 
     // 生成电流/力矩控制指令 (0x64)
     // current_raw: -32767 ~ 32767 (对应 -4A 到 4A)
-    std::vector<uint8_t> genCurrentCtrl(int16_t current_raw);
+    void genCurrentCtrl(uint8_t* out_packet, int16_t current_raw);
 
     // 生成位置控制指令 (0x64)
-    std::vector<uint8_t> genPositionCtrl(uint16_t position_value);
+    void genPositionCtrl(uint8_t* out_packet, uint16_t position_value);
 
     // 生成请求其他反馈指令 (0x74) - 获取里程和精确位置
-    std::vector<uint8_t> genQueryExtraCmd();
+    void genQueryExtraCmd(uint8_t* out_packet);
 
     // ==================== [数据解析逻辑] ====================
 
@@ -83,9 +84,19 @@ public:
     // CRC8 校验计算 (CRC-8/MAXIM)
     static uint8_t calculateCRC8(const uint8_t* data, uint8_t len);
 
+    //获取反馈数据
+    int16_t getSpeed() const { return __drive_status.speed; }
+    int16_t getCurrent() const { return __drive_status.current; }
+    uint8_t getTemp() const { return __drive_status.temp; }
+    uint8_t getFaultCode() const { return __drive_status.fault_code; }
+    int32_t getMileage() const { return __extra_status.mileage; }
+    uint16_t getPosition() const { return __extra_status.position; }
+    uint8_t getMode() const { return __extra_status.mode; }
     private:
     uint8_t _id;
-    // 基础封包函数
-    std::vector<uint8_t> buildPacket(uint8_t reg, uint16_t val, uint8_t d6 = 0, uint8_t d7 = 0);
+    MotorDriveStatus __drive_status; // 上次的常规反馈状态
+    MotorExtraStatus __extra_status; // 上次的额外反馈状态
+    // 内部通用的填包逻辑
+    void buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8_t d6 = 0, uint8_t d7 = 0);
 };
 

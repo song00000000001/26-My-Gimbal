@@ -21,29 +21,27 @@ uint8_t BenMoMotor::calculateCRC8(const uint8_t* data, uint8_t len) {
 }
 
 /**
- * @brief 通用包构建器 (10字节固定长度)
+ * @brief 通用包构建器 (10字节固定长度)：直接操作传入的数组指针
  */
-std::vector<uint8_t> BenMoMotor::buildPacket(uint8_t cmd_type, uint16_t val, uint8_t data6, uint8_t data7) {
-    std::vector<uint8_t> packet(10, 0);
-    packet[0] = _id;
-    packet[1] = cmd_type;
-    packet[2] = (uint8_t)(val >> 8);   // 高8位
-    packet[3] = (uint8_t)(val & 0xFF); // 低8位
-    // DATA[4], DATA[5] 手册中发送基本都是默认为 0
-    packet[4] = 0;
-    packet[5] = 0;
-    packet[6] = data6;
-    packet[7] = data7;
-    packet[9] = calculateCRC8(packet.data(), 9);
-    return packet;
+void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8_t d6, uint8_t d7) {
+    memset(buf, 0, 10);      // 先清空数组
+    buf[0] = _id;            // ID
+    buf[1] = reg;            // 指令标识符
+    buf[2] = (val >> 8);     // 数据高位
+    buf[3] = (val & 0xFF);   // 数据低位
+    buf[4] = 0;             // 保留
+    buf[5] = 0;             // 保留
+    buf[6] = d6;             // 加速时间
+    buf[7] = d7;             // 刹车位
+    buf[9] = calculateCRC8(buf, 9); // 计算前9位的CRC填入第10位
 }
 
 /**
  * @brief 切换运行模式 (对应手册 P10)
  * 模式值: 0x00 开环, 0x01 电流环, 0x02 速度环, 0x03 位置环
  */
-std::vector<uint8_t> BenMoMotor::genModeCmd(MotorMode mode) {
-    return buildPacket(0xA0, (uint16_t)mode << 8);
+void BenMoMotor::genModeCmd(uint8_t* out_packet, uint8_t mode_val) {
+    buildBasicPacket(out_packet, 0xA0, (uint16_t)mode_val << 8);
 }
 
 /**
@@ -52,8 +50,8 @@ std::vector<uint8_t> BenMoMotor::genModeCmd(MotorMode mode) {
  * - 切换模式: DATA[2] = 0x00~0x03
  * - 使能/失能: DATA[2] = 0x08 (使能) 或 0x09 (失能)
  */
-std::vector<uint8_t> BenMoMotor::genEnableCmd(bool enable) {
-    return buildPacket(0xA0, (enable ? 0x08 : 0x09) << 8);
+void BenMoMotor::genEnableCmd(uint8_t* out_packet, bool enable) {
+    buildBasicPacket(out_packet, 0xA0, (enable ? 0x08 : 0x09) << 8);
 }
 
 /**
@@ -61,34 +59,34 @@ std::vector<uint8_t> BenMoMotor::genEnableCmd(bool enable) {
  * target_rpm: 目标转速(RPM)。例如输入30表示3rpm。
  * accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
  */
-std::vector<uint8_t> BenMoMotor::genSpeedCtrl(uint16_t target_rpm, uint8_t accel_time, bool brake) {
+void BenMoMotor::genSpeedCtrl(uint8_t* out_packet, float target_rpm, uint8_t accel_time = 0, bool brake = false) {
     // 转换规则：写入值 = 实际转速 * 10
     int16_t val = (int16_t)(target_rpm * 10.0f);
-    return buildPacket(0x64, (uint16_t)val, accel_time, (brake ? 0xFF : 0x00));
+    buildBasicPacket(out_packet, 0x64, (uint16_t)val, accel_time, (brake ? 0xFF : 0x00));
 }
 
 /**
  * @brief 电流/力矩控制 (对应手册 P8)
  * current_raw: -32767 ~ 32767 (对应 -4A 到 4A)
  */
-std::vector<uint8_t> BenMoMotor::genCurrentCtrl(int16_t current_raw) {
-    return buildPacket(0x64, (uint16_t)current_raw);
+void BenMoMotor::genCurrentCtrl(uint8_t* out_packet, int16_t current_raw) {
+    buildBasicPacket(out_packet, 0x64, (uint16_t)current_raw);
 }
 
 /**
  * @brief 位置控制 (对应手册 P8)
  * position_value: 0~32767 对应 0~360°
  */
-std::vector<uint8_t> BenMoMotor::genPositionCtrl(uint16_t position_value) {
-    return buildPacket(0x64, position_value);
+void BenMoMotor::genPositionCtrl(uint8_t* out_packet, uint16_t position_value) {
+    buildBasicPacket(out_packet, 0x64, position_value);
 }
 
 /**
  * @brief 查询额外反馈 (对应手册 P9)
  * 该指令请求电机返回里程、位置和当前模式等高级状态信息，反馈ID为 0x75/0x76。
  */
-std::vector<uint8_t> BenMoMotor::genQueryExtraCmd() {
-    return buildPacket(0x74, 0x0000);
+void BenMoMotor::genQueryExtraCmd(uint8_t* out_packet) {
+    buildBasicPacket(out_packet, 0x74, 0x0000);
 }
 
 /**
