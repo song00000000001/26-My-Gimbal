@@ -7,8 +7,8 @@
 extern "C" {
 #endif
 
-#define upper_uart_id 1 // 上位机通信串口
-#define motor_uart_id 4 // 电机通信串口 
+#define upper_uart_id 4 // 上位机通信串口
+#define motor_uart_id 1 // 电机通信串口 
 
 #define STACK_REMAIN_MONITER_ENABLE 0 // 是否启用任务栈剩余监测功能
 

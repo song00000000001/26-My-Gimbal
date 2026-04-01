@@ -253,7 +253,7 @@ void Task_UsartTransmit(void *arg)
                 if (SRML_UART_Transmit_DMA(Usart_TxCOB.port_num, Usart_TxCOB.data, Usart_TxCOB.len) == HAL_OK)
                 {
                     // 只有成功启动了 DMA，才需要等待它结束
-                    while(state != HAL_UART_STATE_READY && state != HAL_UART_STATE_BUSY_RX)
+                    while(state != HAL_UART_STATE_READY&&state != HAL_UART_STATE_BUSY_RX)
                     {
                         state = HAL_UART_GetState(target_huart);
                         vTaskDelay(1);
@@ -263,6 +263,20 @@ void Task_UsartTransmit(void *arg)
                 {
                     // 发送启动失败（可能是 HAL_BUSY 或 ERROR）
                     state = HAL_UART_GetState(target_huart);
+					if(state == HAL_UART_STATE_BUSY_TX||state == HAL_UART_STATE_BUSY_TX_RX||state == HAL_UART_STATE_BUSY||state == HAL_UART_STATE_BUSY_RX)
+                    {
+                        while(state != HAL_UART_STATE_READY&&state != HAL_UART_STATE_BUSY_RX)
+                        {
+                            state = HAL_UART_GetState(target_huart);
+                            vTaskDelay(1);
+                        } 
+                        while (SRML_UART_Transmit_DMA(Usart_TxCOB.port_num, Usart_TxCOB.data, Usart_TxCOB.len) != HAL_OK && state != HAL_UART_STATE_BUSY_RX)
+                        {
+                            state = HAL_UART_GetState(target_huart);
+                            vTaskDelay(1);
+                        }
+                    }
+    
                 }
             }
         }
@@ -271,43 +285,44 @@ void Task_UsartTransmit(void *arg)
 
 void Task_UsartReceive(void *arg)
 {
-  /* Cache for Task */
-  USART_COB Usart_RxCOB;
-  /* Pre-Load for task */
-  /* Infinite loop */
-  for (;;)
-  {
-    /* Usart Receive Port*/
-    if (xQueueReceive(USART_RxPort, &Usart_RxCOB, portMAX_DELAY) == pdPASS)
+    /* Cache for Task */
+    USART_COB Usart_RxCOB;
+    /* Pre-Load for task */
+    /* Infinite loop */
+    for (;;)
     {
-      /* User Code Begin Here -------------------------------*/
-      // 注意！！！如果接口里函数嵌套、临时变量很多，请考虑该任务栈大小
-      switch (Usart_RxCOB.port_num)
-      {
-      case 1:
-        //memcpy(&upper_ctrl_packet, Usart_RxCOB.address, sizeof(UpperCtrlPacket_t));
-        //if(upper_ctrl_packet.ctrl_header == 0xA5)
-        //{
-            // 解析上位机控制包
-        //}
-         break;
-        break;
-      case 2:
-        break;
-      case 3:
-        break;
-      case 4:
-        break;
-      case 5:
-        break;
-      case 6:
-        break;
-      default:
-        break;
-      }
-      /* User Code End Here ---------------------------------*/
+        /* Usart Receive Port*/
+        if (xQueueReceive(USART_RxPort, &Usart_RxCOB, portMAX_DELAY) == pdPASS)
+        {
+        /* User Code Begin Here -------------------------------*/
+        // 注意！！！如果接口里函数嵌套、临时变量很多，请考虑该任务栈大小
+        switch (Usart_RxCOB.port_num)
+        {
+        case 1:
+            //memcpy(&upper_ctrl_packet, Usart_RxCOB.address, sizeof(UpperCtrlPacket_t));
+            if(Usart_RxCOB.len == MOTOR_PACKET_SIZE)
+            {
+                for(int i=0;i<MOTOR_COUNT;i++){
+                    gimbal_motors[i].parseDriveFeedback(Usart_RxCOB.address);
+                }
+            }
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            break;
+        case 5:
+            break;
+        case 6:
+            break;
+        default:
+            break;
+        }
+        /* User Code End Here ---------------------------------*/
+        }
     }
-  }
 }
 
 template <uint8_t uart_id>

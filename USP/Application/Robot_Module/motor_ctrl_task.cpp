@@ -5,7 +5,10 @@
 
 static void motor_init(uint8_t port_id);
 static void motor_disable();
-
+#define motor_comm_delay_ms 7 // 电机通信周期，38400波特率下理论上4ms，但是发送可以保证4ms，如果要等电机回复需要6~7ms不等。
+//7ms下测试丢包率1%~2%
+//8ms下测试丢包率0.5%~1%
+//认为7ms是一个比较合理的选择，既能保证通信效率又能降低丢包率。后续可以考虑增加重试机制来进一步降低丢包率。
 /**
  * @brief 电机控制任务
  */
@@ -13,14 +16,17 @@ void task_motor_ctrl(void *arg)
 {
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(4);
+    const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms); // 7ms周期，确保电机通信正常
     motor_init(motor_uart_id); // 初始化电机
    
     for (;;)
     {
-        vTaskDelayUntil(&xLastWakeTime_t, xFrequency);// 4ms周期
-        uint32_t time_clock = xTaskGetTickCount();// 实时更新时间戳
-
+        for(int i=0;i<MOTOR_COUNT;i++){
+            vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+            gimbal_motors[i].sendQueryExtraCmd(); // 请求里程和精确位置等额外反馈
+            vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+            gimbal_motors[i].sendPositionCtrl(0); // 位置控制指令，目标位置为 180° (16384 对应 180°)
+        }
         #if STACK_REMAIN_MONITER_ENABLE
         StackWaterMark_Get(motor_ctrl);
         #endif
@@ -45,13 +51,13 @@ static void motor_init(uint8_t port_id)
     // 2. 设置发送使用的串口ID
     for (int i = 0; i < MOTOR_COUNT; i++) {
         gimbal_motors[i].setPortNum(port_id);// 设置串口ID
-        vTaskDelay(pdMS_TO_TICKS(4));
+        vTaskDelay(pdMS_TO_TICKS(motor_comm_delay_ms));
         gimbal_motors[i].sendEnableCmd(true); // 使能
-        vTaskDelay(pdMS_TO_TICKS(4));
+        vTaskDelay(pdMS_TO_TICKS(motor_comm_delay_ms));
         gimbal_motors[i].sendModeCmd(MotorMode::POSITION_LOOP); // 切换到位置环模式
-        vTaskDelay(pdMS_TO_TICKS(4));
+        vTaskDelay(pdMS_TO_TICKS(motor_comm_delay_ms));
         gimbal_motors[i].sendPositionCtrl(0); // 位置控制指令，目标位置为 180° (16384 对应 180°)
-        vTaskDelay(pdMS_TO_TICKS(4));
+        vTaskDelay(pdMS_TO_TICKS(motor_comm_delay_ms));
     }
 }
 
@@ -63,6 +69,6 @@ static void motor_disable()
 {
     for (int i = 0; i < MOTOR_COUNT; i++) {
         gimbal_motors[i].sendEnableCmd(false); // 失能
-        vTaskDelay(pdMS_TO_TICKS(4));
+        vTaskDelay(pdMS_TO_TICKS(motor_comm_delay_ms));
     }
 }

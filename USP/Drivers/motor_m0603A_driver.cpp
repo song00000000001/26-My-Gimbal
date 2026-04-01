@@ -179,7 +179,7 @@ bool BenMoMotor::parseDriveFeedback(const uint8_t* buf) {
  */
 bool BenMoMotor::parseExtraFeedback(const uint8_t* buf) {
     if (buf == nullptr) return false;
-
+    
     const BenMoMotorPacket* pkt = reinterpret_cast<const BenMoMotorPacket*>(buf);
 
     // 0x75 为请求回复，0x76 为模式反馈
