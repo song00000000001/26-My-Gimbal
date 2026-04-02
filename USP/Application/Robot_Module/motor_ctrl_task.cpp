@@ -45,7 +45,7 @@ void task_motor_ctrl(void *arg)
  */
 static void motor_init(uint8_t port_id)
 {
-    vTaskDelay(pdMS_TO_TICKS(200)); // 等待系统稳定
+    vTaskDelay(pdMS_TO_TICKS(1200)); // 等待系统稳定
     // 电机初始化逻辑
     // 1. 注册发送函数指针，供驱动内部调用发送指令包
     BenMoMotor::registerSendFunction(send_motor_packet);
