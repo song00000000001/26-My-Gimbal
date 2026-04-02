@@ -1,0 +1,254 @@
+#include "my_pid.h"
+
+static float my_clamp(float x, float min_val, float max_val)
+{
+    if (x > max_val) return max_val;
+    if (x < min_val) return min_val;
+    return x;
+}
+
+float MyPid_AngleWrapDeg(float err_deg)
+{
+    while (err_deg > 180.0f) err_deg -= 360.0f;
+    while (err_deg < -180.0f) err_deg += 360.0f;
+    return err_deg;
+}
+
+void MyPid_Init(MyPid *pid,
+                MyPidMode mode,
+                float kp,
+                float ki,
+                float kd,
+                float dt)
+{
+    if (pid == 0) return;
+
+    pid->mode = mode;
+    pid->param.kp = kp;
+    pid->param.ki = ki;
+    pid->param.kd = kd;
+    pid->dt = dt;
+
+    pid->integ_enable = true;
+    pid->d_on_measurement = false;
+
+    pid->limit.out_min = -1e6f;
+    pid->limit.out_max =  1e6f;
+    pid->limit.integ_min = -1e6f;
+    pid->limit.integ_max =  1e6f;
+    pid->limit.delta_out_min = -1e6f;
+    pid->limit.delta_out_max =  1e6f;
+
+    MyPid_Reset(pid);
+}
+
+void MyPid_SetParam(MyPid *pid, float kp, float ki, float kd)
+{
+    if (pid == 0) return;
+    pid->param.kp = kp;
+    pid->param.ki = ki;
+    pid->param.kd = kd;
+}
+
+void MyPid_SetLimit(MyPid *pid,
+                    float out_min,
+                    float out_max,
+                    float integ_min,
+                    float integ_max,
+                    float delta_out_min,
+                    float delta_out_max)
+{
+    if (pid == 0) return;
+
+    pid->limit.out_min = out_min;
+    pid->limit.out_max = out_max;
+    pid->limit.integ_min = integ_min;
+    pid->limit.integ_max = integ_max;
+    pid->limit.delta_out_min = delta_out_min;
+    pid->limit.delta_out_max = delta_out_max;
+}
+
+void MyPid_Reset(MyPid *pid)
+{
+    if (pid == 0) return;
+
+    pid->data.ref = 0.0f;
+    pid->data.fdb = 0.0f;
+    pid->data.err = 0.0f;
+    pid->data.err_last = 0.0f;
+    pid->data.err_last2 = 0.0f;
+
+    pid->data.pout = 0.0f;
+    pid->data.iout = 0.0f;
+    pid->data.dout = 0.0f;
+
+    pid->data.out = 0.0f;
+    pid->data.out_last = 0.0f;
+
+    pid->data.delta_out = 0.0f;
+    pid->data.delta_out_last = 0.0f;
+
+    pid->data.target_accum = 0.0f;
+}
+
+void MyPid_SetAccumTarget(MyPid *pid, float target)
+{
+    if (pid == 0) return;
+    pid->data.target_accum = target;
+}
+
+float MyPid_Calc(MyPid *pid, float ref, float fdb)
+{
+    if (pid == 0) return 0.0f;
+
+    pid->data.ref = ref;
+    pid->data.fdb = fdb;
+
+    pid->data.err_last2 = pid->data.err_last;
+    pid->data.err_last  = pid->data.err;
+    pid->data.err       = ref - fdb;
+
+    switch (pid->mode)
+    {
+    case MY_PID_MODE_POSITION:
+    {
+        pid->data.pout = pid->param.kp * pid->data.err;
+
+        if (pid->integ_enable)
+        {
+            pid->data.iout += pid->param.ki * pid->data.err * pid->dt;
+            pid->data.iout = my_clamp(pid->data.iout,
+                                      pid->limit.integ_min,
+                                      pid->limit.integ_max);
+        }
+        else
+        {
+            pid->data.iout = 0.0f;
+        }
+
+        pid->data.dout = pid->param.kd *
+                         (pid->data.err - pid->data.err_last) / pid->dt;
+
+        pid->data.out = pid->data.pout + pid->data.iout + pid->data.dout;
+        pid->data.out = my_clamp(pid->data.out,
+                                 pid->limit.out_min,
+                                 pid->limit.out_max);
+    }
+    break;
+
+    case MY_PID_MODE_INCREMENTAL:
+    {
+        float de   = pid->data.err - pid->data.err_last;
+        float dde  = pid->data.err - 2.0f * pid->data.err_last + pid->data.err_last2;
+
+        pid->data.pout = pid->param.kp * de;
+        pid->data.iout = pid->param.ki * pid->data.err * pid->dt;
+        pid->data.dout = pid->param.kd * dde / pid->dt;
+
+        pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout;
+        pid->data.delta_out = my_clamp(pid->data.delta_out,
+                                       pid->limit.delta_out_min,
+                                       pid->limit.delta_out_max);
+
+        pid->data.out = pid->data.out_last + pid->data.delta_out;
+        pid->data.out = my_clamp(pid->data.out,
+                                 pid->limit.out_min,
+                                 pid->limit.out_max);
+    }
+    break;
+
+    case MY_PID_MODE_GIMBAL_INC_POS:
+    {
+        pid->data.pout = pid->param.kp * pid->data.err;
+
+        if (pid->integ_enable)
+        {
+            pid->data.iout += pid->param.ki * pid->data.err * pid->dt;
+            pid->data.iout = my_clamp(pid->data.iout,
+                                      pid->limit.integ_min,
+                                      pid->limit.integ_max);
+        }
+        else
+        {
+            pid->data.iout = 0.0f;
+        }
+
+        pid->data.dout = pid->param.kd *
+                         (pid->data.err - pid->data.err_last) / pid->dt;
+
+        pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout;
+        pid->data.delta_out = my_clamp(pid->data.delta_out,
+                                       pid->limit.delta_out_min,
+                                       pid->limit.delta_out_max);
+
+        pid->data.target_accum += pid->data.delta_out;
+        pid->data.target_accum = my_clamp(pid->data.target_accum,
+                                          pid->limit.out_min,
+                                          pid->limit.out_max);
+
+        pid->data.out = pid->data.target_accum;
+    }
+    break;
+
+    default:
+        pid->data.out = 0.0f;
+        break;
+    }
+
+    pid->data.out_last = pid->data.out;
+    pid->data.delta_out_last = pid->data.delta_out;
+
+    return pid->data.out;
+}
+
+float MyPid_CalcGimbal(MyPid *pid, float angle_ref, float angle_fdb, float gyro_dps)
+{
+    if (pid == 0) return 0.0f;
+    if (pid->mode != MY_PID_MODE_GIMBAL_INC_POS) return 0.0f;
+
+    float err = angle_ref - angle_fdb;
+    err = MyPid_AngleWrapDeg(err);
+
+    pid->data.ref = angle_ref;
+    pid->data.fdb = angle_fdb;
+
+    pid->data.err_last2 = pid->data.err_last;
+    pid->data.err_last  = pid->data.err;
+    pid->data.err       = err;
+
+    pid->data.pout = pid->param.kp * pid->data.err;
+
+    if (pid->integ_enable)
+    {
+        pid->data.iout += pid->param.ki * pid->data.err * pid->dt;
+        pid->data.iout = my_clamp(pid->data.iout,
+                                  pid->limit.integ_min,
+                                  pid->limit.integ_max);
+    }
+    else
+    {
+        pid->data.iout = 0.0f;
+    }
+
+    /**
+     * 这里的d项不是对误差求导，而是直接用陀螺仪做阻尼：
+     * delta_out = Kp*e + Ki*∫e - Kd*gyro
+     */
+    pid->data.dout = -pid->param.kd * gyro_dps;
+
+    pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout;
+    pid->data.delta_out = my_clamp(pid->data.delta_out,
+                                   pid->limit.delta_out_min,
+                                   pid->limit.delta_out_max);
+
+    pid->data.target_accum += pid->data.delta_out;
+    pid->data.target_accum = my_clamp(pid->data.target_accum,
+                                      pid->limit.out_min,
+                                      pid->limit.out_max);
+
+    pid->data.out = pid->data.target_accum;
+    pid->data.out_last = pid->data.out;
+    pid->data.delta_out_last = pid->data.delta_out;
+
+    return pid->data.out;
+}

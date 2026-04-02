@@ -470,6 +470,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>USP/Services</GroupName>
+          <Files>
+            <File>
+              <FileName>my_pid.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\USP\Services\my_pid.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>my_pid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\USP\Services\my_pid.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>USP/drivers</GroupName>
           <Files>
             <File>
