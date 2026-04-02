@@ -143,6 +143,6 @@ static void System_Mpu_Init()
   /*	配置MPU6050 参数  完成初始化	*/
   MPU6050_Init(&mpu_config, &dmp_config);
   /*	运行陀螺仪自检	*/
-  //MPU6050_run_self_test(0, 10);
+  MPU6050_run_self_test(0, 10);
 }
 #endif

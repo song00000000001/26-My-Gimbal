@@ -67,24 +67,22 @@ void task_imu(void *arg)
     /* Pre-Load for task */
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
-    uint8_t ws2812_counter = 0; // WS2812 的控制频率
+	//由于角度数据经常在-180到180跳变，这里直接加180度偏移，变成0~360，方便后续的PID计算和调试观察
+    
     for (;;)
     {
         /* wait for next circle */
-        vTaskDelayUntil(&xLastWakeTime_t, 4);
+        vTaskDelayUntil(&xLastWakeTime_t, 4); // 4ms周期，确保MPU6050数据读取正常
         /*  读取MPU6050数据 */
         vTaskSuspendAll();      //挂起其他任务，防止被打断
         taskDISABLE_INTERRUPTS();//关闭中断，若使用中断关闭，请确保SRML定时器的中断不受FreeRTOS管辖
         dmp_read_data(&mpu_receive);
         taskENABLE_INTERRUPTS();
         xTaskResumeAll();
-
-        // ws2812_counter++;
-        // if(ws2812_counter >= 25) { // 每100ms更新一次灯光
-        //     //R_light(g_TargetCtrl.TargetColor);
-        //     R_light_Follow(mpu_receive.yaw, g_TargetCtrl.TargetColor);
-        //     ws2812_counter = 0;
-        // }
+        imu_angle_deg[PITCH] = mpu_receive.roll + 180.0f;
+        imu_angle_deg[YAW] = mpu_receive.yaw + 180.0f;
+        imu_gyro_dps[PITCH] = mpu_receive.gyro[0];
+        imu_gyro_dps[YAW] = mpu_receive.gyro[1];
     }
 }
 

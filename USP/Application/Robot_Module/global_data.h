@@ -2,20 +2,21 @@
 
 #include "internal.h"
 #include "motor_m0603A_driver.h"
+#include "my_pid.h"
 //#include "motor_ctrl_driver.h"
 //#include "remote_ctrl_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-// 1. 定义电机索引
+
 enum MotorIndex {
     PITCH = 0,
     YAW   = 1,
     MOTOR_COUNT = 2
 };
-
 extern BenMoMotor gimbal_motors[MOTOR_COUNT]; // 电机实例数组
+extern float motor_target_position[MOTOR_COUNT]; // 目标位置，单位为度
 
 typedef enum{
     debug_idle = 0,
@@ -74,6 +75,12 @@ typedef struct {
     uint8_t cmd;          
     uint8_t data;   
 } My_Packet_t;
+
+extern MyPid gimbal_pid[MOTOR_COUNT]; // PID控制器实例数组
+extern float motor_cmd_deg[MOTOR_COUNT]; // 电机控制指令，单位为度
+extern float hold_angle_deg[2]; // 固定的目标位置，单位为度
+extern float imu_angle_deg[2]; // 来自IMU的当前角度反馈，单位为度
+extern float imu_gyro_dps[2]; // 来自IMU的角速度反馈，单位为度每秒
 #pragma pack()
 
 #ifdef __cplusplus

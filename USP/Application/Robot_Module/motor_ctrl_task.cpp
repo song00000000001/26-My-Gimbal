@@ -3,8 +3,29 @@
 #include "robot_config.h"
 #include "comm_protocal.h"
 
+
 static void motor_init(uint8_t port_id);
 static void motor_disable();
+
+
+
+void gimbal_pid_init(void)
+{
+    vTaskDelay(10000);
+    for(uint8_t i=0;i<MOTOR_COUNT;i++){
+        MyPid_Init(&gimbal_pid[i], MY_PID_MODE_GIMBAL_INC_POS, 0.08f, 0.0f, 0.015f, 0.014f);
+
+        // 输出直接就是位置目标，范围按电机 0~360°
+        MyPid_SetLimit(&gimbal_pid[i],
+                       0.0f,   360.0f,   // target_accum / out 限幅
+                       -10.0f, 10.0f,    // 积分限幅
+                       -2.0f,  2.0f);    // 每次位置增量限幅
+
+        MyPid_SetAccumTarget(&gimbal_pid[i], imu_angle_deg[i]); // 初始目标位置
+    }
+}
+
+
 #define motor_comm_delay_ms 7 // 电机通信周期，38400波特率下理论上4ms，但是发送可以保证4ms，如果要等电机回复需要6~7ms不等。
 //7ms下测试丢包率1%~2%
 //8ms下测试丢包率0.5%~1%
@@ -18,15 +39,25 @@ void task_motor_ctrl(void *arg)
     xLastWakeTime_t = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms); // 7ms周期，确保电机通信正常
     motor_init(motor_uart_id); // 初始化电机
-   
+    gimbal_pid_init(); // 初始化PID控制器
+
     for (;;)
     {
+        
+
+        
         for(int i=0;i<MOTOR_COUNT;i++){
+            motor_cmd_deg[i] = MyPid_CalcGimbal(&gimbal_pid[i],
+                                       hold_angle_deg[i],
+                                       imu_angle_deg[i],
+                                       imu_gyro_dps[i]);
+                                    
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
             gimbal_motors[i].sendQueryExtraCmd(); // 请求里程和精确位置等额外反馈
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-            gimbal_motors[i].sendPositionCtrl(0); // 位置控制指令，目标位置为 180° (16384 对应 180°)
+            gimbal_motors[i].sendPositionCtrl(motor_cmd_deg[i]); // 位置控制指令，目标位置由全局变量 motor_target_position 提供，单位为度
         }
+        
         #if STACK_REMAIN_MONITER_ENABLE
         StackWaterMark_Get(motor_ctrl);
         #endif
