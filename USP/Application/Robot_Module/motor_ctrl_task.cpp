@@ -28,6 +28,7 @@ void gimbal_pid_init(void)
 /**
  * @brief 电机控制任务
  */
+
 void task_motor_ctrl(void *arg)
 {
     TickType_t xLastWakeTime_t;
@@ -45,8 +46,7 @@ void task_motor_ctrl(void *arg)
             MyPid_Calc(&gimbal_pid_pos[i],hold_angle_deg[i],imu_angle_deg[i]);
         }
         
-        // gimbal_motors[i].sendQueryExtraCmd(); // 请求里程和精确位置等额外反馈
-        gimbal_motors[YAW].sendSpeedCtrl(gimbal_pid_pos[YAW].data.out); // 速度控制指令)
+        gimbal_motors[YAW].sendSpeedCtrl(gimbal_pid_pos[YAW].data.out,Debugger.motor_accel_time,Debugger.motor_brake_enable); // 速度控制指令)
 
         #if STACK_REMAIN_MONITER_ENABLE
         StackWaterMark_Get(motor_ctrl);
@@ -72,11 +72,16 @@ static void motor_init(uint8_t port_id)
     BenMoMotor::registerSendFunction(send_motor_packet);
     // 2. 设置发送使用的串口ID
     for (int i = 0; i < MOTOR_COUNT; i++) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+
         gimbal_motors[i].setPortNum(port_id);// 设置串口ID
-        
-        gimbal_motors[i].sendModeCmd(MotorMode::SPEED_LOOP); // 切换到速度环模式
-        gimbal_motors[i].sendSpeedCtrl(0); // 速度控制指令，目标速度为 0 (16384 对应 180°)
+        vTaskDelay(pdMS_TO_TICKS(10));
+
         gimbal_motors[i].sendEnableCmd(true); // 使能
+        vTaskDelay(pdMS_TO_TICKS(10));
+
+        gimbal_motors[i].sendModeCmd(MotorMode::SPEED_LOOP); // 切换到速度环模式
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
@@ -87,7 +92,8 @@ static void motor_init(uint8_t port_id)
 static void motor_disable()
 {
     for (int i = 0; i < MOTOR_COUNT; i++) {
+        vTaskDelay(pdMS_TO_TICKS(10));
         gimbal_motors[i].sendEnableCmd(false); // 失能
-        vTaskDelay(pdMS_TO_TICKS(motor_comm_delay_ms));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }

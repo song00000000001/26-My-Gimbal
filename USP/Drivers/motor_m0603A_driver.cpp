@@ -97,14 +97,14 @@ void BenMoMotor::sendEnableCmd(bool enable) {
 
 /**
  * @brief 速度控制 (对应手册 P8)
- * @param target_rpm: 目标转速(RPM)。范围 -500.0 ~ 500.0 RPM，负值表示反转。
+ * @param target_rpm: 目标转速(RPM)。范围 -380.0 ~ 380.0 RPM，负值表示反转。
  * @details 实际写入值 = target_rpm * 10
  * @param accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
  * @param brake: 是否刹车 (仅速度环有效)
  */
 void BenMoMotor::sendSpeedCtrl(float target_rpm, uint8_t accel_time, bool brake) {
-    if(target_rpm < -500.0f) target_rpm = -500.0f;
-    if(target_rpm > 500.0f) target_rpm = 500.0f;
+    if(target_rpm < -380.0f) target_rpm = -380.0f;
+    if(target_rpm > 380.0f) target_rpm = 380.0f;
     // 转换规则：写入值 = 实际转速 * 10
     int16_t val = (int16_t)(target_rpm * 10.0f);
     buildBasicPacket(_out_packet, 0x64, (uint16_t)val, accel_time, (brake ? 0xFF : 0x00));
@@ -204,5 +204,36 @@ bool BenMoMotor::parseExtraFeedback(const uint8_t* buf) {
         // 0x76 模式反馈包 (Byte 2)
         __extra_status.mode = pkt->data_h;
     }
+    return true;
+}
+
+
+/**
+ * @brief 解析电机模式反馈 (对应手册 P9 反馈ID 0xA1)
+ * 反馈数据格式 (10字节):
+    * Byte 0: 电机ID
+    * Byte 1: 反馈ID (0xA1)
+    * Byte 2: 电机模式值
+    * 模式值:
+        0x00:设定为开环
+        0x01:设定为电流环
+        0x02:设定为速度环
+        0x08:电机使能
+        0x09:电机失能
+        0x0A:电机后转150±10°
+        0x10:开启通讯断联功能，超过3S没有接收到信息会停止动作，维持上一个模式
+        0x11:关闭通讯断联功能
+ */
+bool BenMoMotor::parseModeFeedback(const uint8_t* buf) {
+    if (buf == nullptr) return false;
+    
+    const BenMoMotorPacket* pkt = reinterpret_cast<const BenMoMotorPacket*>(buf);
+
+    // 0x75 为请求回复，0x76 为模式反馈
+    if (pkt->id != _id || (pkt->reg != 0xA1)) return false;
+    if (calculateCRC8(buf, 9) != pkt->crc) return false;
+
+    __extra_status.mode = pkt->data_h; // 模式值在 Byte 2 (data_h)
+
     return true;
 }

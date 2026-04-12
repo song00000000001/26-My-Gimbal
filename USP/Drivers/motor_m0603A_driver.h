@@ -174,6 +174,9 @@ public:
     // 解析 ID 0x75/0x76 的反馈数据 (里程、位置、模式)
     bool parseExtraFeedback(const uint8_t* buf);
 
+    // 解析 ID 0xA0 的模式反馈数据
+    bool parseModeFeedback(const uint8_t* buf);
+
     // CRC8 校验计算 (CRC-8/MAXIM)
     static uint8_t calculateCRC8(const uint8_t* data, uint8_t len);
 

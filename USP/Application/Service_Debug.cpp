@@ -106,16 +106,24 @@ void Task_VofaMonitor(void *arg){
                 ,(float)gimbal_pid_pos[YAW].data.ref
                 ,(float)gimbal_pid_pos[YAW].data.fdb
                 ,(float)gimbal_pid_pos[YAW].data.out
-                ,(float)imu_gyro_dps[YAW]//imu的角速度反馈，单位为度每秒
+                //,(float)imu_gyro_dps[YAW]//imu的角速度反馈，单位为度每秒
                 ,(float)gimbal_motors[YAW].getCurrent()//输出正常电流值，用手转约34ma,静止/失能时偶尔有突发20~30ma的峰，不清楚原因。
                 ,(float)gimbal_motors[YAW].getSpeed() //输出正常速度值，用手转最快22.3rpm,
+                ,(float)gimbal_motors[YAW].getMode() //输出正常模式值，电流环模式为1，速度环模式为2，位置环模式为3
                 // ,(float)gimbal_motors[YAW].getTemp() //输出正常温度值，约为27
                 // ,(float)gimbal_motors[YAW].getFaultCode() //测试正常输出0,还没遇到异常
                 //以下是额外内容,需要额外调用函数
-                // ,(float)gimbal_motors[YAW].getMode()
                 // ,(float)gimbal_motors[YAW].getMileage()
                 // ,(float)gimbal_motors[YAW].getPosition()
             );      
+            /**
+             * 关于响应
+             * 测试发现电机的速度反馈响应最快，其次是imu的角速度反馈（相对上一个延时约42ms），其次是imu的角度反馈（42ms），其次是电机的电流反馈（84ms）。
+             * 电机实际模式是电流环模式。因为使能后默认电流环，而代码是先设模式再使能，所以模式设置失效，而电流环和速度环共用寄存器指令，所以输出为电流环模式。
+             * 电流环模式下，12v电池供电，空载最大转速170rpm，最大堵转电流570ma。
+             * 角度环模式下，12v电池供电，getspeed变成了编码器数据，范围是-1638.4~1638.4，对应-180°~180°，需要修改获取速度函数，根据模式处理数据。
+             * 
+             */
             break;   
         case debug_idle:
         default:
