@@ -1,5 +1,7 @@
 #include "my_pid.h"
 
+#include <math.h>
+
 static float my_clamp(float x, float min_val, float max_val)
 {
     if (x > max_val) return max_val;
@@ -37,6 +39,7 @@ void MyPid_Init(MyPid *pid,
     pid->limit.out_max =  0;
     pid->limit.integ_min = 0;
     pid->limit.integ_max =  0;
+    pid->limit.integ_split_threshold = 0;
     pid->limit.delta_out_min = 0;
     pid->limit.delta_out_max =  0;
 
@@ -69,12 +72,20 @@ void MyPid_SetLimit(MyPid *pid,
     pid->limit.delta_out_max = delta_out_max;
 }
 
+void MyPid_SetIntegSplitThreshold(MyPid *pid, float threshold)
+{
+    if (pid == 0) return;
+    pid->limit.integ_split_threshold = (threshold >= 0.0f) ? threshold : -threshold;
+}
+
 void MyPid_Reset(MyPid *pid)
 {
     if (pid == 0) return;
 
     pid->data.ref = 0.0f;
     pid->data.fdb = 0.0f;
+    pid->data.fdb_last = 0.0f;
+    pid->data.fdb_last2 = 0.0f;
     pid->data.err = 0.0f;
     pid->data.err_last = 0.0f;
     pid->data.err_last2 = 0.0f;
@@ -103,6 +114,9 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
     if (pid == 0) return 0.0f;
 
     pid->data.ref = ref;
+
+    pid->data.fdb_last2 = pid->data.fdb_last;
+    pid->data.fdb_last  = pid->data.fdb;
     pid->data.fdb = fdb;
 
     pid->data.err_last2 = pid->data.err_last;
@@ -113,22 +127,41 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
     {
     case MY_PID_MODE_POSITION:
     {
+        bool integ_allow = pid->integ_enable;
+        if (integ_allow && pid->integ_split_enable)
+        {
+            float th = pid->limit.integ_split_threshold;
+            if (th > 0.0f && fabsf(pid->data.err) > th)
+            {
+                integ_allow = false;
+                pid->data.iout = 0.0f;//误差过大时清除积分，避免积分影响到后续的控制
+            }
+        }
+
         pid->data.pout = pid->param.kp * pid->data.err;
 
-        if (pid->integ_enable)
+        if (integ_allow)
         {
             pid->data.iout += pid->param.ki * pid->data.err * pid->dt;
             pid->data.iout = my_clamp(pid->data.iout,
                                       pid->limit.integ_min,
                                       pid->limit.integ_max);
         }
-        else
+        else if (!pid->integ_enable)
         {
             pid->data.iout = 0.0f;
         }
 
-        pid->data.dout = pid->param.kd *
-                         (pid->data.err - pid->data.err_last) / pid->dt;
+        if (pid->d_split_enable)
+        {
+            pid->data.dout = -pid->param.kd *
+                             (pid->data.fdb - pid->data.fdb_last) / pid->dt;
+        }
+        else
+        {
+            pid->data.dout = pid->param.kd *
+                             (pid->data.err - pid->data.err_last) / pid->dt;
+        }
 
         pid->data.out = pid->data.pout + pid->data.iout + pid->data.dout;
         pid->data.out = my_clamp(pid->data.out,
@@ -139,12 +172,39 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
 
     case MY_PID_MODE_INCREMENTAL:
     {
+        bool integ_allow = pid->integ_enable;
+        if (integ_allow && pid->integ_split_enable)
+        {
+            float th = pid->limit.integ_split_threshold;
+            if (th > 0.0f && fabsf(pid->data.err) > th)
+            {
+                integ_allow = false;
+            }
+        }
+
         float de   = pid->data.err - pid->data.err_last;
         float dde  = pid->data.err - 2.0f * pid->data.err_last + pid->data.err_last2;
+        float dd_fdb = pid->data.fdb - 2.0f * pid->data.fdb_last + pid->data.fdb_last2;
 
         pid->data.pout = pid->param.kp * de;
-        pid->data.iout = pid->param.ki * pid->data.err * pid->dt;
-        pid->data.dout = pid->param.kd * dde / pid->dt;
+
+        if (integ_allow)
+        {
+            pid->data.iout = pid->param.ki * pid->data.err * pid->dt;
+        }
+        else
+        {
+            pid->data.iout = 0.0f;
+        }
+
+        if (pid->d_split_enable)
+        {
+            pid->data.dout = -pid->param.kd * dd_fdb / pid->dt;
+        }
+        else
+        {
+            pid->data.dout = pid->param.kd * dde / pid->dt;
+        }
 
         pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout;
         pid->data.delta_out = my_clamp(pid->data.delta_out,
@@ -160,22 +220,40 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
 
     case MY_PID_MODE_GIMBAL_INC_POS:
     {
+        bool integ_allow = pid->integ_enable;
+        if (integ_allow && pid->integ_split_enable)
+        {
+            float th = pid->limit.integ_split_threshold;
+            if (th > 0.0f && fabsf(pid->data.err) > th)
+            {
+                integ_allow = false;
+            }
+        }
+
         pid->data.pout = pid->param.kp * pid->data.err;
 
-        if (pid->integ_enable)
+        if (integ_allow)
         {
             pid->data.iout += pid->param.ki * pid->data.err * pid->dt;
             pid->data.iout = my_clamp(pid->data.iout,
                                       pid->limit.integ_min,
                                       pid->limit.integ_max);
         }
-        else
+        else if (!pid->integ_enable)
         {
             pid->data.iout = 0.0f;
         }
 
-        pid->data.dout = pid->param.kd *
-                         (pid->data.err - pid->data.err_last) / pid->dt;
+        if (pid->d_split_enable)
+        {
+            pid->data.dout = -pid->param.kd *
+                             (pid->data.fdb - pid->data.fdb_last) / pid->dt;
+        }
+        else
+        {
+            pid->data.dout = pid->param.kd *
+                             (pid->data.err - pid->data.err_last) / pid->dt;
+        }
 
         pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout;
         pid->data.delta_out = my_clamp(pid->data.delta_out,
@@ -211,6 +289,9 @@ float MyPid_CalcGimbal(MyPid *pid, float angle_ref, float angle_fdb, float gyro_
     err = MyPid_AngleWrapDeg(err);
 
     pid->data.ref = angle_ref;
+
+    pid->data.fdb_last2 = pid->data.fdb_last;
+    pid->data.fdb_last  = pid->data.fdb;
     pid->data.fdb = angle_fdb;
 
     pid->data.err_last2 = pid->data.err_last;
@@ -219,14 +300,24 @@ float MyPid_CalcGimbal(MyPid *pid, float angle_ref, float angle_fdb, float gyro_
 
     pid->data.pout = pid->param.kp * pid->data.err;
 
-    if (pid->integ_enable)
+    bool integ_allow = pid->integ_enable;
+    if (integ_allow && pid->integ_split_enable)
+    {
+        float th = pid->limit.integ_split_threshold;
+        if (th > 0.0f && fabsf(pid->data.err) > th)
+        {
+            integ_allow = false;
+        }
+    }
+
+    if (integ_allow)
     {
         pid->data.iout += pid->param.ki * pid->data.err * pid->dt;
         pid->data.iout = my_clamp(pid->data.iout,
                                   pid->limit.integ_min,
                                   pid->limit.integ_max);
     }
-    else
+    else if (!pid->integ_enable)
     {
         pid->data.iout = 0.0f;
     }
@@ -235,7 +326,15 @@ float MyPid_CalcGimbal(MyPid *pid, float angle_ref, float angle_fdb, float gyro_
      * 这里的d项不是对误差求导，而是直接用陀螺仪做阻尼：
      * delta_out = Kp*e + Ki*∫e - Kd*gyro
      */
-    pid->data.dout = -pid->param.kd * gyro_dps;
+    if (pid->d_split_enable)
+    {
+        pid->data.dout = -pid->param.kd * gyro_dps;
+    }
+    else
+    {
+        pid->data.dout = pid->param.kd *
+                         (pid->data.err - pid->data.err_last) / pid->dt;
+    }
 
     pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout;
     pid->data.delta_out = my_clamp(pid->data.delta_out,

@@ -48,6 +48,8 @@ typedef struct
 {
     float ref;              ///< 参考值
     float fdb;              ///< 反馈值
+    float fdb_last;         ///< 上次反馈值
+    float fdb_last2;        ///< 上上次反馈值
     float err;              ///< 当前误差 e[k]
     float err_last;         ///< 上次误差 e[k-1]
     float err_last2;        ///< 上上次误差 e[k-2]
@@ -106,6 +108,11 @@ void MyPid_SetLimit(MyPid *pid,
                     float integ_max,
                     float delta_out_min,
                     float delta_out_max);
+
+/**
+ * @brief 设置积分分离阈值（绝对误差超过阈值时暂停积分）
+ */
+void MyPid_SetIntegSplitThreshold(MyPid *pid, float threshold);
 
 /**
  * @brief 复位PID内部状态
