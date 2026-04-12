@@ -50,10 +50,10 @@ void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8
     if(buf == nullptr || BenMoMotor::_sendFunction == nullptr) return; // 安全检查
 
     //内部延时，方便使用。
-    static TickType_t xLastWakeTime_t;
-    xLastWakeTime_t = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms);
-    vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+    // static TickType_t xLastWakeTime_t;
+    // xLastWakeTime_t = xTaskGetTickCount();
+    // const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms);
+    // vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
 
     BenMoMotorPacket* pkt = reinterpret_cast<BenMoMotorPacket*>(buf);
     /**

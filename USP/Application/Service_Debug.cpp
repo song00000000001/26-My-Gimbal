@@ -8,7 +8,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "internal.h"
 #include "global_data.h"
-
+#include "robot_config.h"
 /* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 TaskHandle_t UpperMonitor_Handle;
@@ -78,11 +78,12 @@ void Task_VofaMonitor(void *arg){
 
 	/* Pre-Load for task */
 	TickType_t xLastWakeTime_t;
-	xLastWakeTime_t = xTaskGetTickCount();
+    xLastWakeTime_t = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms); // 7ms周期，确保电机通信正常
 	/* Infinite loop */
 	while(1)
 	{
-		vTaskDelayUntil(&xLastWakeTime_t, 14);
+		vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
 
         switch (Debugger.enable_debug_mode)
         {
@@ -102,10 +103,14 @@ void Task_VofaMonitor(void *arg){
             break;
         case debug_mtvofa_monitor:
             VofaMonitor::setDatas(0,
-                (float)gimbal_pid_pos[YAW].data.ref,
-                (float)gimbal_pid_pos[YAW].data.fdb,
-                (float)gimbal_pid_pos[YAW].data.err,
-                (float)gimbal_pid_pos[YAW].data.out
+                (float)gimbal_pid_pos[YAW].data.ref-180,
+                (float)gimbal_pid_pos[YAW].data.fdb-180,
+                (float)gimbal_pid_pos[YAW].data.out,
+                (float)gimbal_motors[YAW].getCurrent(),
+                (float)gimbal_motors[YAW].getSpeed(),
+                (float)gimbal_motors[YAW].getTemp(),
+                (float)gimbal_motors[YAW].getFaultCode(),
+                (float)gimbal_motors[YAW].getMode(),
             );      
             break;   
         case debug_idle:

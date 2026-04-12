@@ -13,8 +13,7 @@ void gimbal_pid_init(void)
 {
     vTaskDelay(1000);
     for(uint8_t i=0;i<MOTOR_COUNT;i++){
-        MyPid_Init(&gimbal_pid_pos[i], MY_PID_MODE_POSITION, 10.0f, 0.0f, 2.0f, 0.014f);//dt根据任务周期设置，这里是7ms的两倍，即14ms，确保PID计算周期与电机控制周期同步，避免过快或过慢导致控制性能下降。
-
+        MyPid_Init(&gimbal_pid_pos[i], MY_PID_MODE_POSITION, 0.0f, 0.0f, 0.0f, 0.007f);//dt根据任务周期设置，这里是7ms
         // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
         MyPid_SetLimit(&gimbal_pid_pos[i],
                        -500.0f,   500.0f,      // target_accum / out 限幅
@@ -34,7 +33,7 @@ void task_motor_ctrl(void *arg)
 {
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(2*motor_comm_delay_ms); // 7ms周期，确保电机通信正常
+    const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms); // 7ms周期，确保电机通信正常
     motor_init(motor_uart_id); // 初始化电机
     gimbal_pid_init(); // 初始化PID控制器
 
@@ -45,11 +44,11 @@ void task_motor_ctrl(void *arg)
         
         for(int i=0;i<MOTOR_COUNT;i++){
             MyPid_Calc(&gimbal_pid_pos[i],hold_angle_deg[i],imu_angle_deg[i]);
-        
-            // gimbal_motors[i].sendQueryExtraCmd(); // 请求里程和精确位置等额外反馈
-            gimbal_motors[i].sendSpeedCtrl(gimbal_pid_pos[i].data.out); // 速度控制指令)
         }
         
+        // gimbal_motors[i].sendQueryExtraCmd(); // 请求里程和精确位置等额外反馈
+        gimbal_motors[YAW].sendSpeedCtrl(gimbal_pid_pos[YAW].data.out); // 速度控制指令)
+
         #if STACK_REMAIN_MONITER_ENABLE
         StackWaterMark_Get(motor_ctrl);
         #endif
