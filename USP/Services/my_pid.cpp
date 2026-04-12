@@ -30,8 +30,9 @@ void MyPid_Init(MyPid *pid,
     pid->dt = dt;
 
     pid->integ_enable = true;
-    pid->d_on_measurement = false;
-
+    pid->integ_split_enable = false;
+    pid->d_split_enable = false;
+    
     pid->limit.out_min = 0;
     pid->limit.out_max =  0;
     pid->limit.integ_min = 0;

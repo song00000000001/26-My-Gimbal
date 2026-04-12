@@ -26,6 +26,7 @@ typedef struct
     float out_max;          ///< 最终输出上限
     float integ_min;        ///< 积分项下限
     float integ_max;        ///< 积分项上限
+    float integ_split_threshold; ///< 积分分离阈值
     float delta_out_min;    ///< 增量输出下限（增量式/云台模式用）
     float delta_out_max;    ///< 增量输出上限（增量式/云台模式用）
 } MyPidLimit;
@@ -76,7 +77,8 @@ typedef struct
 
     float dt;               ///< 控制周期，单位 s
     bool integ_enable;      ///< 是否启用积分
-    bool d_on_measurement;  ///< 微分是否基于测量值，默认false
+    bool integ_split_enable;///< 是否启用积分分离
+    bool d_split_enable;    ///< 是否启用微分分离（微分项只对测量值求导，避免参考值突变引起微分峰值）
 } MyPid;
 
 /**
