@@ -16,7 +16,6 @@ enum MotorIndex {
     MOTOR_COUNT = 2
 };
 extern BenMoMotor gimbal_motors[MOTOR_COUNT]; // 电机实例数组
-extern float motor_target_position[MOTOR_COUNT]; // 目标位置，单位为度
 
 typedef enum{
     debug_idle = 0,
@@ -76,8 +75,7 @@ typedef struct {
     uint8_t data;   
 } My_Packet_t;
 
-extern MyPid gimbal_pid[MOTOR_COUNT]; // PID控制器实例数组
-extern float motor_cmd_deg[MOTOR_COUNT]; // 电机控制指令，单位为度
+extern MyPid gimbal_pid_pos[MOTOR_COUNT]; // PID控制器实例数组
 extern float hold_angle_deg[2]; // 固定的目标位置，单位为度
 extern float imu_angle_deg[2]; // 来自IMU的当前角度反馈，单位为度
 extern float imu_gyro_dps[2]; // 来自IMU的角速度反馈，单位为度每秒

@@ -1,4 +1,5 @@
 #include "motor_m0603A_driver.h"
+#include "robot_config.h"
 
 // 静态成员变量定义和初始化
 bool (*BenMoMotor::_sendFunction)(uint8_t, const uint8_t*, uint8_t) = nullptr;
@@ -47,6 +48,12 @@ uint8_t BenMoMotor::calculateCRC8(const uint8_t* data, uint8_t len) {
  */
 void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8_t d6, uint8_t d7) {
     if(buf == nullptr || BenMoMotor::_sendFunction == nullptr) return; // 安全检查
+
+    //内部延时，方便使用。
+    static TickType_t xLastWakeTime_t;
+    xLastWakeTime_t = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms);
+    vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
 
     BenMoMotorPacket* pkt = reinterpret_cast<BenMoMotorPacket*>(buf);
     /**

@@ -9,6 +9,10 @@ extern "C" {
 
 #define upper_uart_id 4 // 上位机通信串口
 #define motor_uart_id 1 // 电机通信串口 
+#define motor_comm_delay_ms 7 // 电机通信周期，38400波特率下理论上4ms，但是发送可以保证4ms，如果要等电机回复需要6~7ms不等。
+//7ms下测试丢包率1%~2%
+//8ms下测试丢包率0.5%~1%
+//认为7ms是一个比较合理的选择，既能保证通信效率又能降低丢包率。后续可以考虑增加重试机制来进一步降低丢包率。
 
 #define STACK_REMAIN_MONITER_ENABLE 0 // 是否启用任务栈剩余监测功能
 

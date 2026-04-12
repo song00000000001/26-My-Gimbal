@@ -18,9 +18,8 @@ EnergySystemState_t g_TargetCtrl;
 BenMoMotor gimbal_motors[MOTOR_COUNT] = { BenMoMotor(1), BenMoMotor(2) };
 
 //临时变量
-float motor_target_position[MOTOR_COUNT] = {0.0f}; // 目标位置，单位为度
-MyPid gimbal_pid[MOTOR_COUNT]={}; // PID控制器实例数组
-float motor_cmd_deg[MOTOR_COUNT] = {0.0f}; // 电机控制指令，单位为度
-float hold_angle_deg[2] = {180.0f, 180.0f}; // 固定的目标位置，单位为度
+MyPid gimbal_pid_pos[MOTOR_COUNT]={}; // PID控制器实例数组
+
+float hold_angle_deg[2] = {0.0f, 0.0f}; // 固定的目标位置，单位为度
 float imu_angle_deg[2] = {0.0f}; // 来自IMU的当前角度反馈，单位为度
 float imu_gyro_dps[2] = {0.0f}; // 来自IMU的角速度反馈，单位为度每秒

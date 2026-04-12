@@ -32,12 +32,12 @@ void MyPid_Init(MyPid *pid,
     pid->integ_enable = true;
     pid->d_on_measurement = false;
 
-    pid->limit.out_min = -1e6f;
-    pid->limit.out_max =  1e6f;
-    pid->limit.integ_min = -1e6f;
-    pid->limit.integ_max =  1e6f;
-    pid->limit.delta_out_min = -1e6f;
-    pid->limit.delta_out_max =  1e6f;
+    pid->limit.out_min = 0;
+    pid->limit.out_max =  0;
+    pid->limit.integ_min = 0;
+    pid->limit.integ_max =  0;
+    pid->limit.delta_out_min = 0;
+    pid->limit.delta_out_max =  0;
 
     MyPid_Reset(pid);
 }
