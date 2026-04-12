@@ -103,8 +103,8 @@ void Task_VofaMonitor(void *arg){
             break;
         case debug_mtvofa_monitor:
             VofaMonitor::setDatas(0,
-                (float)gimbal_pid_pos[YAW].data.ref-180,
-                (float)gimbal_pid_pos[YAW].data.fdb-180,
+                (float)gimbal_pid_pos[YAW].data.ref,
+                (float)gimbal_pid_pos[YAW].data.fdb,
                 (float)gimbal_pid_pos[YAW].data.out,
                 (float)gimbal_motors[YAW].getCurrent(),
                 (float)gimbal_motors[YAW].getSpeed(),

@@ -19,8 +19,7 @@ void gimbal_pid_init(void)
                        -500.0f,   500.0f,      // target_accum / out 限幅
                        0.0f, 0.0f,       // 积分限幅
                        0,  0);              //特殊模式下的增量限幅，这里无意义
-
-        MyPid_SetAccumTarget(&gimbal_pid_pos[i], imu_angle_deg[i]); // 初始目标位置
+        MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[i], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
     }
 }
 

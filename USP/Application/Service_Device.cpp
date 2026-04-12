@@ -73,14 +73,16 @@ void task_imu(void *arg)
     {
         /* wait for next circle */
         vTaskDelayUntil(&xLastWakeTime_t, 4); // 4ms周期，确保MPU6050数据读取正常
+
         /*  读取MPU6050数据 */
         vTaskSuspendAll();      //挂起其他任务，防止被打断
         taskDISABLE_INTERRUPTS();//关闭中断，若使用中断关闭，请确保SRML定时器的中断不受FreeRTOS管辖
         dmp_read_data(&mpu_receive);
         taskENABLE_INTERRUPTS();
         xTaskResumeAll();
-        imu_angle_deg[PITCH] = mpu_receive.roll + 180.0f;
-        imu_angle_deg[YAW] = mpu_receive.yaw + 180.0f;
+
+        imu_angle_deg[PITCH] = mpu_receive.roll ;
+        imu_angle_deg[YAW] = mpu_receive.yaw;
         imu_gyro_dps[PITCH] = mpu_receive.gyro[0];
         imu_gyro_dps[YAW] = mpu_receive.gyro[1];
     }
