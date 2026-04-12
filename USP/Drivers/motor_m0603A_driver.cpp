@@ -137,6 +137,8 @@ void BenMoMotor::sendPositionCtrl(float position_value, uint8_t accel_time) {
 /**
  * @brief 查询额外反馈 (对应手册 P9)
  * 该指令请求电机返回里程、位置和当前模式等高级状态信息，反馈ID为 0x75/0x76。
+ * @todo 有问题，额外数据一直是0。需要排查是发送指令有问题还是解析有问题，或者电机固件不支持这个功能。
+ * 
  */
 void BenMoMotor::sendQueryExtraCmd() {
     buildBasicPacket(_out_packet, 0x74, 0);
@@ -167,6 +169,7 @@ bool BenMoMotor::parseDriveFeedback(const uint8_t* buf) {
     // 复制一份以便后续处理
     memcpy(_in_packet, buf, MOTOR_PACKET_SIZE);
 
+    
     __drive_status.speed   = (int16_t)((pkt->data_h << 8) | pkt->data_l); 
     __drive_status.current = (int16_t)((pkt->reserved1 << 8) | pkt->reserved2); // 手册中 0x65 反馈的 Byte 4-5
     __drive_status.temp    = pkt->d7;

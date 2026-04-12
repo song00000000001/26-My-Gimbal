@@ -6,22 +6,9 @@
 
 static void motor_init(uint8_t port_id);
 static void motor_disable();
+static void gimbal_pid_init(void);
 
 
-
-void gimbal_pid_init(void)
-{
-    vTaskDelay(1000);
-    for(uint8_t i=0;i<MOTOR_COUNT;i++){
-        MyPid_Init(&gimbal_pid_pos[i], MY_PID_MODE_POSITION, 0.0f, 0.0f, 0.0f, 0.007f);//dt根据任务周期设置，这里是7ms
-        // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
-        MyPid_SetLimit(&gimbal_pid_pos[i],
-                       -500.0f,   500.0f,      // target_accum / out 限幅
-                       0.0f, 0.0f,       // 积分限幅
-                       0,  0);              //特殊模式下的增量限幅，这里无意义
-        MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[i], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
-    }
-}
 
 
 
@@ -85,6 +72,20 @@ static void motor_init(uint8_t port_id)
     }
 }
 
+void gimbal_pid_init(void)
+{
+    vTaskDelay(1000);
+    for(uint8_t i=0;i<MOTOR_COUNT;i++){
+        MyPid_Init(&gimbal_pid_pos[i], MY_PID_MODE_POSITION, 0.0f, 0.0f, 0.0f, 0.007f);//dt根据任务周期设置，这里是7ms
+        // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
+        MyPid_SetLimit(&gimbal_pid_pos[i],
+                       -500.0f,   500.0f,      // target_accum / out 限幅
+                       0.0f, 0.0f,       // 积分限幅
+                       0,  0);              //特殊模式下的增量限幅，这里无意义
+        MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[i], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
+    }
+}
+
 /**
  * @brief 电机失能
  * @details 该函数负责电机的失能配置，通常在系统关闭或者需要紧急停止电机时调用。需要确保在调用该函数后，电机不会再响应任何控制指令。
@@ -97,3 +98,4 @@ static void motor_disable()
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
+
