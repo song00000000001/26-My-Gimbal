@@ -29,6 +29,7 @@ typedef struct {
     Debug_Mode_e enable_debug_mode; // 在watch窗口改为true以进入调试模式(配合遥控器)
     uint8_t motor_accel_time; // 电机加速时间，单位ms/1rpm，0表示最快
     bool motor_brake_enable; // 电机刹车使能，true表示启用刹车，false表示不刹车
+    uint8_t motor_mode; // 电机模式，0表示电流环模式，1表示速度环模式，2表示位置环模式
 } Debug_Data_t;
 extern Debug_Data_t Debugger;  
 

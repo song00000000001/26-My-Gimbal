@@ -27,14 +27,16 @@ void task_motor_ctrl(void *arg)
     for (;;)
     {
         
-        vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-        
         for(int i=0;i<MOTOR_COUNT;i++){
             MyPid_Calc(&gimbal_pid_pos[i],hold_angle_deg[i],imu_angle_deg[i]);
         }
-        
-        gimbal_motors[YAW].sendSpeedCtrl(gimbal_pid_pos[YAW].data.out,Debugger.motor_accel_time,Debugger.motor_brake_enable); // 速度控制指令)
 
+        vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+        gimbal_motors[YAW].sendSpeedCtrl(gimbal_pid_pos[YAW].data.out,Debugger.motor_accel_time,Debugger.motor_brake_enable); // 速度控制指令)
+        
+        vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+        gimbal_motors[YAW].sendQueryExtraCmd(); // 请求额外反馈，获取里程和精确位置等信息
+        
         #if STACK_REMAIN_MONITER_ENABLE
         StackWaterMark_Get(motor_ctrl);
         #endif

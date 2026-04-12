@@ -304,6 +304,8 @@ void Task_UsartReceive(void *arg)
             {
                 for(int i=0;i<MOTOR_COUNT;i++){
                     gimbal_motors[i].parseDriveFeedback(Usart_RxCOB.address);
+					gimbal_motors[i].parseExtraFeedback(Usart_RxCOB.address);
+                    gimbal_motors[i].parseModeFeedback(Usart_RxCOB.address);
                 }
             }
             break;
