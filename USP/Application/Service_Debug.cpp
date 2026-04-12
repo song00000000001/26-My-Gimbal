@@ -106,10 +106,11 @@ void Task_VofaMonitor(void *arg){
                 ,(float)gimbal_pid_pos[YAW].data.ref
                 ,(float)gimbal_pid_pos[YAW].data.fdb
                 ,(float)gimbal_pid_pos[YAW].data.out
-                ,(float)gimbal_motors[YAW].getCurrent()
-                ,(float)gimbal_motors[YAW].getSpeed()
-                ,(float)gimbal_motors[YAW].getTemp()
-                ,(float)gimbal_motors[YAW].getFaultCode()
+                ,(float)imu_gyro_dps[YAW]//imu的角速度反馈，单位为度每秒
+                ,(float)gimbal_motors[YAW].getCurrent()//输出正常电流值，用手转约34ma,静止/失能时偶尔有突发20~30ma的峰，不清楚原因。
+                ,(float)gimbal_motors[YAW].getSpeed() //输出正常速度值，用手转最快22.3rpm,
+                // ,(float)gimbal_motors[YAW].getTemp() //输出正常温度值，约为27
+                // ,(float)gimbal_motors[YAW].getFaultCode() //测试正常输出0,还没遇到异常
                 //以下是额外内容,需要额外调用函数
                 // ,(float)gimbal_motors[YAW].getMode()
                 // ,(float)gimbal_motors[YAW].getMileage()
