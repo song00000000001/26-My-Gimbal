@@ -82,7 +82,7 @@ void Task_VofaMonitor(void *arg){
 	/* Infinite loop */
 	while(1)
 	{
-		vTaskDelayUntil(&xLastWakeTime_t, 5);
+		vTaskDelayUntil(&xLastWakeTime_t, 14);
 
         switch (Debugger.enable_debug_mode)
         {
@@ -101,12 +101,12 @@ void Task_VofaMonitor(void *arg){
             );
             break;
         case debug_mtvofa_monitor:
-            // VofaMonitor::setDatas(0,
-            //     (float)motor_ctrl.mymotor_pid_spd.Target,
-            //     (float)motor_ctrl.mymotor_pid_spd.Current,
-            //     (float)motor_ctrl.mymotor_pid_spd.Out,
-            //     (float)motor_ctrl.get_motor_angle()
-            // );      
+            VofaMonitor::setDatas(0,
+                (float)gimbal_pid_pos[YAW].data.ref,
+                (float)gimbal_pid_pos[YAW].data.fdb,
+                (float)gimbal_pid_pos[YAW].data.err,
+                (float)gimbal_pid_pos[YAW].data.out
+            );      
             break;   
         case debug_idle:
         default:

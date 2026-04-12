@@ -27,7 +27,7 @@ typedef enum{
 typedef struct {
     // 标志位
     Debug_Mode_e enable_debug_mode; // 在watch窗口改为true以进入调试模式(配合遥控器)
-    bool Debug_simulate_hit;// 模拟击打（进入调试模式后，在watch窗口改为true以模拟一次击打事件，配合遥控器）
+
 } Debug_Data_t;
 extern Debug_Data_t Debugger;  
 
