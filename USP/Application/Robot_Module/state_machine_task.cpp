@@ -9,11 +9,7 @@ void task_state_machine(void *arg)
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(2);
     uint32_t main_task_now = xTaskGetTickCount();
-
-    Debugger={
-        .enable_debug_mode=debug_idle,
-    };
-    
+   
     for (;;)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);

@@ -110,7 +110,7 @@ void Task_VofaMonitor(void *arg){
                 (float)gimbal_motors[YAW].getSpeed(),
                 (float)gimbal_motors[YAW].getTemp(),
                 (float)gimbal_motors[YAW].getFaultCode(),
-                (float)gimbal_motors[YAW].getMode(),
+                (float)gimbal_motors[YAW].getMode()
             );      
             break;   
         case debug_idle:
