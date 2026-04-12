@@ -178,8 +178,8 @@ public:
     static uint8_t calculateCRC8(const uint8_t* data, uint8_t len);
 
     //获取反馈数据
-    int16_t getSpeed() const { return __drive_status.speed; }
-    int16_t getCurrent() const { return __drive_status.current; }
+    float getSpeed() const { return __drive_status.speed/10.0; }///< 速度 (int16_t, 实际值 = speed / 10.0 RPM)
+    float getCurrent() const { return __drive_status.current *4/32767.0f; }///< 电流 (int16_t, -32767~32767 对应 -4A~4A),这里直接转换成实际电流值返回，单位为A
     uint8_t getTemp() const { return __drive_status.temp; }
     uint8_t getFaultCode() const { return __drive_status.fault_code; }
     int32_t getMileage() const { return __extra_status.mileage; }

@@ -102,15 +102,18 @@ void Task_VofaMonitor(void *arg){
             );
             break;
         case debug_mtvofa_monitor:
-            VofaMonitor::setDatas(0,
-                (float)gimbal_pid_pos[YAW].data.ref,
-                (float)gimbal_pid_pos[YAW].data.fdb,
-                (float)gimbal_pid_pos[YAW].data.out,
-                (float)gimbal_motors[YAW].getCurrent(),
-                (float)gimbal_motors[YAW].getSpeed(),
-                (float)gimbal_motors[YAW].getTemp(),
-                (float)gimbal_motors[YAW].getFaultCode(),
-                (float)gimbal_motors[YAW].getMode()
+            VofaMonitor::setDatas(0
+                ,(float)gimbal_pid_pos[YAW].data.ref
+                ,(float)gimbal_pid_pos[YAW].data.fdb
+                ,(float)gimbal_pid_pos[YAW].data.out
+                ,(float)gimbal_motors[YAW].getCurrent()
+                ,(float)gimbal_motors[YAW].getSpeed()
+                ,(float)gimbal_motors[YAW].getTemp()
+                ,(float)gimbal_motors[YAW].getFaultCode()
+                //以下是额外内容,需要额外调用函数
+                // ,(float)gimbal_motors[YAW].getMode()
+                // ,(float)gimbal_motors[YAW].getMileage()
+                // ,(float)gimbal_motors[YAW].getPosition()
             );      
             break;   
         case debug_idle:
