@@ -188,13 +188,15 @@ public:
     int32_t getMileage() const { return __extra_status.mileage; }
     uint16_t getPosition() const { return __extra_status.position; }
     uint8_t getMode() const { return __extra_status.mode; }
-    private:
+
+private:
     uint8_t _id;
     uint8_t _port_num; // 发送使用的串口ID
     MotorDriveStatus __drive_status; // 上次的常规反馈状态
     MotorExtraStatus __extra_status; // 上次的额外反馈状态
     uint8_t _out_packet[MOTOR_PACKET_SIZE]; // 用于生成指令的缓冲区
     uint8_t _in_packet[MOTOR_PACKET_SIZE];  // 用于解析反馈的缓冲区
+    MotorMode _current_mode; // 当前运行模式
     // 内部通用的填包逻辑
     void buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8_t d6 = 0, uint8_t d7 = 0);
     // 存储用户注册的发送函数指针

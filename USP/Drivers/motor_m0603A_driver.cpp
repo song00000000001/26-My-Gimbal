@@ -81,8 +81,9 @@ void BenMoMotor::buildBasicPacket(uint8_t* buf, uint8_t reg, uint16_t val, uint8
  * 模式值: 0x00 开环, 0x01 电流环, 0x02 速度环, 0x03 位置环
  */
 void BenMoMotor::sendModeCmd(MotorMode mode_val) {
+    _current_mode = mode_val;
     // 使用 static_cast 将强类型枚举转为底层数字
-    buildBasicPacket(_out_packet, 0xA0, static_cast<uint16_t>(mode_val) << 8);
+    buildBasicPacket(_out_packet, 0xA0, static_cast<uint16_t>(_current_mode) << 8);
 }
 
 /**
