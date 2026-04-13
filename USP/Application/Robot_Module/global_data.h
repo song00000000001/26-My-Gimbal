@@ -29,6 +29,7 @@ typedef struct {
     //uint8_t motor_accel_time; ///< 电机加速时间，单位ms/1rpm，0表示最快
     //bool motor_brake_enable; ///< 电机刹车使能，true表示启用刹车，false表示不刹车
     //uint8_t motor_mode; ///< 电机模式，0表示电流环模式，1表示速度环模式，2表示位置环模式
+    MotorMode motor_mode; ///< 电机模式，OPEN_LOOP=0, CURRENT_LOOP=1, SPEED_LOOP=2, POSITION_LOOP=3
     bool angle_loop_enable; ///< 由于角度环串速度环需要单独调试，这里增加一个开关用于切换
     float spd_target_rpm; ///< 用于单独调速度环时给定速度target，单位为RPM
     bool spd_feedback_source; ///< 用于切换速度环反馈数据源, false表示使用电机速度反馈，true表示使用IMU角速度数据

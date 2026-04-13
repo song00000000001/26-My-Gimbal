@@ -23,7 +23,7 @@ void task_motor_ctrl(void *arg)
     Debugger.spd_feedback_source = false;               // 默认使用电机速度反馈
     Debugger.enable_debug_mode = debug_mtvofa_monitor;  // 默认开启mtvofa监控模式
     Debugger.spd_target_rpm = 0.0f;                     // 速度环单独调试时的目标速度，单位为RPM
-
+    Debugger.motor_mode = MotorMode::CURRENT_LOOP;     // 默认电流环模式
     /**
      * @brief PID参数初始化
      */
@@ -79,7 +79,7 @@ void task_motor_ctrl(void *arg)
         }
         else{
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-            gimbal_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out); 
+            gimbal_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out/10.0f); // 这里除以10是实测得到的，
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
             gimbal_motors[YAW].sendCurrentCtrl(gimbal_pid_spd[YAW].data.out);
         }
@@ -122,7 +122,7 @@ static void motor_init(uint8_t port_id)
         motor_delay();
         gimbal_motors[i].sendEnableCmd(true); // 使能
         motor_delay();
-        gimbal_motors[i].sendModeCmd(MotorMode::OPEN_LOOP); // 切换到电流环模式
+        gimbal_motors[i].sendModeCmd(Debugger.motor_mode);
         motor_delay();
     }
 }
@@ -169,3 +169,41 @@ static void motor_disable()
     }
 }
 
+
+/** 
+  * @brief 电机测试总结
+  * @details
+电机使劲转几次后容易自己从电流环退出到开环。不清楚原因。反馈模式一直是1电流环模式。
+重新失能使能发一次模式就好了。
+# 开环模式
+输出0.90基本能克服起转静摩擦。
+输出0.8，固定时反馈是80ma=0.08a左右，相差10倍。
+转起来后就在50~60ma左右。手动正反转能跑到800ma/-337ma。
+25v ，给4，反馈最大1260，消耗0.9a。静态0.062a。最快410rpm。
+12v，给4，最大590，消耗0.47a。静态0.095a。最快180rpm。
+
+| 输出/反馈电流平均，转速平均 | ma  | rpm     |
+| -------------- | --- | ------- |
+| 0.9            | 50  | 15.19   |
+| 1              | 55  | 20.694  |
+| 2              | 67  | 74.02   |
+| 3              | 71  | 127.762 |
+| 4              | 80  | 182.11  |
+
+- 测试输出固定0.9，电机固定（堵转），电压12v，电流反馈平均值0.09，电压逐渐上升到24v，反馈一路上升到0.21。
+- 感觉在12v下，可以近似认为输出0.9就是静态给0.09ma的输出。也可能是电压或者力矩。开环大概可以这么计算吧。
+# 电流环模式
+- 电机固定（堵转）。（0.1~0.5输出下，电压从10v~25v下响应基本一致）
+	- 输出一个阶跃信号，从0到0.1，反馈电流均值0.1a，响应91ms，无超调，整体平稳，抖动幅度在0.0048a以内。
+	- 从0.1加到0.2，再加到0.3,再加到0.4测试响应和误差基本一致。电流环工作良好。
+	- 0.5时，响应一致，但是出现14ms超调，幅度0.0307a。稳态误差0.0044a。
+	- 0.6时，输出饱和，反馈均值在0.576a。（12v下饱和）
+- 测试最大起转输出。
+	- 一般从0给0.09的阶跃能直接转起来。
+	- 但是从0给0.07的阶跃，很久也不会转。然后0.07每次加0.1，最大在0.11才开始转。
+- 测试维持最小转速输出
+	- 给0.052，稳态误差0.0052a，用手辅助起转后（大于30rpm保持几百毫秒左右），能一直转，转速区间21~44rpm。用手轻轻辅助起转（起转速度大于22rpm)，转了2圈会停。最大转速也有44rpm。用手轻碰（起转速度小于20rpm），一般转不到1/2圈就停了。
+- 给0.06，并且轻轻触碰后，就能从0加速到172rpm左右。耗时7770ms。加速过程速度一直有反复震荡，震荡幅度基本都在9rpm左右，震荡周期基本在150ms左右。整体波形像是对数上升曲线叠加了正弦。
+- 给0.068，并且轻轻触碰后，就能从0加速到180rpm左右。
+- 根据以上测试结果，帮我设计起转死区代码思路和前馈实现思路以及前馈参数大致范围。
+*/
