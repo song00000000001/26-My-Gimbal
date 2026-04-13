@@ -38,7 +38,7 @@ void task_motor_ctrl(void *arg)
              * 由于云台是电机直驱，并没有经过减速，所以速度反馈数据既可以从电机取，也可以从IMU的角速度数据取。
              * 电机的速度数据会有一点毛刺和噪声，但总体还行；IMU的角速度数据相对更平滑，但有延迟。
              */
-            float gimbal_speed_feedback = Debugger.spd_feedback_source ? gimbal_motors[i].getSpeed() : imu_gyro_dps[i];
+            float gimbal_speed_feedback = Debugger.spd_feedback_source ? imu_gyro_dps[i] : gimbal_motors[i].getSpeed() ;
             if(Debugger.angle_loop_enable){
                 MyPid_Calc(&gimbal_pid_spd[i],gimbal_pid_pos[i].data.out,gimbal_speed_feedback);
             }
@@ -53,7 +53,6 @@ void task_motor_ctrl(void *arg)
         vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
         if(!Debugger.system_enable){
             motor_disable();
-            continue;
         }
         else{
             //gimbal_motors[PITCH].sendSpeedCtrl(gimbal_pid_spd[PITCH].data.out,Debugger.motor_accel_time,Debugger.motor_brake_enable); 
@@ -63,7 +62,7 @@ void task_motor_ctrl(void *arg)
         /**
          * @brief 系统使能状态切换检测
          */
-        static bool system_enable_last = false;
+        static bool system_enable_last = true;
         if(Debugger.system_enable && !system_enable_last){
             //系统从失能变为使能，重新初始化电机
             motor_init(motor_uart_id);
@@ -95,6 +94,7 @@ static void motor_init(uint8_t port_id)
     for (int i = 0; i < MOTOR_COUNT; i++) {
         
         gimbal_motors[i].setPortNum(port_id);// 设置串口ID
+        motor_delay();
         gimbal_motors[i].sendEnableCmd(true); // 使能
         motor_delay();
         gimbal_motors[i].sendModeCmd(MotorMode::CURRENT_LOOP); // 切换到电流环模式
@@ -113,6 +113,13 @@ void gimbal_pid_init(void)
                        0.0f, 0.0f,       // 积分限幅
                        0,  0);              //特殊模式下的增量限幅，这里无意义
         MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[i], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
+
+        MyPid_Init(&gimbal_pid_spd[i], MY_PID_MODE_POSITION, 0.0f, 0.0f, 0.0f, 0.007f);//dt根据任务周期设置，这里是7ms
+        MyPid_SetLimit(&gimbal_pid_spd[i],
+                       -4.0f,   4.0f,      // target_accum / out 限幅
+                       -1.0f, 1.0f,       // 积分限幅
+                       0,  0);              //特殊模式下的增量限幅，这里无意义
+        MyPid_SetIntegSplitThreshold(&gimbal_pid_spd[i], 5.0f); 
     }
 }
 

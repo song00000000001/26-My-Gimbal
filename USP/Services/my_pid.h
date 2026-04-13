@@ -77,7 +77,6 @@ typedef struct
 
     float dt;               ///< 控制周期，单位 s
     bool integ_enable;      ///< 是否启用积分
-    bool integ_split_enable;///< 是否启用积分分离
     bool d_split_enable;    ///< 是否启用微分分离（微分项只对测量值求导，避免参考值突变引起微分峰值）
 } MyPid;
 

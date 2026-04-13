@@ -32,8 +32,7 @@ void MyPid_Init(MyPid *pid,
     pid->dt = dt;
 
     pid->integ_enable = true;
-    pid->integ_split_enable = false;
-    pid->d_split_enable = false;
+    pid->d_split_enable = true;
     
     pid->limit.out_min = 0;
     pid->limit.out_max =  0;
@@ -72,6 +71,11 @@ void MyPid_SetLimit(MyPid *pid,
     pid->limit.delta_out_max = delta_out_max;
 }
 
+/**
+ * @brief 设置积分分离阈值（绝对误差超过阈值时暂停并清空积分）
+ * @param pid PID对象指针
+ * @param threshold 阈值，单位与误差相同。如果设置为0则禁用。负数自动转换为正数。
+ */
 void MyPid_SetIntegSplitThreshold(MyPid *pid, float threshold)
 {
     if (pid == 0) return;
@@ -124,7 +128,7 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
     case MY_PID_MODE_POSITION:
     {
         bool integ_allow = pid->integ_enable;
-        if (integ_allow && pid->integ_split_enable)
+        if (integ_allow)
         {
             float th = pid->limit.integ_split_threshold;
             if (th > 0.0f && fabsf(pid->data.err) > th)
@@ -169,10 +173,10 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
     case MY_PID_MODE_INCREMENTAL:
     {
         bool integ_allow = pid->integ_enable;
-        if (integ_allow && pid->integ_split_enable)
+        if (integ_allow)
         {
             float th = pid->limit.integ_split_threshold;
-            if (th > 0.0f && fabsf(pid->data.err) > th)
+            if (th > 0.0f && fabsf(pid->data.err) > th)//如果设置了非零的积分分离阈值，则启用积分分离
             {
                 integ_allow = false;
             }
