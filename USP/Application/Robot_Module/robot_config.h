@@ -24,6 +24,8 @@ extern "C" {
 
 #define adc_start(adc_buf)   HAL_ADC_Start_DMA(&hadc1, adc_buf, 1)
 
+#define motor_delay() vTaskDelay(pdMS_TO_TICKS(motor_comm_delay_ms)) // 电机通信延时，确保电机通信正常
+
 #ifdef __cplusplus
 }
 #endif

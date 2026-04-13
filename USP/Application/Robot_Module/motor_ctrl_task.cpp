@@ -3,39 +3,72 @@
 #include "robot_config.h"
 #include "comm_protocal.h"
 
-
 static void motor_init(uint8_t port_id);
 static void motor_disable();
 static void gimbal_pid_init(void);
 
-
-
-
-
 /**
  * @brief 电机控制任务
  */
-
 void task_motor_ctrl(void *arg)
 {
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms); // 7ms周期，确保电机通信正常
+    vTaskDelay(pdMS_TO_TICKS(1200)); // 等待电机上电并且发完上电指令。
     motor_init(motor_uart_id); // 初始化电机
     gimbal_pid_init(); // 初始化PID控制器
-
+    Debugger.system_enable = true; // 系统使能
     for (;;)
     {
+        /**
+         * @brief 先请求反馈
+         * 暂时注释掉，目前不需要获取电机的里程和位置等额外反馈数据，后续如果需要再打开。
+         */
+        // vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+        // gimbal_motors[YAW].sendQueryExtraCmd(); // 请求额外反馈，获取里程和精确位置等信息
         
+        /**
+         * @brief 计算控制输出
+         */
         for(int i=0;i<MOTOR_COUNT;i++){
             MyPid_Calc(&gimbal_pid_pos[i],hold_angle_deg[i],imu_angle_deg[i]);
+            /**
+             * @brief 速度环的计算
+             * 由于云台是电机直驱，并没有经过减速，所以速度反馈数据既可以从电机取，也可以从IMU的角速度数据取。
+             * 电机的速度数据会有一点毛刺和噪声，但总体还行；IMU的角速度数据相对更平滑，但有延迟。
+             */
+            float gimbal_speed_feedback = Debugger.spd_feedback_source ? gimbal_motors[i].getSpeed() : imu_gyro_dps[i];
+            if(Debugger.angle_loop_enable){
+                MyPid_Calc(&gimbal_pid_spd[i],gimbal_pid_pos[i].data.out,gimbal_speed_feedback);
+            }
+            else{
+                MyPid_Calc(&gimbal_pid_spd[i],Debugger.spd_target_rpm,gimbal_speed_feedback);
+            }
         }
-
+       
+        /**
+         * @brief 发送控制指令
+         */
         vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-        gimbal_motors[YAW].sendSpeedCtrl(gimbal_pid_pos[YAW].data.out,Debugger.motor_accel_time,Debugger.motor_brake_enable); // 速度控制指令)
+        if(!Debugger.system_enable){
+            motor_disable();
+            continue;
+        }
+        else{
+            //gimbal_motors[PITCH].sendSpeedCtrl(gimbal_pid_spd[PITCH].data.out,Debugger.motor_accel_time,Debugger.motor_brake_enable); 
+            gimbal_motors[YAW].sendCurrentCtrl(gimbal_pid_spd[YAW].data.out);
+        }
         
-        vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-        gimbal_motors[YAW].sendQueryExtraCmd(); // 请求额外反馈，获取里程和精确位置等信息
+        /**
+         * @brief 系统使能状态切换检测
+         */
+        static bool system_enable_last = false;
+        if(Debugger.system_enable && !system_enable_last){
+            //系统从失能变为使能，重新初始化电机
+            motor_init(motor_uart_id);
+        }
+        system_enable_last = Debugger.system_enable;
         
         #if STACK_REMAIN_MONITER_ENABLE
         StackWaterMark_Get(motor_ctrl);
@@ -55,22 +88,17 @@ void task_motor_ctrl(void *arg)
  */
 static void motor_init(uint8_t port_id)
 {
-    vTaskDelay(pdMS_TO_TICKS(1200)); // 等待系统稳定
     // 电机初始化逻辑
     // 1. 注册发送函数指针，供驱动内部调用发送指令包
     BenMoMotor::registerSendFunction(send_motor_packet);
     // 2. 设置发送使用的串口ID
     for (int i = 0; i < MOTOR_COUNT; i++) {
-        vTaskDelay(pdMS_TO_TICKS(10));
-
+        
         gimbal_motors[i].setPortNum(port_id);// 设置串口ID
-        vTaskDelay(pdMS_TO_TICKS(10));
-
         gimbal_motors[i].sendEnableCmd(true); // 使能
-        vTaskDelay(pdMS_TO_TICKS(10));
-
-        gimbal_motors[i].sendModeCmd(MotorMode::SPEED_LOOP); // 切换到速度环模式
-        vTaskDelay(pdMS_TO_TICKS(10));
+        motor_delay();
+        gimbal_motors[i].sendModeCmd(MotorMode::CURRENT_LOOP); // 切换到电流环模式
+        motor_delay();
     }
 }
 
@@ -95,9 +123,8 @@ void gimbal_pid_init(void)
 static void motor_disable()
 {
     for (int i = 0; i < MOTOR_COUNT; i++) {
-        vTaskDelay(pdMS_TO_TICKS(10));
+        motor_delay();
         gimbal_motors[i].sendEnableCmd(false); // 失能
-        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 

@@ -142,52 +142,40 @@ public:
      * @param port_id 串口ID，例如 1 表示 USART1
      */
     void setPortNum(uint8_t port_id) { _port_num = port_id; }
+    
     // ==================== [发送指令生成] ====================
 
-    // 生成切换模式指令 (0xA0)
     void sendModeCmd(MotorMode mode_val);
-
-    // 生成使能/失能指令 (0xA0 0x08/0x09)
     void sendEnableCmd(bool enable);
-
-    // 生成速度控制指令 (0x64)
-    // target_rpm: 目标转速(0.1RPM)。实际写入值 = target_rpm * 10
-    // accel_time: 加速时间 (ms/1rpm), 0表示最快。默认1。
-    // brake: 是否刹车 (仅速度环有效)
     void sendSpeedCtrl(float target_rpm, uint8_t accel_time = 0, bool brake = false);
-
-    // 生成电流/力矩控制指令 (0x64)
-    // current_raw: -32767 ~ 32767 (对应 -4A 到 4A)
     void sendCurrentCtrl(float current_raw);
-
-    // 生成位置控制指令 (0x64)
     void sendPositionCtrl(float position_value, uint8_t accel_time = 0);
-
-    // 生成请求其他反馈指令 (0x74) - 获取里程和精确位置
     void sendQueryExtraCmd();
 
     // ==================== [数据解析逻辑] ====================
 
-    // 解析 ID 0x65 的反馈数据 (速度、电流、温度)
     bool parseDriveFeedback(const uint8_t* buf);
-
-    // 解析 ID 0x75/0x76 的反馈数据 (里程、位置、模式)
     bool parseExtraFeedback(const uint8_t* buf);
-
-    // 解析 ID 0xA0 的模式反馈数据
     bool parseModeFeedback(const uint8_t* buf);
-
-    // CRC8 校验计算 (CRC-8/MAXIM)
     static uint8_t calculateCRC8(const uint8_t* data, uint8_t len);
 
     //获取反馈数据
-    float getSpeed() const { return __drive_status.speed/10.0; }///< 速度 (int16_t, 实际值 = speed / 10.0 RPM)
+    /**
+     * @brief 获取当前速度，单位为RPM
+     * @details 由于电机反馈的速度值是以0.1RPM为单位的整数，所以需要除以10.0f来转换成实际的RPM值返回。
+     * @return 当前速度，单位为RPM
+     * @attention 在速度环模式是速度，位置环模式却是编码器值，范围-16384~16384，对应-180°~180°。
+     */
+    float getSpeed() const 
+    { 
+        return __drive_status.speed/10.0; 
+    }
     float getCurrent() const { return __drive_status.current *4/32767.0f; }///< 电流 (int16_t, -32767~32767 对应 -4A~4A),这里直接转换成实际电流值返回，单位为A
     uint8_t getTemp() const { return __drive_status.temp; }
     uint8_t getFaultCode() const { return __drive_status.fault_code; }
     int32_t getMileage() const { return __extra_status.mileage; }
     uint16_t getPosition() const { return __extra_status.position; }
-    uint8_t getMode() const { return __extra_status.mode; }
+    uint8_t getMode() const { return __extra_status.mode; }///< 0~3 分别对应开环、电流环、速度环、位置环
 
 private:
     uint8_t _id;
