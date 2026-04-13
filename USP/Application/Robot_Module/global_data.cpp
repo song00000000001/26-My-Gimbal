@@ -3,7 +3,7 @@
 #include "internal.h"
 
 
-Debug_Data_t Debugger={.enable_debug_mode=debug_mtvofa_monitor};//调试数据结构体实例化
+Debug_Data_t Debugger={};//调试数据结构体实例化
 
 #if STACK_REMAIN_MONITER_ENABLE
 stack_remain_t Stack_Remain={255};

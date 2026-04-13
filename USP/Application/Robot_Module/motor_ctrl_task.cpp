@@ -18,6 +18,10 @@ void task_motor_ctrl(void *arg)
     vTaskDelay(pdMS_TO_TICKS(1200)); // 等待电机上电并且发完上电指令。
     motor_init(motor_uart_id); // 初始化电机
     gimbal_pid_init(); // 初始化PID控制器
+    Debugger.angle_loop_enable = true; // 默认开启角度环串速度环的调试模式
+    Debugger.spd_feedback_source = false; // 默认使用电机速度反馈
+    Debugger.enable_debug_mode = debug_mtvofa_monitor; // 默认开启mtvofa监控模式
+    Debugger.spd_target_rpm = 0.0f; // 速度环单独调试时的目标速度，单位为RPM
     Debugger.system_enable = true; // 系统使能
     for (;;)
     {
@@ -50,12 +54,15 @@ void task_motor_ctrl(void *arg)
         /**
          * @brief 发送控制指令
          */
-        vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+        
         if(!Debugger.system_enable){
+            vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
             motor_disable();
         }
         else{
-            //gimbal_motors[PITCH].sendSpeedCtrl(gimbal_pid_spd[PITCH].data.out,Debugger.motor_accel_time,Debugger.motor_brake_enable); 
+            vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+            gimbal_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out); 
+            vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
             gimbal_motors[YAW].sendCurrentCtrl(gimbal_pid_spd[YAW].data.out);
         }
         
