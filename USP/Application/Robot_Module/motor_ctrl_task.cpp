@@ -111,23 +111,38 @@ static void motor_init(uint8_t port_id)
 
 void gimbal_pid_init(void)
 {
-    vTaskDelay(1000);
-    for(uint8_t i=0;i<MOTOR_COUNT;i++){
-        MyPid_Init(&gimbal_pid_pos[i], MY_PID_MODE_POSITION, 1.2f,100.0f, 0.0f,motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
-        // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
-        MyPid_SetLimit(&gimbal_pid_pos[i],
-                       -170.0f,   170.0f,      // target_accum / out 限幅
-                       0.0f, 0.0f,       // 积分限幅
-                       0,  0);              //特殊模式下的增量限幅，这里无意义
-        MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[i], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
+    vTaskDelay(1000);//等imu输出
+    MyPid_Init(&gimbal_pid_pos[YAW], MY_PID_MODE_POSITION, 1.2f,0.0f, 0.0f,motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
+    // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
+    MyPid_SetLimit(&gimbal_pid_pos[YAW],
+                    -170.0f,   170.0f,      // target_accum / out 限幅
+                    0.0f, 0.0f,       // 积分限幅
+                    0,  0);              //特殊模式下的增量限幅，这里无意义
+    MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[YAW], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
+    gimbal_pid_pos[YAW].integ_enable = false; // 角度环暂时不启用积分
 
-        MyPid_Init(&gimbal_pid_spd[i], MY_PID_MODE_POSITION, 0.006f, 0.01f, 0.0002f, motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
-        MyPid_SetLimit(&gimbal_pid_spd[i],
-                       -4.0f,   4.0f,      // target_accum / out 限幅
-                       -1.0f, 1.0f,       // 积分限幅
-                       0,  0);              //特殊模式下的增量限幅，这里无意义
-        MyPid_SetIntegSplitThreshold(&gimbal_pid_spd[i], 30.0f); 
-    }
+    MyPid_Init(&gimbal_pid_spd[YAW], MY_PID_MODE_POSITION, 0.006f, 0.01f, 0.0002f, motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
+    MyPid_SetLimit(&gimbal_pid_spd[YAW],
+                    -4.0f,   4.0f,      // target_accum / out 限幅
+                    -1.0f, 1.0f,       // 积分限幅
+                    0,  0);              //特殊模式下的增量限幅，这里无意义
+    MyPid_SetIntegSplitThreshold(&gimbal_pid_spd[YAW], 30.0f); 
+    
+    MyPid_Init(&gimbal_pid_pos[PITCH], MY_PID_MODE_POSITION, 1.0f,0.0f, 0.0f,motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
+    // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
+    MyPid_SetLimit(&gimbal_pid_pos[PITCH],
+                    -170.0f,   170.0f,      // target_accum / out 限幅
+                    0.0f, 0.0f,       // 积分限幅
+                    0,  0);              //特殊模式下的增量限幅，这里无意义
+    MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[PITCH], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
+    gimbal_pid_pos[PITCH].integ_enable = false; // 角度环暂时不启用积分
+
+    MyPid_Init(&gimbal_pid_spd[PITCH], MY_PID_MODE_POSITION, 0.003f, 0.01f, 0.0f, motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
+    MyPid_SetLimit(&gimbal_pid_spd[PITCH],
+                    -4.0f,   4.0f,      // target_accum / out 限幅
+                    -1.0f, 1.0f,       // 积分限幅
+                    0,  0);              //特殊模式下的增量限幅，这里无意义
+    MyPid_SetIntegSplitThreshold(&gimbal_pid_spd[PITCH], 30.0f); 
 }
 
 /**
