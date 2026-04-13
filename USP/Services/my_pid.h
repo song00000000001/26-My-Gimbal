@@ -38,6 +38,7 @@ typedef struct
     float kp;
     float ki;
     float kd;
+    float kff; // 前馈增益
 } MyPidParam;
 
 /**
@@ -56,6 +57,7 @@ typedef struct
     float pout;             ///< 比例项
     float iout;             ///< 积分项
     float dout;             ///< 微分项
+    float ffout;            ///< 前馈项
 
     float out;              ///< 当前输出
     float out_last;         ///< 上次输出
@@ -76,6 +78,7 @@ typedef struct
     MyPidData data;
 
     float dt;               ///< 控制周期，单位 s
+    float param_scale;      ///< 参数缩放，便于调参时使用较大的整数参数，内部自动缩放到实际值
     bool integ_enable;      ///< 是否启用积分
     bool d_split_enable;    ///< 是否启用微分分离（微分项只对测量值求导，避免参考值突变引起微分峰值）
 } MyPid;
@@ -84,16 +87,27 @@ typedef struct
  * @brief 初始化PID对象
  */
 void MyPid_Init(MyPid *pid,
-                MyPidMode mode,
-                float kp,
-                float ki,
-                float kd,
-                float dt);
+                MyPidMode mode=MY_PID_MODE_POSITION,
+                float param_scale=1.0f,
+                float dt=0.007f);
 
 /**
  * @brief 设置PID参数
+ * @param pid PID对象指针
+ * @param kp 比例增益
+ * @param ki 积分增益   
+ * @param kd 微分增益
+ * @param kff 前馈增益
+ * @details 内部会将参数乘以pid->param_scale进行缩放，方便调参时使用较大的整数参数，例如1000，实际生效的增益会是0.001倍
  */
-void MyPid_SetParam(MyPid *pid, float kp, float ki, float kd);
+void MyPid_SetParam(MyPid *pid, float kp, float ki, float kd, float kff);
+
+/**
+ * @brief 设置PID参数（结构体版本）
+ * @param pid PID对象指针
+ * @param param PID参数结构体指针
+ */
+void MyPid_SetParam_Struct(MyPid *pid, MyPidParam *param);
 
 /**
  * @brief 设置PID输出限幅
@@ -101,10 +115,10 @@ void MyPid_SetParam(MyPid *pid, float kp, float ki, float kd);
 void MyPid_SetLimit(MyPid *pid,
                     float out_min,
                     float out_max,
-                    float integ_min,
-                    float integ_max,
-                    float delta_out_min,
-                    float delta_out_max);
+                    float integ_min=0.0f,
+                    float integ_max=0.0f,
+                    float delta_out_min=0.0f,
+                    float delta_out_max=0.0f);
 
 /**
  * @brief 设置积分分离阈值（绝对误差超过阈值时暂停积分）

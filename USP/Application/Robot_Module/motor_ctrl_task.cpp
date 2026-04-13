@@ -18,11 +18,27 @@ void task_motor_ctrl(void *arg)
     vTaskDelay(pdMS_TO_TICKS(1200)); // 等待电机上电并且发完上电指令。
     motor_init(motor_uart_id); // 初始化电机
     gimbal_pid_init(); // 初始化PID控制器
-    Debugger.angle_loop_enable = true; // 默认开启角度环串速度环的调试模式
-    Debugger.spd_feedback_source = false; // 默认使用电机速度反馈
-    Debugger.enable_debug_mode = debug_mtvofa_monitor; // 默认开启mtvofa监控模式
-    Debugger.spd_target_rpm = 0.0f; // 速度环单独调试时的目标速度，单位为RPM
-    Debugger.system_enable = true; // 系统使能
+    Debugger.system_enable = true;// 系统使能
+    Debugger.angle_loop_enable = false;                 // 关闭角度环串速度环
+    Debugger.spd_feedback_source = false;               // 默认使用电机速度反馈
+    Debugger.enable_debug_mode = debug_mtvofa_monitor;  // 默认开启mtvofa监控模式
+    Debugger.spd_target_rpm = 0.0f;                     // 速度环单独调试时的目标速度，单位为RPM
+
+    /**
+     * @brief PID参数初始化
+     */
+    gimbal_pid_param_pos[YAW]={
+        .kp = 0.0f,
+        .ki = 0.0f,
+        .kd = 0.0f,
+        .kff= 0.0f
+    };
+    gimbal_pid_param_spd[YAW]={
+        .kp = 0.0f,
+        .ki = 0.0f,
+        .kd = 0.0f,
+        .kff= 0.0f
+    };
     for (;;)
     {
         /**
@@ -35,6 +51,8 @@ void task_motor_ctrl(void *arg)
         /**
          * @brief 计算控制输出
          */
+        MyPid_SetParam_Struct(&gimbal_pid_pos[YAW],&gimbal_pid_param_pos[YAW]);
+        MyPid_SetParam_Struct(&gimbal_pid_spd[YAW],&gimbal_pid_param_spd[YAW]);
         for(int i=0;i<MOTOR_COUNT;i++){
             MyPid_Calc(&gimbal_pid_pos[i],hold_angle_deg[i],imu_angle_deg[i]);
             /**
@@ -109,40 +127,34 @@ static void motor_init(uint8_t port_id)
     }
 }
 
+void Mypid_init_m0603a_pos(MyPid *pid)
+{
+    MyPid_Init(pid, MY_PID_MODE_POSITION,1.0f,motor_comm_delay_ms/1000.0f);
+    MyPid_SetLimit(pid,
+                    -170.0f,   170.0f, // out 限幅
+                    0.0f, 0.0f,        // 积分限幅
+                    0.0f, 0.0f         // 增量输出限幅
+                    );            
+    MyPid_SetIntegSplitThreshold(pid, 0.0f);
+    pid->integ_enable = false;
+}
+
+void Mypid_init_m0603a_spd(MyPid *pid)
+{
+    MyPid_Init(pid, MY_PID_MODE_POSITION,1.0f,motor_comm_delay_ms/1000.0f);
+    MyPid_SetLimit(pid,
+                    -4.0f,   4.0f,    // out 限幅
+                    0.0f, 0.0f,       // 积分限幅
+                    0.0f, 0.0f         // 增量输出限幅
+                    );            
+    MyPid_SetIntegSplitThreshold(pid, 0.0f);
+    pid->integ_enable = false;
+}
+
 void gimbal_pid_init(void)
 {
-    vTaskDelay(1000);//等imu输出
-    MyPid_Init(&gimbal_pid_pos[YAW], MY_PID_MODE_POSITION, 1.2f,100.0f, 0.0f,motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
-    // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
-    MyPid_SetLimit(&gimbal_pid_pos[YAW],
-                    -170.0f,   170.0f,      // target_accum / out 限幅
-                    -10.0f, 10.0f,       // 积分限幅
-                    0,  0);              //特殊模式下的增量限幅，这里无意义
-    MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[YAW], 10.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
-    gimbal_pid_pos[YAW].integ_enable = ture;
-
-    MyPid_Init(&gimbal_pid_spd[YAW], MY_PID_MODE_POSITION, 0.06f, 0.01f, 0.0f, motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
-    MyPid_SetLimit(&gimbal_pid_spd[YAW],
-                    -4.0f,   4.0f,      // target_accum / out 限幅
-                    -1.0f, 1.0f,       // 积分限幅
-                    0,  0);              //特殊模式下的增量限幅，这里无意义
-    MyPid_SetIntegSplitThreshold(&gimbal_pid_spd[YAW], 30.0f); 
-    
-    MyPid_Init(&gimbal_pid_pos[PITCH], MY_PID_MODE_POSITION, 1.0f,0.0f, 0.0f,motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
-    // 输出为电机转速，电机空载转速400rpm，额定100rpm，极值参考驱动函数。
-    MyPid_SetLimit(&gimbal_pid_pos[PITCH],
-                    -170.0f,   170.0f,      // target_accum / out 限幅
-                    0.0f, 0.0f,       // 积分限幅
-                    0,  0);              //特殊模式下的增量限幅，这里无意义
-    MyPid_SetIntegSplitThreshold(&gimbal_pid_pos[PITCH], 5.0f); // 误差超过5度时暂停并清空积分，避免大误差引起的积分风暴。
-    gimbal_pid_pos[PITCH].integ_enable = false; // 角度环暂时不启用积分
-
-    MyPid_Init(&gimbal_pid_spd[PITCH], MY_PID_MODE_POSITION, 0.003f, 0.01f, 0.0f, motor_comm_delay_ms/1000.0f);//dt根据任务周期设置，这里是7ms
-    MyPid_SetLimit(&gimbal_pid_spd[PITCH],
-                    -4.0f,   4.0f,      // target_accum / out 限幅
-                    -1.0f, 1.0f,       // 积分限幅
-                    0,  0);              //特殊模式下的增量限幅，这里无意义
-    MyPid_SetIntegSplitThreshold(&gimbal_pid_spd[PITCH], 30.0f); 
+    Mypid_init_m0603a_pos(&gimbal_pid_pos[YAW]);
+    Mypid_init_m0603a_spd(&gimbal_pid_spd[YAW]);
 }
 
 /**

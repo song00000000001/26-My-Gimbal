@@ -18,39 +18,34 @@ float MyPid_AngleWrapDeg(float err_deg)
 
 void MyPid_Init(MyPid *pid,
                 MyPidMode mode,
-                float kp,
-                float ki,
-                float kd,
+                float param_scale,
                 float dt)
 {
     if (pid == 0) return;
 
     pid->mode = mode;
-    pid->param.kp = kp;
-    pid->param.ki = ki;
-    pid->param.kd = kd;
+    pid->param_scale = param_scale;
     pid->dt = dt;
 
     pid->integ_enable = true;
     pid->d_split_enable = true;
-    
-    pid->limit.out_min = 0;
-    pid->limit.out_max =  0;
-    pid->limit.integ_min = 0;
-    pid->limit.integ_max =  0;
-    pid->limit.integ_split_threshold = 0;
-    pid->limit.delta_out_min = 0;
-    pid->limit.delta_out_max =  0;
 
     MyPid_Reset(pid);
 }
 
-void MyPid_SetParam(MyPid *pid, float kp, float ki, float kd)
+void MyPid_SetParam(MyPid *pid, float kp, float ki, float kd, float kff)
 {
     if (pid == 0) return;
-    pid->param.kp = kp;
-    pid->param.ki = ki;
-    pid->param.kd = kd;
+    pid->param.kp = kp * pid->param_scale;
+    pid->param.ki = ki * pid->param_scale;
+    pid->param.kd = kd * pid->param_scale;
+    pid->param.kff = kff * pid->param_scale;
+}
+
+void MyPid_SetParam_Struct(MyPid *pid, MyPidParam *param)
+{
+    if (pid == 0 || param == 0) return;
+    MyPid_SetParam(pid, param->kp, param->ki, param->kd, param->kff);
 }
 
 void MyPid_SetLimit(MyPid *pid,
@@ -97,7 +92,7 @@ void MyPid_Reset(MyPid *pid)
     pid->data.pout = 0.0f;
     pid->data.iout = 0.0f;
     pid->data.dout = 0.0f;
-
+    pid->data.ffout = 0.0f;
     pid->data.out = 0.0f;
     pid->data.out_last = 0.0f;
 
@@ -163,7 +158,9 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
                              (pid->data.err - pid->data.err_last) / pid->dt;
         }
 
-        pid->data.out = pid->data.pout + pid->data.iout + pid->data.dout;
+        pid->data.ffout = pid->param.kff * ref;
+
+        pid->data.out = pid->data.pout + pid->data.iout + pid->data.dout + pid->data.ffout;
         pid->data.out = my_clamp(pid->data.out,
                                  pid->limit.out_min,
                                  pid->limit.out_max);
@@ -206,7 +203,9 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
             pid->data.dout = pid->param.kd * dde / pid->dt;
         }
 
-        pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout;
+        pid->data.ffout = pid->param.kff * (ref - pid->data.fdb);
+
+        pid->data.delta_out = pid->data.pout + pid->data.iout + pid->data.dout + pid->data.ffout;
         pid->data.delta_out = my_clamp(pid->data.delta_out,
                                        pid->limit.delta_out_min,
                                        pid->limit.delta_out_max);

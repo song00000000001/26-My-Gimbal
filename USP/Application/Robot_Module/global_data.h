@@ -82,6 +82,8 @@ typedef struct {
 
 extern MyPid gimbal_pid_pos[MOTOR_COUNT]; // PID控制器实例数组
 extern MyPid gimbal_pid_spd[MOTOR_COUNT]; // PID控制器实例数组
+extern MyPidParam gimbal_pid_param_pos[MOTOR_COUNT]; // PID参数实例数组
+extern MyPidParam gimbal_pid_param_spd[MOTOR_COUNT]; // PID参数实例数组
 extern float hold_angle_deg[2]; // 固定的目标位置，单位为度
 extern float imu_angle_deg[2]; // 来自IMU的当前角度反馈，单位为度
 extern float imu_gyro_dps[2]; // 来自IMU的角速度反馈，单位为度每秒
