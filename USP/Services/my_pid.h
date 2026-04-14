@@ -68,6 +68,16 @@ typedef struct
 } MyPidData;
 
 /**
+ * @brief PID功能开关
+ */
+typedef struct
+{
+    bool integ_enable;      ///< 是否启用积分
+    bool integ_split_enable;///< 是否启用积分分离（误差过大时暂停积分）
+    bool d_split_enable;    ///< 是否启用微分分离（微分项只对测量值求导，避免参考值突变引起微分峰值）
+} MyPid_Feature;
+
+/**
  * @brief PID控制器对象
  */
 typedef struct
@@ -79,9 +89,52 @@ typedef struct
 
     float dt;               ///< 控制周期，单位 s
     float param_scale;      ///< 参数缩放，便于调参时使用较大的整数参数，内部自动缩放到实际值
-    bool integ_enable;      ///< 是否启用积分
-    bool d_split_enable;    ///< 是否启用微分分离（微分项只对测量值求导，避免参考值突变引起微分峰值）
+    MyPid_Feature feature;        ///< 功能开关
 } MyPid;
+
+/**
+ * @brief PID串联开关
+ */
+typedef enum
+{
+    MY_PID_CURRENT_LOOP_ENABLE = 0x00,  ///< 电流环使能
+    MY_PID_SPEED_LOOP_ENABLE = 0x01,   ///< 速度环使能
+    MY_PID_ANGLE_LOOP_ENABLE = 0x02,   ///< 位置环使能
+} MyPidCascadeEnable;
+
+/**
+ * @brief PID调试对象
+ */
+typedef struct
+{
+    float ref;
+    float out_range;         
+    float integ_range;
+    //float integ_split_threshold;
+    MyPidParam param;
+    MyPid_Feature feature;
+} MyPid_Debug;
+
+/**
+ * @brief 3环串级PID调试对象，包含位置环、速度环、电流环的参数和功能开关
+ */
+typedef struct
+{
+    MyPidCascadeEnable cascade_enable;
+    MyPid_Debug pos;
+    MyPid_Debug spd;
+    MyPid_Debug cur;
+} MyPid_Debug_Struct;
+
+/**
+ * @brief 3环串级PID对象，包含位置环、速度环、电流环
+ */
+typedef struct
+{
+    MyPid pos;
+    MyPid spd;
+    MyPid cur;
+} MyPid_Struct;
 
 /**
  * @brief 初始化PID对象
@@ -108,6 +161,11 @@ void MyPid_SetParam(MyPid *pid, float kp, float ki, float kd, float kff);
  * @param param PID参数结构体指针
  */
 void MyPid_SetParam_Struct(MyPid *pid, MyPidParam *param);
+
+/**
+ * @brief 设置PID调试参数
+ */
+void MyPid_SetDebugParam_Struct(MyPid_Struct *pid, MyPid_Debug_Struct *param,float cur_fdb,float spd_fdb,float pos_fdb);
 
 /**
  * @brief 设置PID输出限幅

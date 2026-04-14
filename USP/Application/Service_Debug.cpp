@@ -107,16 +107,14 @@ void Task_VofaMonitor(void *arg){
             break;
         case debug_mtvofa_monitor:
             VofaMonitor::setDatas(0
-                ,(float)gimbal_pid_pos[YAW].data.ref
-                ,(float)gimbal_pid_pos[YAW].data.fdb
-                ,(float)gimbal_pid_pos[YAW].data.out
+                ,(float)g_pid[YAW].pos.data.ref
+                ,(float)g_pid[YAW].pos.data.fdb
+                ,(float)g_pid[YAW].spd.data.ref
+                ,(float)g_pid[YAW].spd.data.fdb
                 //,(float)imu_gyro_dps[YAW]//imu的角速度反馈，单位为度每秒
-                ,(float)gimbal_pid_spd[YAW].data.ref
-                ,(float)gimbal_pid_spd[YAW].data.fdb
-                ,(float)gimbal_pid_spd[YAW].data.out
-                ,(float)gimbal_pid_cur[YAW].data.ref
-                ,(float)gimbal_pid_cur[YAW].data.fdb
-                ,(float)gimbal_pid_cur[YAW].data.out
+                ,(float)g_pid[YAW].cur.data.ref
+                ,(float)g_pid[YAW].cur.data.fdb
+                ,(float)g_pid[YAW].cur.data.out
             );      
             /**
              * 关于响应

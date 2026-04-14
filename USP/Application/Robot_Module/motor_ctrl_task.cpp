@@ -12,104 +12,100 @@ static void gimbal_pid_init(void);
  */
 void task_motor_ctrl(void *arg)
 {
+    static bool system_enable_last = true;
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms); // 7ms周期，确保电机通信正常
     vTaskDelay(pdMS_TO_TICKS(1200)); // 等待电机上电并且发完上电指令。
     motor_init(motor_uart_id); // 初始化电机
     gimbal_pid_init(); // 初始化PID控制器
+
     Debugger.system_enable = true;// 系统使能
-    Debugger.angle_loop_enable = false;                 // 关闭角度环串速度环
-    Debugger.speed_loop_enable = false;                 // 关闭速度环串电流环
     Debugger.spd_feedback_source = false;               // 默认使用电机速度反馈
     Debugger.enable_debug_mode = debug_mtvofa_monitor;  // 默认开启mtvofa监控模式
-    Debugger.spd_target_rpm = 0.0f;                     // 速度环单独调试时的目标速度，单位为RPM
     Debugger.motor_mode = MotorMode::OPEN_LOOP;     // 默认电流环模式
+
+    g_pid_debug[YAW].cascade_enable = MY_PID_ANGLE_LOOP_ENABLE; // 默认位置环串速度环串电流环
     /**
      * @brief PID参数初始化
      */
-    gimbal_pid_param_pos[YAW]={
-        .kp = 1.0f,
-        .ki = 0.0f,
-        .kd = 0.0f,
-        .kff= 0.0f
+    g_pid_debug[YAW].pos={
+        .ref=0.0f,
+        .out_range=170.0f,
+        .integ_range=0.0f,
+        .param={
+                .kp = 1.0f,
+                .ki = 0.0f,
+                .kd = 0.0f,
+                .kff= 0.0f
+        },
+        .feature={
+            .integ_enable=false,
+            .d_split_enable=true
+        }
+        
     };
-    gimbal_pid_param_spd[YAW]={
-        .kp = 3.0f,
-        .ki = 10.0f,
-        .kd = 0.0f,
-        .kff= 1.15f
+    g_pid_debug[YAW].spd={
+        .ref=0.0f,
+        .out_range=0.6f,
+        .integ_range=0.1f,
+        .param={
+                .kp = 3.0f,
+                .ki = 10.0f,
+                .kd = 0.0f,
+                .kff= 1.15f
+        },
+        .feature={
+            .integ_enable=true,
+            .d_split_enable=true
+        }
     };
-    gimbal_pid_param_cur[YAW]={
-        .kp = 0.0f,
-        .ki = 300.0f,
-        .kd = 0.0f,
-        .kff= 0.0f
+    g_pid_debug[YAW].cur={
+        .ref=0.0f,
+        .out_range=4.0f,
+        .integ_range=4.0f,
+        .param={
+                .kp = 0.0f,
+                .ki = 300.0f,
+                .kd = 0.0f,
+                .kff= 0.0f
+        },
+        .feature={
+            .integ_enable=true,
+            .d_split_enable=true
+        }
     };
-    float cur_tar=0.0f;
-    float cur_out_maxmin=0.0f;
+    
     for (;;)
     {
         /**
-         * @brief 先请求反馈
-         * 暂时注释掉，目前不需要获取电机的里程和位置等额外反馈数据，后续如果需要再打开。
-         */
-        // vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-        // gimbal_motors[YAW].sendQueryExtraCmd(); // 请求额外反馈，获取里程和精确位置等信息
-        
-        /**
          * @brief 计算控制输出
          */
-        
-        MyPid_SetParam_Struct(&gimbal_pid_pos[YAW],&gimbal_pid_param_pos[YAW]);
-        MyPid_SetParam_Struct(&gimbal_pid_spd[YAW],&gimbal_pid_param_spd[YAW]);
-        MyPid_SetParam_Struct(&gimbal_pid_cur[YAW],&gimbal_pid_param_cur[YAW]);
         for(int i=0;i<MOTOR_COUNT;i++){
-            MyPid_Calc(&gimbal_pid_pos[i],hold_angle_deg[i],imu_angle_deg[i]);
-            /**
-             * @brief 速度环的计算
-             * 由于云台是电机直驱，并没有经过减速，所以速度反馈数据既可以从电机取，也可以从IMU的角速度数据取。
-             * 电机的速度数据会有一点编码器跳动带来的毛刺和噪声，但总体还行；IMU的角速度数据相对更平滑，但有延迟。
-             */
-            float gimbal_speed_feedback = Debugger.spd_feedback_source ? imu_gyro_dps[i] : gimbal_motors[i].getSpeed() ;
-            if(Debugger.angle_loop_enable){
-                MyPid_Calc(&gimbal_pid_spd[i],gimbal_pid_pos[i].data.out,gimbal_speed_feedback);
-            }
-            else{
-                MyPid_Calc(&gimbal_pid_spd[i],Debugger.spd_target_rpm,gimbal_speed_feedback);
-            }
-            // 电流环的计算
-            float cur_feedback = gimbal_motors[i].getCurrent();
-            gimbal_pid_cur[YAW].limit.out_max = cur_out_maxmin; // 电流环最大输出4
-            gimbal_pid_cur[YAW].limit.out_min = -cur_out_maxmin; // 电流环最小输出-4
-            if(Debugger.speed_loop_enable){
-                MyPid_Calc(&gimbal_pid_cur[i],gimbal_pid_spd[i].data.out,gimbal_motors[i].getCurrent());
-            }
-            else{
-               
-                MyPid_Calc(&gimbal_pid_cur[i],cur_tar,gimbal_motors[i].getCurrent());
-            }
+            float gimbal_speed_feedback = Debugger.spd_feedback_source ? g_imu_gyro_dps[i] : g_motors[i].getSpeed() ;
+            MyPid_SetDebugParam_Struct( &g_pid[i] , &g_pid_debug[i],
+                                        g_motors[i].getCurrent(),
+                                        gimbal_speed_feedback, 
+                                        g_imu_angle_deg[i]);
         }
        
         /**
          * @brief 发送控制指令
          */
-        
         if(!Debugger.system_enable){
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
             motor_disable();
         }
         else{
             // vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-            // gimbal_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out/10.0f);
+            // g_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out/10.0f);
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-            gimbal_motors[YAW].sendCurrentCtrl(gimbal_pid_cur[YAW].data.out);
+            g_motors[YAW].sendCurrentCtrl(g_pid[YAW].cur.data.out);
         }
         
         /**
          * @brief 系统使能状态切换检测
          */
-        static bool system_enable_last = true;
         if(Debugger.system_enable && !system_enable_last){
             //系统从失能变为使能，重新初始化电机
             motor_init(motor_uart_id);
@@ -140,11 +136,11 @@ static void motor_init(uint8_t port_id)
     // 2. 设置发送使用的串口ID
     for (int i = 0; i < MOTOR_COUNT; i++) {
         
-        gimbal_motors[i].setPortNum(port_id);// 设置串口ID
+        g_motors[i].setPortNum(port_id);// 设置串口ID
         motor_delay();
-        gimbal_motors[i].sendEnableCmd(true); // 使能
+        g_motors[i].sendEnableCmd(true); // 使能
         motor_delay();
-        gimbal_motors[i].sendModeCmd(Debugger.motor_mode);
+        g_motors[i].sendModeCmd(Debugger.motor_mode);
         motor_delay();
     }
 }
@@ -152,52 +148,29 @@ static void motor_init(uint8_t port_id)
 void Mypid_init_m0603a_pos(MyPid *pid)
 {
     MyPid_Init(pid, MY_PID_MODE_POSITION,1.0f,motor_comm_delay_ms/1000.0f);
-    MyPid_SetLimit(pid,
-                    -170.0f,   170.0f, // out 限幅
-                    0.0f, 0.0f,        // 积分限幅
-                    0.0f, 0.0f         // 增量输出限幅
-                    );            
-    MyPid_SetIntegSplitThreshold(pid, 0.0f);
-    pid->integ_enable = false;
+    // MyPid_SetLimit(pid,
+    //                 0.0f, 0.0f,        // out 限幅
+    //                 0.0f, 0.0f,        // 积分限幅
+    //                 0.0f, 0.0f         // 增量输出限幅
+    //                 );            
+    // MyPid_SetIntegSplitThreshold(pid, 0.0f);
 }
 
 void Mypid_init_m0603a_spd(MyPid *pid)
 {
-    /**
-     * @brief 速度环PID参数初始化
-     * 12v，电机模式电流环，最大电流0.6a。
-     */
     MyPid_Init(pid, MY_PID_MODE_POSITION,0.001f,motor_comm_delay_ms/1000.0f);
-    MyPid_SetLimit(pid,
-                    -0.6f, 0.6f,    // out 限幅
-                    -0.1f, 0.1f,       // 积分限幅
-                    0.0f, 0.0f         // 增量输出限幅
-                    );            
-    MyPid_SetIntegSplitThreshold(pid, 0.0f);
-    pid->integ_enable = false;
 }
 
 void Mypid_init_m0603a_cur(MyPid *pid)
 {
-    /**
-     * @brief 电流环PID参数初始化
-     * 12v，电机模式电流环，最大输出4，最大反馈电流0.6a。
-     */
     MyPid_Init(pid, MY_PID_MODE_POSITION,1.0f,motor_comm_delay_ms/1000.0f);
-    MyPid_SetLimit(pid,
-                    -4.0f,   4.0f,    // out 限幅
-                    -4.0f, 4.0f,       // 积分限幅
-                    0.0f, 0.0f         // 增量输出限幅
-                    );            
-    MyPid_SetIntegSplitThreshold(pid, 0.0f);
-    pid->integ_enable = false;
 }
 
 void gimbal_pid_init(void)
 {
-    Mypid_init_m0603a_pos(&gimbal_pid_pos[YAW]);
-    Mypid_init_m0603a_spd(&gimbal_pid_spd[YAW]);
-    Mypid_init_m0603a_cur(&gimbal_pid_cur[YAW]);
+    Mypid_init_m0603a_pos(&g_pid[YAW].pos);
+    Mypid_init_m0603a_spd(&g_pid[YAW].spd);
+    Mypid_init_m0603a_cur(&g_pid[YAW].cur);
 }
 
 /**
@@ -208,7 +181,7 @@ static void motor_disable()
 {
     for (int i = 0; i < MOTOR_COUNT; i++) {
         motor_delay();
-        gimbal_motors[i].sendEnableCmd(false); // 失能
+        g_motors[i].sendEnableCmd(false); // 失能
     }
 }
 

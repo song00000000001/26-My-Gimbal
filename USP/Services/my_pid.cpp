@@ -27,9 +27,6 @@ void MyPid_Init(MyPid *pid,
     pid->param_scale = param_scale;
     pid->dt = dt;
 
-    pid->integ_enable = true;
-    pid->d_split_enable = true;
-
     MyPid_Reset(pid);
 }
 
@@ -122,11 +119,11 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
     {
     case MY_PID_MODE_POSITION:
     {
-        bool integ_allow = pid->integ_enable;
+        bool integ_allow = pid->feature.integ_enable;
         if (integ_allow)
         {
             float th = pid->limit.integ_split_threshold;
-            if (th > 0.0f && fabsf(pid->data.err) > th)
+            if (th > 0.0f && fabsf(pid->data.err) > th&&pid->feature.integ_split_enable)//如果设置了非零的积分分离阈值，并且启用了积分分离功能，则当误差超过阈值时暂停积分
             {
                 integ_allow = false;
                 pid->data.iout = 0.0f;//误差过大时清除积分，避免积分影响到后续的控制
@@ -142,12 +139,12 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
                                       pid->limit.integ_min,
                                       pid->limit.integ_max);
         }
-        else if (!pid->integ_enable)
+        else if (!pid->feature.integ_enable)
         {
             pid->data.iout = 0.0f;
         }
 
-        if (pid->d_split_enable)
+        if (pid->feature.d_split_enable)
         {
             pid->data.dout = -pid->param.kd *
                              (pid->data.fdb - pid->data.fdb_last) / pid->dt;
@@ -169,11 +166,11 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
 
     case MY_PID_MODE_INCREMENTAL:
     {
-        bool integ_allow = pid->integ_enable;
+        bool integ_allow = pid->feature.integ_enable;
         if (integ_allow)
         {
             float th = pid->limit.integ_split_threshold;
-            if (th > 0.0f && fabsf(pid->data.err) > th)//如果设置了非零的积分分离阈值，则启用积分分离
+            if (th > 0.0f && fabsf(pid->data.err) > th&&pid->feature.integ_split_enable)//如果设置了非零的积分分离阈值，并且启用了积分分离功能，则当误差超过阈值时暂停积分
             {
                 integ_allow = false;
             }
@@ -194,7 +191,7 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
             pid->data.iout = 0.0f;
         }
 
-        if (pid->d_split_enable)
+        if (pid->feature.d_split_enable)
         {
             pid->data.dout = -pid->param.kd * dd_fdb / pid->dt;
         }
@@ -226,4 +223,35 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
     pid->data.delta_out_last = pid->data.delta_out;
 
     return pid->data.out;
+}
+
+void MyPid_SetDebugParam(MyPid *pid, MyPid_Debug *param){
+    if (pid == 0 || param == 0) return;
+    MyPid_SetParam_Struct(pid, &param->param);
+    pid->feature = param->feature;
+    pid->limit.integ_split_threshold = param->integ_range;
+    if(param->out_range<0.0f) param->out_range = -param->out_range;
+    pid->limit.out_max = param->out_range;
+    pid->limit.out_min = -param->out_range;
+}
+
+void MyPid_SetDebugParam_Struct(MyPid_Struct *pid, MyPid_Debug_Struct *param,float cur_fdb,float spd_fdb,float pos_fdb){
+    if(pid==0||param==0) return;
+
+    MyPid_SetDebugParam(&pid->cur,&param->cur);
+    MyPid_SetDebugParam(&pid->spd,&param->spd);
+    MyPid_SetDebugParam(&pid->pos,&param->pos);
+
+    if(param->cascade_enable == MY_PID_ANGLE_LOOP_ENABLE){
+        MyPid_Calc(&pid->pos,param->pos.ref,pos_fdb);
+        MyPid_Calc(&pid->spd,pid->pos.data.out,spd_fdb);
+        MyPid_Calc(&pid->cur,pid->spd.data.out,cur_fdb);
+    }
+    else if(param->cascade_enable == MY_PID_SPEED_LOOP_ENABLE){
+        MyPid_Calc(&pid->spd,param->spd.ref,spd_fdb);
+        MyPid_Calc(&pid->cur,pid->spd.data.out,cur_fdb);
+    }
+    else if(param->cascade_enable == MY_PID_CURRENT_LOOP_ENABLE){
+        MyPid_Calc(&pid->cur,param->cur.ref,cur_fdb);
+    }
 }

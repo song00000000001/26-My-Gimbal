@@ -303,9 +303,9 @@ void Task_UsartReceive(void *arg)
             if(Usart_RxCOB.len == MOTOR_PACKET_SIZE)
             {
                 for(int i=0;i<MOTOR_COUNT;i++){
-                    gimbal_motors[i].parseDriveFeedback(Usart_RxCOB.address);
-					gimbal_motors[i].parseExtraFeedback(Usart_RxCOB.address);
-                    gimbal_motors[i].parseModeFeedback(Usart_RxCOB.address);
+                    g_motors[i].parseDriveFeedback(Usart_RxCOB.address);
+					          g_motors[i].parseExtraFeedback(Usart_RxCOB.address);
+                    g_motors[i].parseModeFeedback(Usart_RxCOB.address);
                 }
             }
             break;

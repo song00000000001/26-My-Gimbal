@@ -81,10 +81,10 @@ void task_imu(void *arg)
         taskENABLE_INTERRUPTS();
         xTaskResumeAll();
 
-        imu_angle_deg[PITCH] = mpu_receive.roll ;
-        imu_angle_deg[YAW] = mpu_receive.yaw;
-        imu_gyro_dps[PITCH] = mpu_receive.gyro[0];
-        imu_gyro_dps[YAW] = mpu_receive.gyro[1];
+        g_imu_angle_deg[PITCH] = mpu_receive.roll ;
+        g_imu_angle_deg[YAW] = mpu_receive.yaw;
+        g_imu_gyro_dps[PITCH] = mpu_receive.gyro[0];
+        g_imu_gyro_dps[YAW] = mpu_receive.gyro[1];
     }
 }
 
