@@ -58,7 +58,7 @@ void task_motor_ctrl(void *arg)
             /**
              * @brief 速度环的计算
              * 由于云台是电机直驱，并没有经过减速，所以速度反馈数据既可以从电机取，也可以从IMU的角速度数据取。
-             * 电机的速度数据会有一点毛刺和噪声，但总体还行；IMU的角速度数据相对更平滑，但有延迟。
+             * 电机的速度数据会有一点编码器跳动带来的毛刺和噪声，但总体还行；IMU的角速度数据相对更平滑，但有延迟。
              */
             float gimbal_speed_feedback = Debugger.spd_feedback_source ? imu_gyro_dps[i] : gimbal_motors[i].getSpeed() ;
             if(Debugger.angle_loop_enable){
@@ -78,8 +78,8 @@ void task_motor_ctrl(void *arg)
             motor_disable();
         }
         else{
-            vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-            gimbal_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out/10.0f); // 这里除以10是实测得到的，
+            // vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
+            // gimbal_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out/10.0f);
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
             gimbal_motors[YAW].sendCurrentCtrl(gimbal_pid_spd[YAW].data.out);
         }
@@ -122,7 +122,7 @@ static void motor_init(uint8_t port_id)
         motor_delay();
         gimbal_motors[i].sendEnableCmd(true); // 使能
         motor_delay();
-        gimbal_motors[i].sendModeCmd(Debugger.motor_mode);
+        //gimbal_motors[i].sendModeCmd(Debugger.motor_mode);
         motor_delay();
     }
 }
@@ -173,8 +173,9 @@ static void motor_disable()
 /** 
   * @brief 电机测试总结
   * @details
-电机使劲转几次后容易自己从电流环退出到开环。不清楚原因。反馈模式一直是1电流环模式。
-重新失能使能发一次模式就好了。
+电机用手使劲转，产生比较大的反馈电流（大于0.6a）后,自己会退化成开环。而且反馈的模式不会更新。重新失能使能发一次模式就好了。
+开环下需要更大的输出才能起转，且起转后速度和电流的关系不太线性。电流环模式下，起转电流比较小，且速度和电流的关系比较线性。后续可以识别下开环特征自动重新使能。
+
 # 开环模式
 输出0.90基本能克服起转静摩擦。
 输出0.8，固定时反馈是80ma=0.08a左右，相差10倍。
