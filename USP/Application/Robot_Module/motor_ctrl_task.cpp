@@ -7,21 +7,7 @@ static void motor_init(uint8_t port_id);
 static void motor_disable();
 static void gimbal_pid_init(void);
 
-static MotorSpeedCtrl g_speed_ctrl[MOTOR_COUNT];
-static const MotorSpeedCtrlParam g_speed_ctrl_param = {
-    .stop_rpm_th = 5.0f,
-    .stop_ref_th = 2.0f,
-    .starting_rpm_th = 10.0f,
-    .running_rpm_th = 20.0f,
-    .running_hold_ms = 120U,
-    .startup_timeout_ms = 500U,
-    .dir_ref_th = 2.0f,
-    .dir_iq_th = 0.01f,
-    .i_start_min = 0.095f,
-    .i_start_boost = 0.045f,
-    .i_fric_run = 0.05f,
-    .iq_cmd_limit = 0.6f,
-};
+
 
 
 /**
@@ -69,16 +55,18 @@ void task_motor_ctrl(void *arg)
         .out_range=0.6f,
         .integ_range=0.1f,
         .param={
-                .kp = 3.0f,
-                .ki = 10.0f,
-                .kd = 0.0f,
-                .kff= 1.15f
+                .kp = 2.0f,
+                .ki = 1.0f,
+                .kd = 0.2f,
+                .kff= 0.2f
         },
         .feature={
             .integ_enable=true,
-            .d_split_enable=true
+            .d_split_enable=true,
+            .integ_split_enable=true
         }
     };
+    MyPid_SetIntegSplitThreshold(g_pid_debug[YAW].spd, 10.0f);
     #if USE_MCU_CURRENT_LOOP
     //电机开环，跑自己的电流环
     Debugger.motor_mode = MotorMode::OPEN_LOOP;

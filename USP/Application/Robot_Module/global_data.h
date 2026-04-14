@@ -66,11 +66,15 @@ extern MyPid_Debug_Struct g_pid_debug[MOTOR_COUNT];
 extern float g_imu_angle_deg[2];
 extern float g_imu_gyro_dps[2];
 
+extern MotorSpeedCtrl g_speed_ctrl[MOTOR_COUNT];
+extern MotorSpeedCtrlParam g_speed_ctrl_param;
+
 extern BenMoMotor* motor_observer; 
 extern MyPid_Struct *pid_observer;
 extern MyPid_Debug_Struct *pid_debug_observer;
 extern MotorSpeedCtrl *spd_ctrl_observer;
 extern MotorSpeedCtrlParam *spd_ctrl_param_observer;
+
 #pragma pack()
 
 #ifdef __cplusplus
