@@ -229,7 +229,10 @@ void MyPid_SetDebugParam(MyPid *pid, MyPid_Debug *param){
     if (pid == 0 || param == 0) return;
     MyPid_SetParam_Struct(pid, &param->param);
     pid->feature = param->feature;
-    pid->limit.integ_split_threshold = param->integ_range;
+    //pid->limit.integ_split_threshold = param->integ_split_threshold;
+    if(param->integ_range<0.0f) param->integ_range = -param->integ_range;
+    pid->limit.integ_max = param->integ_range;
+    pid->limit.integ_min = -param->integ_range;
     if(param->out_range<0.0f) param->out_range = -param->out_range;
     pid->limit.out_max = param->out_range;
     pid->limit.out_min = -param->out_range;
