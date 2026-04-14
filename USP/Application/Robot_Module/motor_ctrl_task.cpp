@@ -30,22 +30,22 @@ void task_motor_ctrl(void *arg)
     Debugger.enable_debug_mode = debug_mtvofa_monitor;  // 默认开启mtvofa监控模式
     Debugger.motor_index = YAW;                     // 默认调试YAW电机
 
-    g_pid_debug[YAW].cascade_enable = MY_PID_SPEED_LOOP_ENABLE; // 默认速度环串电流环
+    g_pid_debug[YAW].cascade_enable = MY_PID_ANGLE_LOOP_ENABLE; // 角度环串速度环串电流环
     /**
      * @brief PID参数初始化
      */
     g_pid_debug[YAW].pos={
         .ref=0.0f,
-        .out_range=170.0f,
-        .integ_range=0.0f,
+        .out_range=50.0f,
+        .integ_range=1.0f,
         .param={
-                .kp = 1.0f,
-                .ki = 0.0f,
-                .kd = 0.0f,
+                .kp = 4.0f,
+                .ki = 30.0f,
+                .kd = 0.18f,
                 .kff= 0.0f
         },
         .feature={
-            .integ_enable=false,
+            .integ_enable=true,
             .d_split_enable=true
         }
         
@@ -56,17 +56,17 @@ void task_motor_ctrl(void *arg)
         .integ_range=0.1f,
         .param={
                 .kp = 2.0f,
-                .ki = 1.0f,
+                .ki = 2.0f,
                 .kd = 0.2f,
                 .kff= 0.2f
         },
         .feature={
             .integ_enable=true,
-            .d_split_enable=true,
-            .integ_split_enable=true
+            .integ_split_enable=true,
+            .d_split_enable=true
         }
     };
-    MyPid_SetIntegSplitThreshold(g_pid_debug[YAW].spd, 10.0f);
+    MyPid_SetIntegSplitThreshold(&g_pid[YAW].spd, 10.0f);
     #if USE_MCU_CURRENT_LOOP
     //电机开环，跑自己的电流环
     Debugger.motor_mode = MotorMode::OPEN_LOOP;
@@ -101,6 +101,21 @@ void task_motor_ctrl(void *arg)
     };
     #endif
 
+    g_speed_ctrl_param = {
+        .stop_rpm_th = 1.0f,
+        .stop_ref_th = 1.0f,
+        .starting_rpm_th = 1.0f,
+        .running_rpm_th = 1.0f,
+        .running_hold_ms = 7U,
+        .startup_timeout_ms = 500U,
+        .dir_ref_th = 10.0f,
+        .dir_iq_th = 0.01f,
+        .i_start_min = 0.08f,
+        .i_start_boost = 0.04f,
+        .i_fric_run = 0.04f,//太大会过冲
+        .iq_cmd_limit = 0.6f,
+    };
+
     for (int i = 0; i < MOTOR_COUNT; ++i) {
         motor_speed_ctrl_reset(&g_speed_ctrl[i]);
     }
@@ -112,8 +127,13 @@ void task_motor_ctrl(void *arg)
          */
         const float yaw_speed_feedback = Debugger.spd_feedback_source ? g_imu_gyro_dps[YAW] : g_motors[YAW].getSpeed();
         const float yaw_current_feedback = g_motors[YAW].getCurrent();
+        if(g_pid_debug[YAW].cascade_enable == MY_PID_ANGLE_LOOP_ENABLE){
+            //位置环输出作为速度环的目标
+            MyPid_SetDebugParam(&g_pid[YAW].pos, &g_pid_debug[YAW].pos);
+            g_pid_debug[YAW].spd.ref = MyPid_Calc(&g_pid[YAW].pos,g_pid_debug[YAW].pos.ref , g_imu_angle_deg[YAW]);
+        }
+        
         const float speed_ref = g_pid_debug[YAW].spd.ref;
-
         // 速度环原始输出：只做速度PI，不混入补偿
         MyPid_SetDebugParam(&g_pid[YAW].spd, &g_pid_debug[YAW].spd);
         const float iq_ref_base = MyPid_Calc(&g_pid[YAW].spd, speed_ref, yaw_speed_feedback);
@@ -135,12 +155,17 @@ void task_motor_ctrl(void *arg)
         }
 
         float drive_cmd = 0.0f;
-        #if USE_MCU_CURRENT_LOOP
-        MyPid_SetDebugParam(&g_pid[YAW].cur, &g_pid_debug[YAW].cur);
-        drive_cmd = MyPid_Calc(&g_pid[YAW].cur, speed_ctrl_out.iq_cmd, yaw_current_feedback);
-        #else
-        drive_cmd = speed_ctrl_out.iq_cmd;
-        #endif
+        if(g_pid_debug[YAW].cascade_enable == MY_PID_CURRENT_LOOP_ENABLE){
+            drive_cmd = g_pid_debug[YAW].cur.ref;
+        }
+        else{
+            #if USE_MCU_CURRENT_LOOP
+            MyPid_SetDebugParam(&g_pid[YAW].cur, &g_pid_debug[YAW].cur);
+            drive_cmd = MyPid_Calc(&g_pid[YAW].cur, speed_ctrl_out.iq_cmd, yaw_current_feedback);
+            #else
+            drive_cmd = speed_ctrl_out.iq_cmd;
+            #endif
+        }
        
         /**
          * @brief 发送控制指令
