@@ -7,12 +7,14 @@ static void motor_init(uint8_t port_id);
 static void motor_disable();
 static void gimbal_pid_init(void);
 
+
 /**
  * @brief 电机控制任务
  */
 void task_motor_ctrl(void *arg)
 {
     static bool system_enable_last = true;
+    
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(motor_comm_delay_ms); // 7ms周期，确保电机通信正常
@@ -23,7 +25,7 @@ void task_motor_ctrl(void *arg)
     Debugger.system_enable = true;// 系统使能
     Debugger.spd_feedback_source = false;               // 默认使用电机速度反馈
     Debugger.enable_debug_mode = debug_mtvofa_monitor;  // 默认开启mtvofa监控模式
-    Debugger.motor_mode = MotorMode::OPEN_LOOP;     // 默认电流环模式
+    Debugger.motor_index = YAW;                     // 默认调试YAW电机
 
     g_pid_debug[YAW].cascade_enable = MY_PID_ANGLE_LOOP_ENABLE; // 默认位置环串速度环串电流环
     /**
@@ -60,6 +62,9 @@ void task_motor_ctrl(void *arg)
             .d_split_enable=true
         }
     };
+    #if 1
+    //电机开环，跑自己的电流环
+    Debugger.motor_mode = MotorMode::OPEN_LOOP;
     g_pid_debug[YAW].cur={
         .ref=0.0f,
         .out_range=4.0f,
@@ -75,7 +80,21 @@ void task_motor_ctrl(void *arg)
             .d_split_enable=true
         }
     };
-    
+    #else
+    //电机电流环，自己的电流环直接设置kff=1即可。
+    Debugger.motor_mode = MotorMode::CURRENT_LOOP;     // 默认电流环模式
+    g_pid_debug[YAW].cur={
+        .ref=0.0f,
+        .out_range=0.6f,
+        .integ_range=0.0f,
+        .param={
+                .kp = 0.0f,
+                .ki = 0.0f,
+                .kd = 0.0f,
+                .kff= 1.0f
+        },
+    };
+    #endif
     for (;;)
     {
         /**
@@ -112,6 +131,17 @@ void task_motor_ctrl(void *arg)
         }
         system_enable_last = Debugger.system_enable;
         
+        if(Debugger.motor_index == YAW){
+            motor_observer = &g_motors[YAW];
+            pid_observer = &g_pid[YAW];
+            pid_debug_observer = &g_pid_debug[YAW];
+        }
+        else{
+            motor_observer = &g_motors[PITCH];
+            pid_observer = &g_pid[PITCH];
+            pid_debug_observer = &g_pid_debug[PITCH];
+        }
+
         #if STACK_REMAIN_MONITER_ENABLE
         StackWaterMark_Get(motor_ctrl);
         #endif

@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-enum MotorIndex {
+enum MotorIndex_e {
     PITCH = 0,
     YAW   = 1,
     MOTOR_COUNT = 2
@@ -26,6 +26,7 @@ typedef struct {
     Debug_Mode_e enable_debug_mode; ///< 在watch窗口改为true以进入调试模式(配合遥控器)
     //uint8_t motor_accel_time; ///< 电机加速时间，单位ms/1rpm，0表示最快
     //bool motor_brake_enable; ///< 电机刹车使能，true表示启用刹车，false表示不刹车
+    MotorIndex_e motor_index; ///< 选择要调试的电机，0表示PITCH，1表示YAW
     MotorMode motor_mode; ///< 电机模式，OPEN_LOOP=0, CURRENT_LOOP=1, SPEED_LOOP=2, POSITION_LOOP=3
     bool spd_feedback_source; ///< 用于切换速度环反馈数据源, false表示使用电机速度反馈，true表示使用IMU角速度数据
     bool system_enable; ///< 系统使能
@@ -65,6 +66,9 @@ extern MyPid_Debug_Struct g_pid_debug[MOTOR_COUNT];
 extern float g_imu_angle_deg[2];
 extern float g_imu_gyro_dps[2];
 
+extern BenMoMotor* motor_observer; 
+extern MyPid_Struct *pid_observer;
+extern MyPid_Debug_Struct *pid_debug_observer;
 #pragma pack()
 
 #ifdef __cplusplus
