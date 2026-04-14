@@ -168,6 +168,11 @@ void MyPid_SetParam_Struct(MyPid *pid, MyPidParam *param);
 void MyPid_SetDebugParam_Struct(MyPid_Struct *pid, MyPid_Debug_Struct *param,float cur_fdb,float spd_fdb,float pos_fdb);
 
 /**
+ * @brief 设置单环PID调试参数
+ */
+void MyPid_SetDebugParam(MyPid *pid, MyPid_Debug *param);
+
+/**
  * @brief 设置PID输出限幅
  */
 void MyPid_SetLimit(MyPid *pid,

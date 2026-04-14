@@ -483,6 +483,11 @@
               <FileType>5</FileType>
               <FilePath>..\USP\Services\my_pid.h</FilePath>
             </File>
+            <File>
+              <FileName>motor_speed_ctrl.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\USP\Application\Robot_Module\motor_speed_ctrl.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

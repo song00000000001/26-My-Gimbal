@@ -120,6 +120,7 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
     case MY_PID_MODE_POSITION:
     {
         bool integ_allow = pid->feature.integ_enable;
+        float iout_prev = pid->data.iout;
         if (integ_allow)
         {
             float th = pid->limit.integ_split_threshold;
@@ -161,6 +162,23 @@ float MyPid_Calc(MyPid *pid, float ref, float fdb)
         pid->data.out = my_clamp(pid->data.out,
                                  pid->limit.out_min,
                                  pid->limit.out_max);
+
+        if (pid->feature.integ_enable)
+        {
+            bool sat_high = (pid->data.out >= pid->limit.out_max);
+            bool sat_low  = (pid->data.out <= pid->limit.out_min);
+            bool drives_to_high = (pid->data.err > 0.0f);
+            bool drives_to_low  = (pid->data.err < 0.0f);
+            if ((sat_high && drives_to_high) || (sat_low && drives_to_low))
+            {
+                // 输出饱和且误差方向继续推动饱和时，冻结本周期积分
+                pid->data.iout = iout_prev;
+                pid->data.out = pid->data.pout + pid->data.iout + pid->data.dout + pid->data.ffout;
+                pid->data.out = my_clamp(pid->data.out,
+                                         pid->limit.out_min,
+                                         pid->limit.out_max);
+            }
+        }
     }
     break;
 

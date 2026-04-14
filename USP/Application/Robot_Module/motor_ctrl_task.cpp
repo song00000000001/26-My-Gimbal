@@ -7,6 +7,22 @@ static void motor_init(uint8_t port_id);
 static void motor_disable();
 static void gimbal_pid_init(void);
 
+static MotorSpeedCtrl g_speed_ctrl[MOTOR_COUNT];
+static const MotorSpeedCtrlParam g_speed_ctrl_param = {
+    .stop_rpm_th = 5.0f,
+    .stop_ref_th = 2.0f,
+    .starting_rpm_th = 10.0f,
+    .running_rpm_th = 20.0f,
+    .running_hold_ms = 120U,
+    .startup_timeout_ms = 500U,
+    .dir_ref_th = 2.0f,
+    .dir_iq_th = 0.01f,
+    .i_start_min = 0.095f,
+    .i_start_boost = 0.045f,
+    .i_fric_run = 0.05f,
+    .iq_cmd_limit = 0.6f,
+};
+
 
 /**
  * @brief 电机控制任务
@@ -14,6 +30,7 @@ static void gimbal_pid_init(void);
 void task_motor_ctrl(void *arg)
 {
     static bool system_enable_last = true;
+    MotorSpeedCtrlOutput speed_ctrl_out = {0};
     
     TickType_t xLastWakeTime_t;
     xLastWakeTime_t = xTaskGetTickCount();
@@ -27,7 +44,7 @@ void task_motor_ctrl(void *arg)
     Debugger.enable_debug_mode = debug_mtvofa_monitor;  // 默认开启mtvofa监控模式
     Debugger.motor_index = YAW;                     // 默认调试YAW电机
 
-    g_pid_debug[YAW].cascade_enable = MY_PID_ANGLE_LOOP_ENABLE; // 默认位置环串速度环串电流环
+    g_pid_debug[YAW].cascade_enable = MY_PID_SPEED_LOOP_ENABLE; // 默认速度环串电流环
     /**
      * @brief PID参数初始化
      */
@@ -62,7 +79,7 @@ void task_motor_ctrl(void *arg)
             .d_split_enable=true
         }
     };
-    #if 1
+    #if USE_MCU_CURRENT_LOOP
     //电机开环，跑自己的电流环
     Debugger.motor_mode = MotorMode::OPEN_LOOP;
     g_pid_debug[YAW].cur={
@@ -95,18 +112,47 @@ void task_motor_ctrl(void *arg)
         },
     };
     #endif
+
+    for (int i = 0; i < MOTOR_COUNT; ++i) {
+        motor_speed_ctrl_reset(&g_speed_ctrl[i]);
+    }
+
     for (;;)
     {
         /**
          * @brief 计算控制输出
          */
-        for(int i=0;i<MOTOR_COUNT;i++){
-            float gimbal_speed_feedback = Debugger.spd_feedback_source ? g_imu_gyro_dps[i] : g_motors[i].getSpeed() ;
-            MyPid_SetDebugParam_Struct( &g_pid[i] , &g_pid_debug[i],
-                                        g_motors[i].getCurrent(),
-                                        gimbal_speed_feedback, 
-                                        g_imu_angle_deg[i]);
+        const float yaw_speed_feedback = Debugger.spd_feedback_source ? g_imu_gyro_dps[YAW] : g_motors[YAW].getSpeed();
+        const float yaw_current_feedback = g_motors[YAW].getCurrent();
+        const float speed_ref = g_pid_debug[YAW].spd.ref;
+
+        // 速度环原始输出：只做速度PI，不混入补偿
+        MyPid_SetDebugParam(&g_pid[YAW].spd, &g_pid_debug[YAW].spd);
+        const float iq_ref_base = MyPid_Calc(&g_pid[YAW].spd, speed_ref, yaw_speed_feedback);
+
+        // 起转状态机 + 起转补偿 + 运行摩擦前馈
+        motor_speed_ctrl_update(&g_speed_ctrl[YAW],
+                                &g_speed_ctrl_param,
+                                speed_ref,
+                                yaw_speed_feedback,
+                                iq_ref_base,
+                                motor_comm_delay_ms,
+                                &speed_ctrl_out);
+
+        if (speed_ctrl_out.startup_timeout) {
+            MyPid_Reset(&g_pid[YAW].spd);
+            #if USE_MCU_CURRENT_LOOP
+            MyPid_Reset(&g_pid[YAW].cur);
+            #endif
         }
+
+        float drive_cmd = 0.0f;
+        #if USE_MCU_CURRENT_LOOP
+        MyPid_SetDebugParam(&g_pid[YAW].cur, &g_pid_debug[YAW].cur);
+        drive_cmd = MyPid_Calc(&g_pid[YAW].cur, speed_ctrl_out.iq_cmd, yaw_current_feedback);
+        #else
+        drive_cmd = speed_ctrl_out.iq_cmd;
+        #endif
        
         /**
          * @brief 发送控制指令
@@ -119,7 +165,7 @@ void task_motor_ctrl(void *arg)
             // vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
             // g_motors[PITCH].sendCurrentCtrl(gimbal_pid_spd[PITCH].data.out/10.0f);
             vTaskDelayUntil(&xLastWakeTime_t, xFrequency);
-            g_motors[YAW].sendCurrentCtrl(g_pid[YAW].cur.data.out);
+            g_motors[YAW].sendCurrentCtrl(drive_cmd);
         }
         
         /**

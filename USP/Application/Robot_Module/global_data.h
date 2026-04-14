@@ -3,7 +3,7 @@
 #include "internal.h"
 #include "motor_m0603A_driver.h"
 #include "my_pid.h"
-
+#include "motor_speed_ctrl.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,6 +69,8 @@ extern float g_imu_gyro_dps[2];
 extern BenMoMotor* motor_observer; 
 extern MyPid_Struct *pid_observer;
 extern MyPid_Debug_Struct *pid_debug_observer;
+extern MotorSpeedCtrl *spd_ctrl_observer;
+extern MotorSpeedCtrlParam *spd_ctrl_param_observer;
 #pragma pack()
 
 #ifdef __cplusplus

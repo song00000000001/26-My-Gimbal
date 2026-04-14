@@ -52,7 +52,7 @@ TaskHandle_t tskIMU_Handle;
 void Service_Devices_Init(void)
 {
 	xTaskCreate(task_state_machine, "App.task_state_machine", Large_Stack_Size, NULL, PriorityHigh, &task_state_machine_Handle);
-    xTaskCreate(task_motor_ctrl, "App.task_motor_ctrl", Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityAboveNormal, &task_motor_ctrl_Handle);
+    xTaskCreate(task_motor_ctrl, "App.task_motor_ctrl", Large_Stack_Size, NULL, PriorityAboveNormal, &task_motor_ctrl_Handle);
     //xTaskCreate(armer_ctrl_task, "App.armer_ctrl_task", Small_Stack_Size, NULL, PriorityAboveNormal, &armer_ctrl_Handle);
     #if USE_SRML_MPU6050
     xTaskCreate(task_imu, "App.tskIMU",  Small_Stack_Size+Tiny_Stack_Size, NULL, PriorityNormal, &tskIMU_Handle);

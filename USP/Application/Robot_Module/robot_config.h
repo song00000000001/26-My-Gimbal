@@ -14,6 +14,8 @@ extern "C" {
 //8ms下测试丢包率0.5%~1%
 //认为7ms是一个比较合理的选择，既能保证通信效率又能降低丢包率。后续可以考虑增加重试机制来进一步降低丢包率。
 
+#define USE_MCU_CURRENT_LOOP 1 // 1: MCU自实现电流环；0: 使用电机内部电流环
+
 #define STACK_REMAIN_MONITER_ENABLE 0 // 是否启用任务栈剩余监测功能
 
 // 帧头定义
